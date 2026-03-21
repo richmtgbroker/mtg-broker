@@ -99,6 +99,32 @@ Set in Cloudflare dashboards, never committed to code:
 - No TypeScript — use plain JavaScript/JSX everywhere.
 - Prefer single-file components and readable code over clever abstractions.
 
+## Code Standards
+
+1. **Full files always** — ALWAYS provide the FULL complete file for EVERY code change. Never partial snippets, find-and-replace instructions, section replacements, or manual edit requests. No exceptions.
+2. **Code summary with every delivery** — Always include a summary showing: old lines vs new lines, file sizes, what was added, changed, and removed.
+3. **Webflow embed character limit** — Webflow embeds have a 50,000 character hard limit. Always check character count before delivering. Split into multiple embeds or external files if needed.
+4. **Action item format** — Format action items as: ⚡ ACTION: description
+5. **Keep code simple and well-commented** — This project is maintained by a solo non-developer who is new to coding.
+6. **Debugging order** — When debugging, check in this order: Site Settings head code → Site Settings footer code → Page head code → Page before-body code.
+7. **Use Airtable MCP tools** — Use Airtable MCP tools to create/modify fields and records directly. Never ask to do Airtable changes manually.
+8. **Insurance before Tax** — Homeowner's Insurance is always listed BEFORE Property Tax in all layouts.
+9. **Percent fields** — Store as decimals (divide by 100 on save, multiply by 100 on load).
+10. **Currency fields** — Use precision 0 and $ symbol.
+11. **Worker JS in template literals** — For Worker JS embedding in template literals, use three-step Python escaping: backslash first, then backtick, then `${`.
+12. **Commit and push after every change** — After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
+
+## Platform Architecture
+
+- **Frontend**: Webflow (Site ID: `694e4aaf5f511ad7901b74bc`) — all embeds have 50K char limit
+- **Database**: Airtable (Base ID: `appuJgI9X93OLaf0u`) migrating to Supabase
+  - Pipeline Loans table: `tblH2hB1FlW9a3iXp`
+- **Auth**: Outseta (domain: `mtgbroker.outseta.com`) — JWT stored in localStorage as `Outseta.nocode.accessToken`
+  - Plan UIDs: LITE `NmdnZg90`, PLUS `Dmw8leQ4`, PRO `yWobBP9D`
+- **API**: Cloudflare Workers
+- **Owner/Admin**: Rich (`rich@mtg.broker`, admin email: `rich@prestonlending.com`)
+- **NEXA detection**: JWT email domain check for `@nexalending.com` / `@nexamortgage.com`
+
 ## Current Status (as of 2026-03-21)
 
 ### What's Working
