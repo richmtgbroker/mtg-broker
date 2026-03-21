@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<!--
+  sidebar-test.html
+  =================
+  Test page for the mtg-broker-sidebar Cloudflare Worker.
+  Loads the sidebar from the Worker and verifies it renders correctly
+  before deploying to Webflow and the AI Loan Finder app.
+
+  HOW TO TEST LOCALLY:
+    1. In one terminal: cd workers && wrangler dev mtg-broker-sidebar.js --port 8787
+    2. Open this file in a browser (double-click, or use Live Server in VS Code)
+    3. The sidebar should appear on the left side of the page
+
+  HOW TO TEST AGAINST PRODUCTION:
+    Change SIDEBAR_SRC below from the localhost URL to your deployed Worker URL.
+    Example: https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Test — mtg.broker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ---- Design tokens matching mtg.broker ---- */
+    :root {
+      --navbar-height: 64px;    /* Must match your real navbar height */
+      --sidebar-width: 260px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Host Grotesk', sans-serif;
+      background: #f0f5ff;
+      color: #111827;
+    }
+
+    /* ---- Fake navbar (matches real site layout) ---- */
+    .test-navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--navbar-height);
+      background: #ffffff;
+      border-bottom: 1px solid #E5E7EB;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+    }
+
+    .test-navbar .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a56db;
+    }
+
+    .test-navbar .nav-label {
+      font-size: 12px;
+      color: #6B7280;
+      background: #F3F4F6;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ---- Main content area (pushed right of sidebar) ---- */
+    .test-content {
+      margin-top: var(--navbar-height);
+      margin-left: var(--sidebar-width);
+      padding: 32px;
+      transition: margin-left 0.3s ease;
+    }
+
+    /* When sidebar is collapsed, body.sidebar-collapsed lets us respond */
+    body.sidebar-collapsed .test-content {
+      margin-left: 72px;
+    }
+
+    /* Mobile: no sidebar, no left margin */
+    @media (max-width: 991px) {
+      .test-content {
+        margin-left: 0;
+      }
+    }
+
+    /* ---- Test page styles ---- */
+    .test-header {
+      margin-bottom: 24px;
+    }
+
+    .test-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .test-header p {
+      color: #6B7280;
+      font-size: 15px;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .test-card {
+      background: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .test-card h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #94A3B8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .test-card p {
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    .status-ok   { color: #059669; font-weight: 600; }
+    .status-warn { color: #D97706; font-weight: 600; }
+    .status-err  { color: #DC2626; font-weight: 600; }
+
+    .checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .checklist li {
+      font-size: 14px;
+      color: #374151;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .checklist li::before {
+      content: '☐';
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+
+    .deploy-steps {
+      background: #ffffff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .deploy-steps h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 16px;
+    }
+
+    .deploy-section {
+      margin-bottom: 20px;
+    }
+
+    .deploy-section h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a56db;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    .deploy-section ol {
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .deploy-section li {
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #F3F4F6;
+      border: 1px solid #E5E7EB;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #111827;
+    }
+
+    .url-input {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .url-input label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    .url-input input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      color: #111827;
+    }
+
+    .url-input button {
+      padding: 8px 16px;
+      background: #1a56db;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .url-input button:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =====================================================
+       FAKE NAVBAR
+       Simulates the real mtg.broker navbar so the sidebar
+       positions itself correctly (uses --navbar-height var).
+       ===================================================== -->
+  <div class="test-navbar">
+    <div class="logo">mtg.broker</div>
+    <span class="nav-label">Sidebar Test Page</span>
+  </div>
+
+  <!-- =====================================================
+       SIDEBAR MOUNT POINT
+       This is the only thing you add to each Webflow page
+       (and the React app index.html) to get the sidebar.
+       ===================================================== -->
+  <div id="mtg-sidebar"></div>
+
+  <!-- =====================================================
+       MAIN PAGE CONTENT
+       ===================================================== -->
+  <div class="test-content">
+
+    <div class="test-header">
+      <h1>Sidebar Worker — Test Page</h1>
+      <p>
+        If the sidebar appeared on the left, the Worker is working correctly.
+        Use the checklist below to verify all features.
+      </p>
+    </div>
+
+    <!-- Dynamic Worker URL switcher -->
+    <div class="deploy-steps">
+      <h2>Test a Different Worker URL</h2>
+      <div class="url-input">
+        <label>Worker URL:</label>
+        <input type="text" id="worker-url-input"
+               value="http://localhost:8787/sidebar.js"
+               placeholder="https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js">
+        <button onclick="reloadSidebar()">Reload Sidebar</button>
+      </div>
+      <p style="font-size:13px;color:#6B7280;">
+        Default points to <code>localhost:8787</code> (local wrangler dev).
+        Change to your deployed Worker URL to test production.
+      </p>
+    </div>
+
+    <!-- Verification checklist -->
+    <div class="test-grid">
+      <div class="test-card">
+        <h3>Visual Check</h3>
+        <ul class="checklist">
+          <li>Sidebar appears on the left, below the navbar</li>
+          <li>"Navigation" header text visible at top</li>
+          <li>All nav links present with correct icons</li>
+          <li>"AI Loan Finder" appears after "Loan Search" with sparkle icon</li>
+          <li>Toggle button (double-chevron) visible in header</li>
+        </ul>
+      </div>
+
+      <div class="test-card">
+        <h3>Collapse / Expand</h3>
+        <ul class="checklist">
+          <li>Click toggle → sidebar collapses to icons-only (72px)</li>
+          <li>Page content shifts left when collapsed</li>
+          <li>Reload page → collapsed state is remembered</li>
+          <li>Icons remain centered when collapsed</li>
+          <li>Click toggle again → sidebar expands back to 260px</li>
+        </ul>
+      </div>
+
+      <div class="test-card">
+        <h3>Active Page Highlighting</h3>
+        <ul class="checklist">
+          <li>Current URL path matches a link → it's highlighted in blue</li>
+          <li>No other links are highlighted at the same time</li>
+          <li>Test by adding <code>?path=/app/dashboard</code> to URL and refreshing</li>
+        </ul>
+      </div>
+
+      <div class="test-card">
+        <h3>PRO / NEXA Gating</h3>
+        <ul class="checklist">
+          <li>"Referrals" link is hidden by default (PRO-only)</li>
+          <li>"NEXA Exclusive" section is hidden by default</li>
+          <li>Add <code>body.pro-user</code> class in DevTools → Referrals appears</li>
+          <li>Add <code>body.nexa-user</code> class in DevTools → NEXA section appears</li>
+        </ul>
+      </div>
+
+      <div class="test-card">
+        <h3>Mobile (resize window)</h3>
+        <ul class="checklist">
+          <li>Resize window below 991px → sidebar disappears</li>
+          <li>Content fills full width on mobile</li>
+        </ul>
+      </div>
+
+      <div class="test-card">
+        <h3>Console / Errors</h3>
+        <ul class="checklist">
+          <li>Open DevTools → Console tab</li>
+          <li>No JavaScript errors on load</li>
+          <li>No "No mount point found" warning (means div was found)</li>
+          <li>CSS was injected into &lt;head&gt; (check Elements tab)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Deployment docs -->
+    <div class="deploy-steps">
+      <h2>Deployment Steps</h2>
+
+      <div class="deploy-section">
+        <h3>Step 1 — Deploy the Worker</h3>
+        <ol>
+          <li>Make sure Wrangler is installed: <code>npm install -g wrangler</code></li>
+          <li>Log in: <code>wrangler login</code></li>
+          <li>Deploy from the repo root:
+            <br><code>wrangler deploy workers/mtg-broker-sidebar.js --name mtg-broker-sidebar --compatibility-date 2024-01-01</code>
+          </li>
+          <li>Copy the Worker URL from the output (e.g. <code>https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev</code>)</li>
+          <li>Test it: visit <code>https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js</code> — you should see JavaScript</li>
+        </ol>
+      </div>
+
+      <div class="deploy-section">
+        <h3>Step 2 — Update Webflow (replaces the giant embed)</h3>
+        <ol>
+          <li>In Webflow Designer, go to each app page that has the sidebar embed</li>
+          <li>Delete the giant sidebar embed (the one with all the HTML/CSS/JS)</li>
+          <li>Add a new <strong>Embed</strong> element where the sidebar was, with just:
+            <br><code>&lt;div id="mtg-sidebar"&gt;&lt;/div&gt;</code>
+          </li>
+          <li>In <strong>Site Settings → Footer Code</strong>, add once (applies to all pages):
+            <br><code>&lt;script src="https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js"&gt;&lt;/script&gt;</code>
+          </li>
+          <li>Publish the Webflow site and verify on a live app page</li>
+        </ol>
+      </div>
+
+      <div class="deploy-section">
+        <h3>Step 3 — Update the AI Loan Finder React App</h3>
+        <ol>
+          <li>Open <code>apps/ai-loan-finder/index.html</code></li>
+          <li>Inside <code>&lt;body&gt;</code>, add before the <code>&lt;div id="root"&gt;</code>:
+            <br><code>&lt;div id="mtg-sidebar"&gt;&lt;/div&gt;</code>
+          </li>
+          <li>At the bottom of <code>&lt;body&gt;</code>, add:
+            <br><code>&lt;script src="https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js"&gt;&lt;/script&gt;</code>
+          </li>
+          <li>Make sure the app's CSS sets <code>--navbar-height</code> and pushes content right of the sidebar:
+            <br><code>margin-left: 260px;</code> (or use <code>var(--sidebar-width)</code>)
+          </li>
+          <li>Rebuild and deploy: <code>cd apps/ai-loan-finder &amp;&amp; npm run build</code></li>
+        </ol>
+      </div>
+
+      <div class="deploy-section">
+        <h3>Future Sidebar Updates (the big win)</h3>
+        <ol>
+          <li>Edit <code>workers/mtg-broker-sidebar.js</code> — change CSS, HTML, or links</li>
+          <li>Run: <code>wrangler deploy workers/mtg-broker-sidebar.js --name mtg-broker-sidebar --compatibility-date 2024-01-01</code></li>
+          <li>Done — ALL pages (Webflow + React app) pick up the change automatically</li>
+          <li>No Webflow Designer changes needed, no app rebuild needed</li>
+        </ol>
+      </div>
+    </div>
+
+  </div><!-- end .test-content -->
+
+
+  <!-- =====================================================
+       LOAD THE SIDEBAR FROM THE WORKER
+       Change this URL to test local vs. production.
+       ===================================================== -->
+  <script>
+    // Default to local wrangler dev server
+    var SIDEBAR_SRC = 'http://localhost:8787/sidebar.js';
+
+    // Load sidebar script dynamically so we can reload it via the button
+    function loadSidebar(src) {
+      // Remove any existing sidebar script + CSS + HTML
+      var old = document.getElementById('mtg-sidebar-script');
+      if (old) old.remove();
+      var oldCss = document.getElementById('mtg-sidebar-css');
+      if (oldCss) oldCss.remove();
+      var mount = document.getElementById('mtg-sidebar');
+      if (mount) mount.innerHTML = '';
+
+      // Inject new script tag
+      var script = document.createElement('script');
+      script.id = 'mtg-sidebar-script';
+      script.src = src + '?t=' + Date.now(); // bust cache on reload
+      script.onerror = function() {
+        document.getElementById('mtg-sidebar').innerHTML =
+          '<div style="padding:20px;color:#DC2626;font-size:13px;font-family:monospace;">' +
+          'Failed to load sidebar from:<br>' + src + '<br><br>' +
+          'Is wrangler dev running on port 8787?<br>' +
+          'Run: <strong>wrangler dev workers/mtg-broker-sidebar.js --port 8787</strong>' +
+          '</div>';
+      };
+      document.body.appendChild(script);
+    }
+
+    function reloadSidebar() {
+      var input = document.getElementById('worker-url-input');
+      loadSidebar(input.value.trim() || SIDEBAR_SRC);
+    }
+
+    // Initial load
+    loadSidebar(SIDEBAR_SRC);
+  </script>
+
+</body>
+</html>
