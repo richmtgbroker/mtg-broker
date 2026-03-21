@@ -1,0 +1,11 @@
+# Cloudflare Pages configuration for MTG Loan Finder
+name = "mtg-loan-finder"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+# Note: ANTHROPIC_API_KEY should be set in the Cloudflare Pages dashboard
+# Never commit API keys to the repository
+
+[vars]
+# Environment variables can be added here for non-sensitive values
+# ANTHROPIC_API_KEY should be set in Cloudflare dashboard as a secret
