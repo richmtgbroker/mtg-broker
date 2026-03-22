@@ -115,6 +115,53 @@ Set in Cloudflare dashboards, never committed to code:
 10. **Currency fields** — Use precision 0 and $ symbol.
 11. **Worker JS in template literals** — For Worker JS embedding in template literals, use three-step Python escaping: backslash first, then backtick, then `${`.
 12. **Commit and push after every change** — After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
+13. **Use Webflow MCP tools** — Use Webflow MCP tools (`mcp__webflow__*`) to create pages, apply styles, and set element properties directly. Never ask the user to make Webflow Designer changes manually if it can be done via MCP.
+
+## Standard App Page Structure
+
+Every page in the `/app/` folder of Webflow MUST follow this exact structure. When creating a new app page, Claude should do ALL of these steps automatically via Webflow MCP tools:
+
+### Required Elements (in order, top to bottom)
+1. `Navbar_App` — component instance (handles sticky top navbar)
+2. `Sidebar_App` — component instance (handles sidebar nav + layout positioning)
+3. **Content Div Block** — with style class `main-content-section` applied
+4. `Footer_App` — component instance
+
+### The `main-content-section` Style Class
+- **Always apply this style** to the content Div Block on every app page.
+- This is a shared Webflow style that handles proper layout within the sidebar framework.
+- Style ID: `ff20f642-7537-d6af-3000-97310d4628f4`
+- Apply via MCP: `set_style` action with `style_names: ["main-content-section"]`
+- **Never skip this** — without it, content will overlap the sticky navbar.
+
+### App Page Creation Checklist (Claude does ALL of these automatically)
+- [ ] Create page via `mcp__webflow__de_page_tool` in the App folder (`695c215357f7a77fba20aac2`)
+- [ ] Add Navbar_App, Sidebar_App, Footer_App component instances
+- [ ] Add content Div Block between Sidebar_App and Footer_App
+- [ ] Apply `main-content-section` style to the content Div Block via `mcp__webflow__element_tool` `set_style`
+- [ ] Add HtmlEmbed inside the content Div Block with the page content/script
+- [ ] Publish the site
+
+### Loading External JS Bundles in Webflow Embeds
+Webflow strips external domains from `<script src="...">` attributes when saving embeds. Use this pattern instead:
+```html
+<div id="my-app"></div>
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.src = 'https://your-bundle-url.pages.dev/assets/index-[hash].js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+</script>
+```
+
+### React Apps Embedded in Webflow
+- Build with Vite as **IIFE format** (not ES module) — avoids cross-origin `type="module"` issues
+- CSS is **inlined into the JS bundle** — no separate CSS file to load
+- Mount target is a `<div id="app-name">` in the HtmlEmbed, NOT `#root`
+- Use DOM polling in `main.jsx` to handle Webflow's async script injection
+- The React app handles NO auth, navbar, sidebar, or footer — all Webflow's job
 
 ## Platform Architecture
 
@@ -127,16 +174,19 @@ Set in Cloudflare dashboards, never committed to code:
 - **Owner/Admin**: Rich (`rich@mtg.broker`, admin email: `rich@prestonlending.com`)
 - **NEXA detection**: JWT email domain check for `@nexalending.com` / `@nexamortgage.com`
 
-## Current Status (as of 2026-03-21)
+## Current Status (as of 2026-03-22)
 
 ### What's Working
-- AI Loan Finder React app (frontend + backend) — built, needs deployment verification
+- AI Loan Finder React app — fully live at `mtg.broker/app/ai-search`
+  - Webflow page with Navbar_App, Sidebar_App, content div (`main-content-section`), Footer_App
+  - React app (IIFE build) deployed on Cloudflare Pages (`mtg-loan-finder.pages.dev`)
+  - Sidebar has "AI Loan Finder" link
+  - Outseta auth gating active
 - Airtable database with ~625 loan products
 - Supabase mirror (migrated from Airtable, used by AI Loan Finder)
 - Webflow site live at mtg.broker
 
 ### What Needs Work
-- Auth flow stabilization (Outseta JWT integration)
-- End-to-end deployment verification for AI Loan Finder
+- End-to-end search testing with real borrower scenarios
 - Automated Airtable → Supabase data sync
 - Workers, embeds, and shared components not yet populated in this repo
