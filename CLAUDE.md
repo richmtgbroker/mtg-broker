@@ -9,7 +9,7 @@ The platform is a combination of a Webflow marketing/app site, standalone React 
 ## Tech Stack
 
 - **Website & App Shell**: Webflow (Site ID: `694e4aaf5f511ad7901b74bc`)
-- **Standalone Apps**: Vite + React (deployed to Cloudflare Pages)
+- **Standalone Apps**: Vite + React (embedded into Webflow via custom code embeds)
 - **Database (current)**: Airtable (Base ID: `appuJgI9X93OLaf0u`)
 - **Database (migrating to)**: Supabase (Project ID: `tcmahfwhdknxhhdvqpum`, URL: `https://tcmahfwhdknxhhdvqpum.supabase.co`)
 - **Auth**: Outseta (`mtgbroker.outseta.com`) — handles signup, login, JWT tokens
@@ -23,7 +23,7 @@ The platform is a combination of a Webflow marketing/app site, standalone React 
 mtg-broker/
 ├── CLAUDE.md                  ← You are here. Platform-wide docs.
 ├── apps/
-│   └── ai-loan-finder/        ← Standalone React app (Vite + Cloudflare Pages)
+│   └── ai-loan-finder/        ← React app (Vite) embedded into Webflow at /app/ai-search
 │       ├── CLAUDE.md           ← App-specific docs, tech details, DB schema
 │       ├── src/                ← React frontend (App.jsx)
 │       ├── functions/          ← Cloudflare Pages Functions (API backend)
@@ -44,9 +44,10 @@ mtg-broker/
 
 | Component | Deploys To | How |
 |-----------|-----------|-----|
-| AI Loan Finder | Cloudflare Pages (`app.mtg.broker`) | `cd apps/ai-loan-finder && npm run build` → Wrangler/CF Pages |
+| AI Loan Finder | Webflow page (`mtg.broker/app/ai-search`) | Built with Vite, JS/CSS hosted on Cloudflare Pages, loaded via HtmlEmbed in Webflow. Auth gated by Outseta automatically. React app has NO navbar/footer/auth — all handled by Webflow components. |
 | Workers | Cloudflare Workers (various routes) | `wrangler deploy` per worker |
 | Webflow Embeds | Webflow custom code blocks | Copy/paste into Webflow Designer (50K char limit per embed) |
+| Sidebar Script | Sidebar_App Webflow component (HtmlEmbed inside it) | Double-click component → double-click embed → paste script tag. Do NOT put in Site Settings. |
 | Airtable Scripts | Airtable Scripting Extension | Copy/paste into Airtable's script editor |
 | Shared Components | Used by apps and embeds | Imported or copy/pasted as needed |
 
@@ -60,7 +61,7 @@ mtg-broker/
 | Airtable Lender List Table | `tbl1mpg3KFakZsFK7` |
 | Supabase Project | `tcmahfwhdknxhhdvqpum` |
 | Outseta Domain | `mtgbroker.outseta.com` |
-| Cloudflare Pages Project | `app.mtg.broker` |
+| AI Loan Finder URL | `mtg.broker/app/ai-search` (Webflow page, Outseta-gated) |
 | GitHub Repo | `richmtgbroker/mtg-broker` |
 
 ## Design System

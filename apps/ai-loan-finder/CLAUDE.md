@@ -5,34 +5,49 @@
 
 ## What This App Does
 
-Lets loan officers describe a borrower scenario in plain English and instantly get matched wholesale loan products. Deployed to Cloudflare Pages at `app.mtg.broker`.
+Lets loan officers describe a borrower scenario in plain English and instantly get matched wholesale loan products. The React app is embedded inside the Webflow page at `mtg.broker/app/ai-search`, which is automatically auth-gated by Outseta.
 
 ## Architecture
 
 ```
-User types scenario → React frontend → POST /api/search → Cloudflare Pages Function
-  → 1. Parse scenario for filters (FICO, occupancy, loan type, etc.)
-  → 2. Query Supabase REST API with filters
-  → 3. Send matching products to Claude for ranking/explanation
-  → 4. Return structured JSON results → Display as cards
+User visits mtg.broker/app/ai-search (Webflow page, Outseta-gated)
+  → Webflow renders: Navbar_App + Sidebar_App + [React App] + Footer_App
+  → React app mounts into <div id="ai-search-app">
+  → User types scenario → POST to Cloudflare Pages Function API
+    → 1. Parse scenario for filters (FICO, occupancy, loan type, etc.)
+    → 2. Query Supabase REST API with filters
+    → 3. Send matching products to Claude for ranking/explanation
+    → 4. Return structured JSON results → Display as cards
 ```
 
 ## Key Files
 
-- `src/App.jsx` — Single-page React frontend (input, chips, results cards, nav)
+- `src/App.jsx` — React search UI (input, chips, results cards — NO navbar/footer/auth)
+- `src/main.jsx` — Mounts React into `#ai-search-app` div on the Webflow page
+- `src/index.css` — Styles for the search UI only
 - `functions/api/search.js` — Cloudflare Pages Function (parses scenario → queries Supabase → calls Claude)
 - `scripts/migrate-airtable-to-supabase.js` — One-time data migration script
-- `worker-proxy.js` — Cloudflare Worker proxy for `/app/ai-search` route
 - `package.json` — App dependencies and build config
 - `vite.config.js` — Vite build configuration
 
 ## Tech Stack
 
-- **Frontend**: Vite + React (single page app)
+- **Frontend**: Vite + React (embedded in Webflow page)
 - **Backend**: Cloudflare Pages Functions (serverless)
 - **Database**: Supabase (PostgreSQL) — `loan_products` table (~625 records)
 - **AI**: Anthropic Claude API (claude-haiku-4-5) — ranks/explains results
-- **Auth**: localStorage-based JWT token auth with redirect to mtg.broker login
+- **Auth**: Outseta (page-level gating on Webflow — no auth code in the React app)
+- **Shell**: Webflow components (Navbar_App, Sidebar_App, Footer_App)
+
+## What the React App Does NOT Handle
+
+The following are all handled by Webflow and Outseta — do NOT add them back to the React app:
+- ❌ Navbar / navigation
+- ❌ Sidebar
+- ❌ Footer
+- ❌ Login prompt / auth gating
+- ❌ JWT decoding or token management
+- ❌ Sign out button
 
 ## Database Schema
 
@@ -85,34 +100,66 @@ Set in Cloudflare Pages dashboard, never in code:
 
 ## Deployment
 
+### Step 1 — Build the React app
 ```bash
 cd apps/ai-loan-finder
 npm run build
-# Deploy via Cloudflare Pages (Wrangler or dashboard)
 ```
+Output goes to `dist/`. The JS and CSS bundles will have hashed filenames like:
+- `dist/assets/index-[hash].js`
+- `dist/assets/index-[hash].css`
 
-- Build output: `dist/`
-- Custom domain: `app.mtg.broker`
+### Step 2 — Deploy to Cloudflare Pages
+Deploy the `dist/` folder and `functions/` folder to Cloudflare Pages.
+The API backend runs as a Pages Function at `/api/search`.
+
+### Step 3 — Update the API_URL in App.jsx
+Set `API_URL` at the top of `src/App.jsx` to the actual Cloudflare Pages domain:
+```js
+const API_URL = 'https://YOUR-PROJECT.pages.dev/api/search'
+```
+Then rebuild and redeploy.
+
+### Step 4 — Embed in Webflow
+In the Webflow Designer, on the `/app/ai-search` page, add an HtmlEmbed in the
+content area (between Sidebar_App and Footer_App) with:
+```html
+<link rel="stylesheet" href="https://YOUR-PROJECT.pages.dev/assets/index-[hash].css">
+<script type="module" src="https://YOUR-PROJECT.pages.dev/assets/index-[hash].js"></script>
+```
+Update the filenames after each build (the hash changes on every build).
+
+### Step 5 — Reorder elements in Webflow Navigator
+The content div (`#ai-search-app`) must appear between Sidebar_App and Footer_App
+in the page structure. Drag it into position in the Webflow Navigator if needed.
+
+## Sidebar Embed Deployment
+
+The sidebar script (`workers/mtg-broker-sidebar/`) is embedded inside the
+**Sidebar_App Webflow component** (not in Site Settings). This ensures it only
+loads on app pages. To update the sidebar embed:
+1. Open any app page in the Webflow Designer
+2. Double-click the Sidebar_App component to enter component view
+3. Double-click the HtmlEmbed inside it
+4. Replace the code with the updated script tag
+5. Save & Close, then publish
+
+## CORS
+
+The Cloudflare Pages Function must allow CORS from `https://mtg.broker`.
+Check `functions/api/search.js` for CORS headers and add if missing:
+```js
+'Access-Control-Allow-Origin': 'https://mtg.broker'
+```
 
 ## Design Requirements
 
-- **Font**: Host Grotesk (Google Fonts)
+- **Font**: Host Grotesk (inherited from Webflow page)
 - **Primary color**: `#1a56db` (blue)
 - **Secondary blue**: `#1e40af`
 - **Light blue background**: `#e0ecff`
-- **Background gradient**: `linear-gradient(180deg, #f0f5ff 0%, #ffffff 30%)`
 - **Clean, professional UI** — no flashy animations, no dark mode
 - **Mobile responsive**
-
-### Navigation Bar
-
-| Label | Path |
-|-------|------|
-| Dashboard | `/dashboard` |
-| AI Loan Finder | `/app/ai-search` (active state) |
-| Loan Search | `/loan-search` |
-| Lenders | `/lenders` |
-| Calculators | `/calculators` |
 
 ## Code Style
 
@@ -122,17 +169,20 @@ npm run build
 - Single-file components where possible
 - No TypeScript — plain JavaScript/JSX
 
-## Current Status (as of 2026-03-21)
+## Current Status (as of 2026-03-22)
 
 ### Built
-- Full React frontend with scenario input, example chips, nav bar, results cards
+- React app stripped of navbar/footer/auth — search UI only
+- Mounts into `#ai-search-app` div on Webflow page
 - Cloudflare Pages Function backend (Supabase query → Claude ranking)
-- JWT-based auth flow (reads access_token from URL redirect or localStorage)
 - Data migrated from Airtable to Supabase
-- Cloudflare Worker proxy for `/app/ai-search` route
+- Webflow page created at `/app/ai-search` with Navbar_App, Sidebar_App, Footer_App
 
 ### Needs Work
-- Auth flow stabilization (went through 6+ iterations)
-- Deployment verification at `app.mtg.broker`
+- Set correct `API_URL` in App.jsx once Cloudflare Pages is deployed
+- Build and deploy to Cloudflare Pages
+- Add CORS header to Pages Function for `mtg.broker`
+- Add HtmlEmbed to Webflow page with correct JS/CSS bundle URLs
+- Reorder content div between Sidebar_App and Footer_App in Webflow Navigator
 - End-to-end search testing with real data
 - Automated Airtable → Supabase sync

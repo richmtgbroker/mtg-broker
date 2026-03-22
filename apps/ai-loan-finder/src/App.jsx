@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
-// Example scenarios from CLAUDE.md
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// API URL for the Cloudflare Pages Function backend.
+// Update this to the actual Cloudflare Pages domain once deployed.
+const API_URL = 'https://ai-loan-finder.pages.dev/api/search'
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+
 const EXAMPLE_SCENARIOS = [
   "640 FICO, self-employed 2 years, buying a duplex as investment property, 25% down in Florida",
   "720 credit score, first-time homebuyer, looking at a condo, 5% down, primary residence",
@@ -10,16 +16,6 @@ const EXAMPLE_SCENARIOS = [
   "VA loan options for a manufactured home, 660 credit score"
 ]
 
-// Navigation links - now using same-domain paths
-const NAV_LINKS = [
-  { label: 'Dashboard', url: '/dashboard' },
-  { label: 'AI Loan Finder', url: '/app/ai-search', active: true },
-  { label: 'Loan Search', url: '/loan-search' },
-  { label: 'Lenders', url: '/lenders' },
-  { label: 'Calculators', url: '/calculators' }
-]
-
-// Progress messages to show during search
 const PROGRESS_MESSAGES = [
   "Analyzing your borrower scenario...",
   "Searching loan products database...",
@@ -28,97 +24,7 @@ const PROGRESS_MESSAGES = [
   "Preparing results..."
 ]
 
-// Decode JWT token (without verification - client-side only)
-function decodeJwt(token) {
-  try {
-    const base64Url = token.split('.')[1]
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-    return JSON.parse(jsonPayload)
-  } catch (e) {
-    return null
-  }
-}
-
-// Check if JWT is expired
-function isTokenExpired(token) {
-  const decoded = decodeJwt(token)
-  if (!decoded || !decoded.exp) return true
-  return decoded.exp * 1000 < Date.now()
-}
-
-// Get user info from token
-function getUserFromToken(token) {
-  const decoded = decodeJwt(token)
-  if (!decoded) return null
-  return {
-    email: decoded.email || decoded['https://outseta.com/email'] || null,
-    name: decoded.name || decoded['https://outseta.com/name'] || null
-  }
-}
-
-// Check auth state from localStorage
-function getAuthState() {
-  const token = localStorage.getItem('Outseta.nocode.accessToken')
-  if (!token || isTokenExpired(token)) {
-    return { isAuthenticated: false, user: null }
-  }
-  const user = getUserFromToken(token)
-  return { isAuthenticated: true, user }
-}
-
-function Navbar({ user, onSignOut }) {
-  return (
-    <nav className="navbar">
-      <div className="navbar-container">
-        <a href="/" className="navbar-logo">
-          <div className="logo-icon">
-            <span>mtg</span>
-          </div>
-          <span className="logo-text">mtg.broker</span>
-        </a>
-        <div className="navbar-links">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.url}
-              className={`navbar-link ${link.active ? 'active' : ''}`}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-        {user && (
-          <div className="navbar-user">
-            <span className="user-email">{user.email}</span>
-            <button onClick={onSignOut} className="sign-out-button">
-              Sign Out
-            </button>
-          </div>
-        )}
-      </div>
-    </nav>
-  )
-}
-
-function LoginPrompt() {
-  return (
-    <div className="login-prompt">
-      <div className="login-prompt-content">
-        <h2>Sign in to use AI Loan Finder</h2>
-        <p>Access our AI-powered loan matching tool to find the best wholesale products for your borrowers.</p>
-        <a href="/login?redirect=/app/ai-search/" className="login-button">
-          Sign In
-        </a>
-      </div>
-    </div>
-  )
-}
+// ─── COMPONENTS ───────────────────────────────────────────────────────────────
 
 function SearchInput({ value, onChange, onSubmit, isLoading }) {
   const handleSubmit = (e) => {
@@ -304,57 +210,17 @@ function ErrorMessage({ error, onRetry }) {
   )
 }
 
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+// Note: Navbar, sidebar, and footer are handled by Webflow (Navbar_App,
+// Sidebar_App, Footer_App components). Auth gating is handled by Outseta
+// on the Webflow page. This app renders search UI only.
+
 function App() {
   const [scenario, setScenario] = useState('')
   const [results, setResults] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [progressMessage, setProgressMessage] = useState('')
-  const [authState, setAuthState] = useState({ isAuthenticated: false, user: null })
-
-  // Check auth state on mount and when localStorage changes
-  useEffect(() => {
-    // Check if access_token is in URL query params (from login redirect)
-    const urlParams = new URLSearchParams(window.location.search)
-    const accessToken = urlParams.get('access_token')
-
-    if (accessToken) {
-      // Save token to localStorage
-      localStorage.setItem('Outseta.nocode.accessToken', accessToken)
-
-      // Remove token from URL without page reload
-      urlParams.delete('access_token')
-      const newUrl = urlParams.toString()
-        ? `${window.location.pathname}?${urlParams.toString()}`
-        : window.location.pathname
-      window.history.replaceState({}, '', newUrl)
-    }
-
-    const checkAuth = () => {
-      setAuthState(getAuthState())
-    }
-
-    // Check immediately
-    checkAuth()
-
-    // Listen for storage changes (e.g., login in another tab)
-    window.addEventListener('storage', checkAuth)
-
-    // Also check periodically for Outseta auth changes
-    const interval = setInterval(checkAuth, 1000)
-
-    return () => {
-      window.removeEventListener('storage', checkAuth)
-      clearInterval(interval)
-    }
-  }, [])
-
-  const handleSignOut = () => {
-    // Clear localStorage token
-    localStorage.removeItem('Outseta.nocode.accessToken')
-    // Redirect to login page
-    window.location.href = '/login'
-  }
 
   const handleSearch = async () => {
     if (!scenario.trim()) return
@@ -363,7 +229,7 @@ function App() {
     setError(null)
     setResults(null)
 
-    // Cycle through progress messages
+    // Cycle through progress messages while waiting
     let messageIndex = 0
     setProgressMessage(PROGRESS_MESSAGES[0])
     const progressInterval = setInterval(() => {
@@ -372,7 +238,7 @@ function App() {
     }, 3000)
 
     try {
-      const response = await fetch('/app/ai-search/api/search', {
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -404,48 +270,33 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Navbar user={authState.user} onSignOut={handleSignOut} />
+    <main className="main-content">
+      <div className="hero">
+        <h1>AI Loan Finder</h1>
+        <p className="hero-subtitle">
+          Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
+        </p>
+      </div>
 
-      <main className="main-content">
-        <div className="hero">
-          <h1>AI Loan Finder</h1>
-          <p className="hero-subtitle">
-            Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
-          </p>
-        </div>
+      <div className="search-container">
+        <SearchInput
+          value={scenario}
+          onChange={setScenario}
+          onSubmit={handleSearch}
+          isLoading={isLoading}
+        />
+        <ExampleChips
+          onSelect={handleExampleSelect}
+          disabled={isLoading}
+        />
+      </div>
 
-        {authState.isAuthenticated ? (
-          <>
-            <div className="search-container">
-              <SearchInput
-                value={scenario}
-                onChange={setScenario}
-                onSubmit={handleSearch}
-                isLoading={isLoading}
-              />
-
-              <ExampleChips
-                onSelect={handleExampleSelect}
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="results-container">
-              {isLoading && <LoadingState message={progressMessage} />}
-              {error && <ErrorMessage error={error} onRetry={handleSearch} />}
-              {results && !isLoading && <Results data={results} />}
-            </div>
-          </>
-        ) : (
-          <LoginPrompt />
-        )}
-      </main>
-
-      <footer className="footer">
-        <p>&copy; {new Date().getFullYear()} mtg.broker. All rights reserved.</p>
-      </footer>
-    </div>
+      <div className="results-container">
+        {isLoading && <LoadingState message={progressMessage} />}
+        {error && <ErrorMessage error={error} onRetry={handleSearch} />}
+        {results && !isLoading && <Results data={results} />}
+      </div>
+    </main>
   )
 }
 
