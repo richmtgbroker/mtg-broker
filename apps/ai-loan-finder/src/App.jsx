@@ -568,9 +568,13 @@ function App() {
   return (
     <main className="main-content">
       <div className="hero">
-        <h1>AI Loan Finder</h1>
+        <h1>AI Loan Finder <span className="beta-badge">BETA</span></h1>
         <p className="hero-subtitle">
           Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
+        </p>
+        <p className="beta-disclaimer">
+          <i className="fas fa-circle-info"></i>{' '}
+          Results are AI-generated suggestions based on available product data. Always verify current guidelines and pricing directly with the lender before presenting options to borrowers.
         </p>
       </div>
 

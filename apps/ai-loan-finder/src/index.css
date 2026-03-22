@@ -55,7 +55,42 @@ html {
   font-size: 1.125rem;
   color: var(--text-muted);
   max-width: 600px;
+  margin: 0 auto 0.75rem;
+}
+
+/* Beta badge — inline next to h1 */
+.beta-badge {
+  display: inline-block;
+  vertical-align: middle;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--primary-blue);
+  background: var(--light-blue-bg);
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  position: relative;
+  top: -3px;
+}
+
+/* Beta disclaimer — below hero subtitle */
+.beta-disclaimer {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 640px;
   margin: 0 auto;
+  padding: 0.625rem 0.875rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--border-radius);
+  line-height: 1.5;
+}
+
+.beta-disclaimer .fa-circle-info {
+  color: #d97706;
+  margin-right: 0.25rem;
 }
 
 /* Search container */
