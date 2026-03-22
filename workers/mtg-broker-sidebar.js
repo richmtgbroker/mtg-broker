@@ -788,34 +788,34 @@ const SIDEBAR_JS_LOGIC = `
 // ============================================================
 // BUILD FUNCTION
 // Assembles the final JS string the browser will execute.
-// Uses JSON.stringify() to safely embed CSS and HTML strings
-// without any escaping issues.
+// Uses JSON.stringify() for ALL content (CSS, HTML, JS) so
+// backticks and ${...} inside those strings never break the output.
+// JS logic runs via new Function() — no template literals at all.
 // ============================================================
 function buildSidebarScript() {
-  return `/* mtg-broker sidebar v8 — served by Cloudflare Worker */
-(function() {
-  'use strict';
-
-  // 1. Inject CSS into <head> (guarded by id so it only runs once per page)
-  if (!document.getElementById('mtg-sidebar-css')) {
-    var style = document.createElement('style');
-    style.id = 'mtg-sidebar-css';
-    style.textContent = ${JSON.stringify(SIDEBAR_CSS)};
-    document.head.appendChild(style);
-  }
-
-  // 2. Find the mount point — add <div id="mtg-sidebar"></div> to your page
-  var container = document.getElementById('mtg-sidebar');
-  if (!container) {
-    console.warn('[mtg-broker-sidebar] No mount point found. Add <div id="mtg-sidebar"></div> to your page.');
-    return;
-  }
-
-  // 3. Inject the sidebar HTML
-  container.innerHTML = ${JSON.stringify(SIDEBAR_HTML)};
-
-  // 4. Run the sidebar logic (collapse/expand, active links, PRO/NEXA detection)
-  ${SIDEBAR_JS_LOGIC}
-
-})();`;
+  var cssStr = JSON.stringify(SIDEBAR_CSS);
+  var htmlStr = JSON.stringify(SIDEBAR_HTML);
+  var jsStr = JSON.stringify(SIDEBAR_JS_LOGIC);
+  return [
+    '/* mtg-broker-sidebar v8 — Cloudflare Worker */',
+    '(function() {',
+    '  // 1. Inject CSS into <head> (guarded by id so it only runs once per page)',
+    '  if (!document.getElementById("mtg-sidebar-css")) {',
+    '    var style = document.createElement("style");',
+    '    style.id = "mtg-sidebar-css";',
+    '    style.textContent = ' + cssStr + ';',
+    '    document.head.appendChild(style);',
+    '  }',
+    '  // 2. Find the mount point — add <div id="mtg-sidebar"></div> to your page',
+    '  var container = document.getElementById("mtg-sidebar");',
+    '  if (!container) {',
+    '    console.warn("[mtg-broker-sidebar] No mount point found. Add <div id=\'mtg-sidebar\'></div> to your page.");',
+    '    return;',
+    '  }',
+    '  // 3. Inject the sidebar HTML',
+    '  container.innerHTML = ' + htmlStr + ';',
+    '  // 4. Run the sidebar logic (collapse/expand, active links, PRO/NEXA detection)',
+    '  (new Function(' + jsStr + '))();',
+    '})();',
+  ].join('\n');
 }
