@@ -9,9 +9,32 @@ You will be given:
 
 YOUR JOB:
 1. Parse the scenario to identify key parameters (FICO, LTV, property type, occupancy, purpose, state, loan amount, special circumstances)
-2. Analyze the provided products and rank them by best fit for this specific scenario
-3. Explain WHY each product fits and note any gotchas or watch-outs
-4. Return structured JSON with your analysis
+2. Analyze ALL provided product fields — especially credit event seasoning, income type requirements, DSCR ratios, LLC vesting, STR income, IO options, prepayment penalties, and eligibility flags
+3. Rank products by best fit, ruling out any that clearly don't fit the scenario
+4. Explain WHY each product fits and note any gotchas, conditions, or watch-outs
+5. Return structured JSON with your analysis
+
+FIELD REFERENCE (for your analysis):
+- bankruptcy_seasoning / foreclosure_seasoning / mortgage_lates: Credit event requirements — check carefully against the scenario
+- ownership_seasoning_cashout / ownership_seasoning_rate_term: How long borrower must own before refinancing
+- dscr_min_ratio / dscr_min_ratio_str: Minimum DSCR for standard vs. short-term rental income
+- dscr_str_income_usable: Whether Airbnb/VRBO/STR income counts for DSCR
+- vest_in_llc: Whether the property can be in an LLC
+- non_occupant_coborrower: Whether a non-occupant co-borrower is allowed
+- fthb_allowed: First-time homebuyer eligibility
+- first_time_investors_allowed: First-time investor eligibility
+- interest_only_available: Whether IO payment option exists
+- cash_out_available / max_cash_out: Cash-out refi capability and limits
+- prepayment_penalty: PPP terms (common on DSCR/Non-QM)
+- reserves_required: Post-close reserve requirements
+- max_seller_concessions: Seller credit limits
+- max_financed_properties: How many financed properties borrower can have
+- max_cltv / max_cltv_investment: Combined LTV limits
+- max_ltv_2_4_units: LTV for 2-4 unit properties specifically
+- rural_properties_allowed: Whether rural/acreage properties qualify
+- daca_eligible: DACA recipient eligibility
+- manual_uw_allowed: Whether manual underwriting is available
+- asset_seasoning: How long funds must be in account
 
 RESPONSE FORMAT:
 Respond with ONLY a valid JSON object (no markdown, no backticks). Structure:
@@ -45,12 +68,13 @@ Respond with ONLY a valid JSON object (no markdown, no backticks). Structure:
 
 Return up to 10 best matches ranked by fit. If no products match well, explain why.`;
 
-// Parse scenario to extract searchable parameters
+
+// Parse scenario to extract searchable parameters for Supabase pre-filtering
 function parseScenarioForFilters(scenario) {
   const lower = scenario.toLowerCase();
   const filters = {};
 
-  // Extract FICO score (look for 3-digit numbers near credit/fico/score keywords)
+  // Extract FICO score
   const ficoPatterns = [
     /(\d{3})\s*(?:fico|credit|score)/i,
     /(?:fico|credit|score)[:\s]*(\d{3})/i,
@@ -71,7 +95,7 @@ function parseScenarioForFilters(scenario) {
   const amountMatch = scenario.match(/\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:k|K|loan|mortgage)?/);
   if (amountMatch) {
     let amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-    if (amount < 1000) amount *= 1000; // Assume "500k" means 500,000
+    if (amount < 1000) amount *= 1000; // "500k" → 500000
     if (amount >= 50000) filters.loanAmount = amount;
   }
 
@@ -89,7 +113,7 @@ function parseScenarioForFilters(scenario) {
     filters.loanType = 'DSCR';
   } else if (lower.includes('fha')) {
     filters.loanType = 'FHA';
-  } else if (lower.includes('va ') || lower.includes('va loan') || lower.match(/\bva\b/)) {
+  } else if (lower.match(/\bva\b/) || lower.includes('va loan')) {
     filters.loanType = 'VA';
   } else if (lower.includes('usda')) {
     filters.loanType = 'USDA';
@@ -132,74 +156,63 @@ function parseScenarioForFilters(scenario) {
   }
 
   // Detect special programs
-  if (lower.includes('itin')) {
-    filters.itin = true;
+  if (lower.includes('itin')) filters.itin = true;
+  if (lower.includes('foreign national')) filters.foreignNational = true;
+  if (lower.includes('self-employed') || lower.includes('self employed')) filters.selfEmployed = true;
+  if (lower.includes('daca')) filters.daca = true;
+  if (lower.includes('str') || lower.includes('short-term rental') || lower.includes('airbnb') || lower.includes('vrbo')) {
+    filters.str = true;
   }
-  if (lower.includes('foreign national')) {
-    filters.foreignNational = true;
-  }
-  if (lower.includes('self-employed') || lower.includes('self employed')) {
-    filters.selfEmployed = true;
-  }
+  if (lower.includes('llc')) filters.llc = true;
+
+  // Extract state (2-letter abbreviation or full name)
+  const stateMatch = scenario.match(/\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/);
+  if (stateMatch) filters.state = stateMatch[1];
 
   return filters;
 }
+
 
 // Query Supabase with filters
 async function querySupabase(env, filters) {
   const supabaseUrl = env.SUPABASE_URL || 'https://tcmahfwhdknxhhdvqpum.supabase.co';
   const supabaseKey = env.SUPABASE_ANON_KEY;
 
-  if (!supabaseKey) {
-    throw new Error('SUPABASE_ANON_KEY not configured');
-  }
+  if (!supabaseKey) throw new Error('SUPABASE_ANON_KEY not configured');
 
-  // Build query URL with filters using URLSearchParams for proper encoding
   const baseUrl = `${supabaseUrl}/rest/v1/loan_products`;
   const params = new URLSearchParams();
 
   params.set('select', '*');
 
-  // Filter by FICO - products where min_fico <= borrower's score
+  // Only active products
+  params.append('product_status', 'ilike.*Active*');
+
+  // FICO: only products where min_fico <= borrower's score
   if (filters.fico) {
     params.append('min_fico', `lte.${filters.fico}`);
   }
 
-  // Filter by occupancy (ilike for partial match)
-  if (filters.occupancy) {
-    params.append('occupancy_choices', `ilike.*${filters.occupancy}*`);
+  // Loan amount range: product min <= loan amount <= product max
+  if (filters.loanAmount) {
+    params.append('min_loan_amount', `lte.${filters.loanAmount}`);
+    params.append('max_loan_amount', `gte.${filters.loanAmount}`);
   }
 
-  // Filter by loan type
-  if (filters.loanType) {
-    params.append('loan_product_type', `ilike.*${filters.loanType}*`);
-  }
+  // Occupancy, loan type, property type, purpose (partial match)
+  if (filters.occupancy)    params.append('occupancy_choices', `ilike.*${filters.occupancy}*`);
+  if (filters.loanType)     params.append('loan_product_type', `ilike.*${filters.loanType}*`);
+  if (filters.propertyType) params.append('property_types', `ilike.*${filters.propertyType}*`);
+  if (filters.purpose)      params.append('purposes', `ilike.*${filters.purpose}*`);
 
-  // Filter by property type
-  if (filters.propertyType) {
-    params.append('property_types', `ilike.*${filters.propertyType}*`);
-  }
+  // Special eligibility flags
+  if (filters.itin)          params.append('itin_allowed', 'ilike.*Yes*');
+  if (filters.foreignNational) params.append('foreign_national_eligible', 'ilike.*Yes*');
+  if (filters.daca)          params.append('daca_eligible', 'ilike.*Yes*');
+  if (filters.str)           params.append('dscr_str_income_usable', 'ilike.*Yes*');
+  if (filters.llc)           params.append('vest_in_llc', 'ilike.*Yes*');
 
-  // Filter by purpose
-  if (filters.purpose) {
-    params.append('purposes', `ilike.*${filters.purpose}*`);
-  }
-
-  // Filter for ITIN
-  if (filters.itin) {
-    params.append('itin_allowed', 'ilike.*Yes*');
-  }
-
-  // Filter for foreign nationals
-  if (filters.foreignNational) {
-    params.append('foreign_national_eligible', 'ilike.*Yes*');
-  }
-
-  // Only active products (contains "Active" to match "🟢 Active")
-  params.append('product_status', 'ilike.*Active*');
-
-  // Limit results (keep small to avoid Claude token limits)
-  params.append('limit', '20');
+  params.append('limit', '25');
 
   const url = `${baseUrl}?${params.toString()}`;
   console.log('Supabase query URL:', url);
@@ -208,7 +221,7 @@ async function querySupabase(env, filters) {
     headers: {
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     }
   });
 
@@ -221,43 +234,99 @@ async function querySupabase(env, filters) {
   return response.json();
 }
 
-// Format products for Claude
+
+// Format products for Claude — includes ALL data fields so nothing is missed
 function formatProductsForClaude(products) {
   if (!products || products.length === 0) {
     return 'No matching products found in the database.';
   }
 
   return products.map((p, i) => {
-    return `
-PRODUCT ${i + 1}: ${p.product_name || 'Unknown'}
-- Lender: ${p.lender_name || 'N/A'}
-- Type: ${p.loan_product_type || 'N/A'}
-- Min FICO: ${p.min_fico || 'N/A'}
-- Min FICO (Investment): ${p.min_fico_investment || 'N/A'}
-- Loan Range: $${p.min_loan_amount?.toLocaleString() || '?'} - $${p.max_loan_amount?.toLocaleString() || '?'}
-- Max LTV (Purchase): ${p.max_ltv_purchase || 'N/A'}
-- Max LTV (Cash-Out): ${p.max_ltv_cashout || 'N/A'}
-- Max LTV (Rate-Term): ${p.max_ltv_rate_term || 'N/A'}
-- Max DTI: ${p.max_dti || 'N/A'}
-- DSCR Min Ratio: ${p.dscr_min_ratio || 'N/A'}
-- Occupancy: ${p.occupancy_choices || 'N/A'}
-- Property Types: ${p.property_types || 'N/A'}
-- Purposes: ${p.purposes || 'N/A'}
-- Income Types: ${p.income_types || 'N/A'}
-- Terms: ${p.terms || 'N/A'}
-- State Restrictions: ${p.state_restrictions || 'None noted'}
-- ITIN Allowed: ${p.itin_allowed || 'N/A'}
-- Foreign National: ${p.foreign_national_eligible || 'N/A'}
-- Description: ${p.description || 'N/A'}
-- Notes: ${p.program_notes || 'N/A'}
-`.trim();
+    // Helper: only include a line if the value is non-null and non-empty
+    const line = (label, value) => {
+      if (value === null || value === undefined || value === '' || value === 'N/A') return null;
+      return `- ${label}: ${value}`;
+    };
+
+    const rows = [
+      `PRODUCT ${i + 1}: ${p.product_name || 'Unknown'}`,
+      line('Lender', p.lender_name),
+      line('Type', p.loan_product_type),
+      line('Status', p.product_status),
+
+      // Loan amounts & LTVs
+      line('Loan Range', `$${p.min_loan_amount?.toLocaleString() || '?'} – $${p.max_loan_amount?.toLocaleString() || '?'}`),
+      line('Min FICO', p.min_fico),
+      line('Min FICO (Investment)', p.min_fico_investment),
+      line('Max LTV (Purchase)', p.max_ltv_purchase),
+      line('Max LTV (Cash-Out)', p.max_ltv_cashout),
+      line('Max LTV (Rate-Term)', p.max_ltv_rate_term),
+      line('Max LTV (2-4 Units)', p.max_ltv_2_4_units),
+      line('Max CLTV', p.max_cltv),
+      line('Max CLTV (Investment)', p.max_cltv_investment),
+      line('Max DTI', p.max_dti),
+
+      // Eligibility
+      line('Occupancy', p.occupancy_choices),
+      line('Property Types', p.property_types),
+      line('Property Types Notes', p.property_types_notes),
+      line('Purposes', p.purposes),
+      line('Income Types', p.income_types),
+      line('Terms', p.terms),
+      line('States Available', p.state_restrictions),
+
+      // DSCR-specific
+      line('DSCR Min Ratio', p.dscr_min_ratio),
+      line('DSCR STR Income Usable', p.dscr_str_income_usable),
+      line('DSCR Min Ratio (STR)', p.dscr_min_ratio_str),
+
+      // Borrower eligibility flags
+      line('ITIN Allowed', p.itin_allowed),
+      line('Foreign National Eligible', p.foreign_national_eligible),
+      line('DACA Eligible', p.daca_eligible),
+      line('FTHB Allowed', p.fthb_allowed),
+      line('First Time Investors Allowed', p.first_time_investors_allowed),
+      line('Non-Occupant Co-Borrower Allowed', p.non_occupant_coborrower),
+
+      // Credit event seasoning (critical for non-QM)
+      line('Bankruptcy Seasoning', p.bankruptcy_seasoning),
+      line('Foreclosure/SS/DIL Seasoning', p.foreclosure_seasoning),
+      line('Mortgage Lates', p.mortgage_lates),
+      line('Ownership Seasoning (Cash-Out)', p.ownership_seasoning_cashout),
+      line('Ownership Seasoning (Rate-Term)', p.ownership_seasoning_rate_term),
+
+      // Loan features
+      line('Interest Only Available', p.interest_only_available),
+      line('Cash-Out Available', p.cash_out_available),
+      line('Max Cash-Out', p.max_cash_out),
+      line('Prepayment Penalty', p.prepayment_penalty),
+      line('Vest in LLC', p.vest_in_llc),
+      line('Manual UW Allowed', p.manual_uw_allowed),
+
+      // Requirements
+      line('Reserves Required', p.reserves_required),
+      line('Asset Seasoning', p.asset_seasoning),
+      line('Max Seller Concessions', p.max_seller_concessions),
+      line('Max Financed Properties', p.max_financed_properties),
+      line('Gift Funds Allowed', p.gift_funds_allowed),
+      line('Additional Reserves', p.additional_reserves),
+      line('Max Acreage', p.max_acreage),
+      line('Rural Properties Allowed', p.rural_properties_allowed),
+
+      // Notes & matrix
+      line('Description', p.description),
+      line('Program Notes', p.program_notes),
+      line('Matrix URL', p.matrix_url),
+    ].filter(Boolean); // Remove null lines
+
+    return rows.join('\n');
   }).join('\n\n---\n\n');
 }
+
 
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -265,7 +334,6 @@ export async function onRequestPost(context) {
   };
 
   try {
-    // Check required environment variables
     const apiKey = env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return new Response(
@@ -274,7 +342,6 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Parse request body
     const body = await request.json();
     const { scenario } = body;
 
@@ -285,7 +352,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Step 1: Parse scenario for filters
+    // Step 1: Parse scenario for Supabase filters
     const filters = parseScenarioForFilters(scenario);
     console.log('Parsed filters:', filters);
 
@@ -302,7 +369,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Step 3: Format products for Claude
+    // Step 3: Format all product fields for Claude
     const productsText = formatProductsForClaude(products);
 
     // Step 4: Call Claude to rank and explain
@@ -320,19 +387,14 @@ Please analyze these products, rank them by best fit for this borrower scenario,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 4096,
         system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: 'user',
-            content: userMessage
-          }
-        ]
-      })
+        messages: [{ role: 'user', content: userMessage }],
+      }),
     });
 
     if (!anthropicResponse.ok) {
@@ -344,36 +406,28 @@ Please analyze these products, rank them by best fit for this borrower scenario,
         : 'Failed to process your request. Please try again.';
 
       return new Response(
-        JSON.stringify({
-          error: errorMessage,
-          status: anthropicResponse.status,
-          details: errorText.substring(0, 500)
-        }),
+        JSON.stringify({ error: errorMessage, status: anthropicResponse.status, details: errorText.substring(0, 500) }),
         { status: anthropicResponse.status === 429 ? 429 : 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
     const anthropicData = await anthropicResponse.json();
 
-    // Extract the text response from Claude
+    // Extract text from Claude response
     let responseText = '';
     if (anthropicData.content && Array.isArray(anthropicData.content)) {
       for (const block of anthropicData.content) {
-        if (block.type === 'text') {
-          responseText += block.text;
-        }
+        if (block.type === 'text') responseText += block.text;
       }
     }
 
-    // Parse the JSON response from Claude
+    // Parse JSON from Claude
     let parsedResult;
     try {
-      // Strip markdown code blocks if present
       let cleanedText = responseText;
       if (cleanedText.includes('```')) {
         cleanedText = cleanedText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
       }
-
       const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         parsedResult = JSON.parse(jsonMatch[0]);
@@ -382,27 +436,19 @@ Please analyze these products, rank them by best fit for this borrower scenario,
       }
     } catch (parseError) {
       console.error('JSON parse error:', parseError.message);
-      console.error('Raw response length:', responseText.length);
-      console.error('Raw response start:', responseText.substring(0, 200));
-      console.error('Raw response end:', responseText.substring(responseText.length - 200));
-
       return new Response(
         JSON.stringify({
           parsed_scenario: null,
           matches: [],
           summary: 'Unable to process the response from the AI. Please try rephrasing your scenario.',
           data_gaps: 'Response parsing failed: ' + parseError.message,
-          raw_response: responseText.substring(0, 500)
+          raw_response: responseText.substring(0, 500),
         }),
         { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
-    // Add metadata about the search
-    parsedResult.meta = {
-      filters_applied: filters,
-      products_found: products.length
-    };
+    parsedResult.meta = { filters_applied: filters, products_found: products.length };
 
     return new Response(
       JSON.stringify(parsedResult),
@@ -426,6 +472,6 @@ export async function onRequestOptions() {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-    }
+    },
   });
 }
