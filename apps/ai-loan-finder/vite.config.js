@@ -3,15 +3,27 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  // Base path for production - app will be served from /app/ai-search/
-  base: '/app/ai-search/',
+
+  build: {
+    rollupOptions: {
+      output: {
+        // Build as a self-contained IIFE (Immediately Invoked Function Expression).
+        // This avoids the cross-origin type="module" issues when embedding in Webflow.
+        // The output can be loaded with a plain <script defer src="..."> tag.
+        format: 'iife',
+        name: 'AiLoanFinder',
+        // Single output file — no code splitting
+        inlineDynamicImports: true,
+      }
+    }
+  },
+
   server: {
     proxy: {
-      '/app/ai-search/api': {
+      '/api': {
         target: 'http://127.0.0.1:8788',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/app\/ai-search/, '')
       }
     }
   }
