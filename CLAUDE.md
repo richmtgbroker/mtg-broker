@@ -40,6 +40,33 @@ mtg-broker/
     └── (navbar, sidebar, footer, etc.)
 ```
 
+## Deployment Architecture
+
+**Universal rule: All Cloudflare-served components use fixed URLs. Webflow embeds are set ONCE and never touched again.**
+
+### Fixed-URL Patterns by Component Type
+
+| Type | Pattern | Cache Strategy | Example |
+|------|---------|----------------|---------|
+| Static bundles (React apps) | Cloudflare Pages + `_headers` file | `Cache-Control: public, max-age=300, stale-while-revalidate=3600` | AI Loan Finder → `mtg-loan-finder.pages.dev/index.js` |
+| Dynamic scripts | Cloudflare Worker, fixed route | Same `Cache-Control` header set in Worker response | Sidebar → `mtg-broker-sidebar.rich-e00.workers.dev/sidebar.js` |
+
+### Rules
+
+- **No content hashes in filenames.** Never use `index-[hash].js`. Output is always `index.js` (or equivalent fixed name).
+- **Cache-busting via headers, not filenames.** `max-age=300` means browsers refresh within 5 minutes of a deploy. `stale-while-revalidate=3600` means no spinner — the old version serves instantly while the new one downloads in the background.
+- **Webflow embeds are set once.** After the initial embed is set to the fixed URL, it never changes — not after rebuilds, not after deployments, not ever.
+- **Deploy workflow is always:** build → deploy to Cloudflare → done. No Webflow steps.
+- **This applies to:** AI Loan Finder, Sidebar Worker, Navbar Worker, and all future components.
+
+### How to Add a New Component (checklist)
+
+- [ ] Build as IIFE (React apps) or Worker script — single output file, fixed filename
+- [ ] For Pages: add `public/_headers` with `Cache-Control: public, max-age=300, stale-while-revalidate=3600`
+- [ ] For Workers: set the same `Cache-Control` header in the `fetch` handler response
+- [ ] Set the Webflow embed to the fixed URL — this is the only time you touch the embed
+- [ ] Document the fixed URL in the app's CLAUDE.md
+
 ## How Each Piece Deploys
 
 | Component | Deploys To | How |

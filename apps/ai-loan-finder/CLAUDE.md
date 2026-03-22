@@ -51,7 +51,7 @@ The following are all handled by Webflow and Outseta — do NOT add them back to
 
 ## Vite Build Configuration
 
-Built as **IIFE format** (not ES module). This avoids cross-origin `type="module"` issues in Webflow embeds. CSS is inlined into the JS bundle — there is NO separate CSS file.
+Built as **IIFE format** (not ES module). This avoids cross-origin `type="module"` issues in Webflow embeds. CSS is inlined into the JS bundle — there is NO separate CSS file. Filename is fixed (`index.js`) — no content hash — so the Webflow embed URL never changes.
 
 ```js
 // vite.config.js
@@ -63,6 +63,7 @@ export default defineConfig({
         format: 'iife',
         name: 'AiLoanFinder',
         inlineDynamicImports: true,
+        entryFileNames: 'index.js',  // Fixed filename — no hash
       }
     }
   }
@@ -189,15 +190,17 @@ npm run build
 ```
 Output goes to `dist/`. Because of the IIFE build format, there is only **one JS file** (no separate CSS):
 - `dist/index.js` — everything bundled (JS + CSS inlined), **fixed filename, no hash**
+- `dist/_headers` — copied from `public/_headers`, sets Cache-Control on `/index.js`
 
 ### Step 2 — Deploy to Cloudflare Pages
 ```bash
 npx wrangler pages deploy dist --project-name mtg-loan-finder
 ```
-The bundle is served at `https://mtg-loan-finder.pages.dev/index.js`.
-The API backend runs as a Pages Function at `https://mtg-loan-finder.pages.dev/api/search`.
+- Bundle URL (permanent): `https://mtg-loan-finder.pages.dev/index.js`
+- Cache headers: `public, max-age=300, stale-while-revalidate=3600` (set via `_headers` file)
+- API endpoint: `https://mtg-loan-finder.pages.dev/api/search`
 
-> ✅ No Step 3 needed — the Webflow embed URL is permanent (`/index.js`). Build and deploy is all that's required.
+> ✅ **No Webflow step.** The embed URL is permanent. Users get the latest build within 5 minutes via cache headers — no filename changes, no Webflow edits, ever.
 
 ## CORS
 
@@ -252,4 +255,3 @@ To update the sidebar script:
 ### Still Needed
 - End-to-end search testing with real borrower scenarios
 - Automated Airtable → Supabase data sync (when Airtable data changes)
-- Update HtmlEmbed hash after future builds (or automate via Webflow MCP)
