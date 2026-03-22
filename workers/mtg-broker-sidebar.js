@@ -15,20 +15,19 @@
  *   After deploy, your URL will be:
  *   https://mtg-broker-sidebar.<YOUR-SUBDOMAIN>.workers.dev/sidebar.js
  *
- * HOW TO USE IN WEBFLOW (replaces the giant sidebar embed):
- *   1. Delete the existing sidebar embed on each app page.
- *   2. Add a 1-line HTML embed wherever the sidebar should appear:
- *        <div id="mtg-sidebar"></div>
- *   3. In Site Settings → Footer Code, add:
- *        <script src="https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js"></script>
- *      (This loads the sidebar on every app page automatically.)
+ * HOW TO USE IN WEBFLOW:
+ *   Replace the embed code inside the "Sidebar_App" Webflow component with:
  *
- * HOW TO USE IN THE AI LOAN FINDER REACT APP:
- *   In index.html (or the root HTML file), add:
  *        <div id="mtg-sidebar"></div>
- *      ...in the body, and:
- *        <script src="https://mtg-broker-sidebar.YOUR-SUBDOMAIN.workers.dev/sidebar.js"></script>
- *      ...at the end of <body>.
+ *        <script src="https://mtg-broker-sidebar.rich-e00.workers.dev/sidebar.js"></script>
+ *
+ *   The component is used only on app pages, so the sidebar only loads there —
+ *   NOT on marketing pages. Do NOT add this to Site Settings Footer Code.
+ *
+ * NOTE ON AI LOAN FINDER:
+ *   The AI Loan Finder is embedded in the Webflow page at /app/ai-search,
+ *   which uses the Sidebar_App component. The sidebar loads automatically
+ *   via the component — no separate script needed in the React app.
  *
  * TO UPDATE THE SIDEBAR:
  *   1. Edit this file (CSS, HTML, or JS sections below).
