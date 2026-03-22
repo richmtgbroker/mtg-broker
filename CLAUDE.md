@@ -93,6 +93,7 @@ Set in Cloudflare dashboards, never committed to code:
 
 ## Workflow Rules
 
+- **Always act autonomously** — Do everything possible automatically without asking for confirmation first. Never ask the user to do something manually if Claude can do it instead.
 - After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
 - Always provide full complete files, never partial snippets.
 - Keep code simple and well-commented — this project is maintained by a solo non-developer.
