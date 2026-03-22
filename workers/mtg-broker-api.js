@@ -1814,7 +1814,8 @@ async function fetchProductsList(apiKey, request) {
   console.log('Products list cache MISS - fetching from Airtable');
 
   // Fields to pull from the Loan Product Types table
-  const fields = ['Name', 'Webflow Slug', 'Category Tags', 'Available Lenders (Rollup)', 'Sort Name Override'];
+  // Primary name field is "Loan Product Type"; categories are in the "Category" multipleSelects field
+  const fields = ['Loan Product Type', 'Webflow Slug', 'Category', 'Available Lenders (Rollup)', 'Sort Name Override'];
   const fieldsParam = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&');
 
   // Airtable returns max 100 records per page — loop until no more offset
@@ -1855,12 +1856,12 @@ async function fetchProductsList(apiKey, request) {
   // Transform records into clean objects for the frontend
   const products = allRecords.map(record => {
     const f = record.fields;
-    const name = f['Name'] || '';
+    const name = f['Loan Product Type'] || '';
     const sortName = (f['Sort Name Override'] || name).toLowerCase();
     const firstLetter = sortName.charAt(0).toUpperCase();
 
-    // Category Tags — Airtable multi-select comes back as an array
-    const categoryTags = Array.isArray(f['Category Tags']) ? f['Category Tags'] : [];
+    // Category — Airtable multipleSelects comes back as an array
+    const categoryTags = Array.isArray(f['Category']) ? f['Category'] : [];
 
     // Available Lenders (Rollup) — normalize to string
     const lendersRollup = f['Available Lenders (Rollup)']
