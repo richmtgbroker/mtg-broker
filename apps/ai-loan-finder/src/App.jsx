@@ -272,10 +272,14 @@ function App() {
   return (
     <main className="main-content">
       <div className="hero">
-        <h1>AI Loan Finder</h1>
+        <div className="hero-title-row">
+          <h1>AI Loan Finder</h1>
+          <span className="beta-badge">BETA</span>
+        </div>
         <p className="hero-subtitle">
           Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
         </p>
+        <p className="hero-disclaimer">Results may not be perfect. We're actively improving accuracy.</p>
       </div>
 
       <div className="search-container">

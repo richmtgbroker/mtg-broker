@@ -44,18 +44,51 @@ html {
   margin-bottom: 2rem;
 }
 
+/* Title row: h1 + beta badge side by side */
+.hero-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
 .hero h1 {
   font-size: 2.5rem;
   font-weight: 700;
   color: var(--text-dark);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+}
+
+/* Beta badge — orange pill */
+.beta-badge {
+  display: inline-block;
+  background: #7c3aed;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  line-height: 1;
+  position: relative;
+  top: -0.5rem; /* nudge up to align with cap-height of h1 */
 }
 
 .hero-subtitle {
   font-size: 1.125rem;
   color: var(--text-muted);
   max-width: 600px;
+  margin: 0 auto 0.5rem;
+}
+
+/* Subtle disclaimer below subtitle */
+.hero-disclaimer {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  max-width: 600px;
   margin: 0 auto;
+  font-style: italic;
 }
 
 /* Search container */
