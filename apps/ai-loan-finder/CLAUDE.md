@@ -93,14 +93,14 @@ The HtmlEmbed inside the content Div Block contains:
 <script>
   (function() {
     var s = document.createElement('script');
-    s.src = 'https://mtg-loan-finder.pages.dev/assets/index-[hash].js';
+    s.src = 'https://mtg-loan-finder.pages.dev/index.js';
     s.defer = true;
     document.head.appendChild(s);
   })();
 </script>
 ```
 
-> ⚠️ The filename hash changes on every build. After rebuilding, update the hash in the HtmlEmbed.
+> ✅ The filename is fixed (`index.js`) — no hash. The Webflow embed never needs updating after a rebuild. Just build and deploy.
 
 ## React App Mount Logic (`main.jsx`)
 
@@ -188,21 +188,16 @@ cd apps/ai-loan-finder
 npm run build
 ```
 Output goes to `dist/`. Because of the IIFE build format, there is only **one JS file** (no separate CSS):
-- `dist/assets/index-[hash].js` — everything bundled (JS + CSS inlined)
+- `dist/index.js` — everything bundled (JS + CSS inlined), **fixed filename, no hash**
 
 ### Step 2 — Deploy to Cloudflare Pages
-Deploy the `dist/` folder and `functions/` folder to Cloudflare Pages project `mtg-loan-finder`.
+```bash
+npx wrangler pages deploy dist --project-name mtg-loan-finder
+```
+The bundle is served at `https://mtg-loan-finder.pages.dev/index.js`.
 The API backend runs as a Pages Function at `https://mtg-loan-finder.pages.dev/api/search`.
 
-### Step 3 — Update the HtmlEmbed in Webflow
-After a build, the hash in the JS filename changes. Update the `src` URL in the HtmlEmbed:
-1. Open Webflow Designer → AI Search page
-2. Double-click the HtmlEmbed inside the content Div Block
-3. Update the hash in the script URL to match the new build output
-4. Save & publish
-
-**Or do it via Webflow MCP** (preferred — no manual steps):
-Use `mcp__webflow__element_tool` to read and update the HtmlEmbed content directly.
+> ✅ No Step 3 needed — the Webflow embed URL is permanent (`/index.js`). Build and deploy is all that's required.
 
 ## CORS
 

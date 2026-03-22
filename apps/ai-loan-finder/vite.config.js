@@ -14,6 +14,8 @@ export default defineConfig({
         name: 'AiLoanFinder',
         // Single output file — no code splitting
         inlineDynamicImports: true,
+        // Fixed filename — no content hash so the Webflow embed URL never needs updating
+        entryFileNames: 'index.js',
       }
     }
   },
