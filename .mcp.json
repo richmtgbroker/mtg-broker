@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "airtable": {
+      "type": "http",
+      "url": "https://airtable-mcp.business-automated.com/mcp-server/fG7K3kP45ehGT7GqOmUK_rLQnhotD6/mcp"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=tcmahfwhdknxhhdvqpum",
+      "headers": {
+        "Authorization": "Bearer sbp_8020c63bf73f7a326689db6d364d0d6e3e70148f"
+      }
+    },
+    "webflow": {
+      "type": "http",
+      "url": "https://mcp.webflow.com/mcp",
+      "headers": {
+        "Authorization": "Bearer 3a7910689f000e7170af49b21460fd4119db454eb971174e16fb82c9f2ed3b50"
+      }
+    }
+  }
+}
