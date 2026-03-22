@@ -98,6 +98,7 @@ Set in Cloudflare dashboards, never committed to code:
 - After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
 - Always provide full complete files, never partial snippets.
 - Keep code simple and well-commented — this project is maintained by a solo non-developer.
+- **Check git before rebuilding** — Before starting any rebuild or major file rewrite, always run `git log` and `git status` first to make sure all recent changes from other sessions have been committed and merged to main. Never overwrite uncommitted work.
 - No TypeScript — use plain JavaScript/JSX everywhere.
 - Prefer single-file components and readable code over clever abstractions.
 
