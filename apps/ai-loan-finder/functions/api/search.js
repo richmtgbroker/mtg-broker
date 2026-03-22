@@ -449,6 +449,8 @@ Please analyze these products, rank them by best fit for this borrower scenario,
     }
 
     parsedResult.meta = { filters_applied: filters, products_found: products.length };
+    // Include full Supabase records so the frontend can show a complete product detail modal
+    parsedResult.raw_products = products;
 
     return new Response(
       JSON.stringify(parsedResult),
