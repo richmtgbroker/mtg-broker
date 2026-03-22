@@ -59,6 +59,31 @@ mtg-broker/
 - **Deploy workflow is always:** build → deploy to Cloudflare → done. No Webflow steps.
 - **This applies to:** AI Loan Finder, Sidebar Worker, Navbar Worker, and all future components.
 
+### Staging / Preview Workflow
+
+**Always deploy to staging first and ask before deploying to production. Never assume production unless the change is explicitly confirmed as trivial.**
+
+#### Cloudflare Pages apps (AI Loan Finder)
+- Every `git push` to any branch automatically creates a **preview deployment** at a unique URL (e.g. `abc123.mtg-loan-finder.pages.dev`)
+- Only the `main` branch deploys to the production URL (`mtg-loan-finder.pages.dev/index.js`)
+- **Staging workflow:** push changes to a `staging` branch → test the preview URL → merge to `main` when ready
+- Preview URLs are safe to share for review before going live
+
+#### Cloudflare Workers (sidebar, navbar, future components)
+- Deploy a staging version with: `wrangler deploy --env staging`
+  - Staging URL pattern: `mtg-broker-sidebar-staging.rich-e00.workers.dev`
+- Test the staging Worker URL directly in the browser or with `curl`
+- When ready, deploy to production: `wrangler deploy` (no `--env` flag)
+
+#### Default deploy workflow
+1. Make changes
+2. Deploy to staging/preview first
+3. Test at the preview/staging URL
+4. If good → deploy to production
+5. **Never deploy directly to production without testing** unless it's a trivial, low-risk change (e.g. a copy tweak or comment)
+
+> ⚠️ **Claude must always ask:** "Deploy to staging or production?" before running any deploy command. Do not assume production.
+
 ### How to Add a New Component (checklist)
 
 - [ ] Build as IIFE (React apps) or Worker script — single output file, fixed filename
