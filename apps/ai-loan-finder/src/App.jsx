@@ -3,7 +3,7 @@ import { useState } from 'react'
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // API URL for the Cloudflare Pages Function backend.
 // Update this to the actual Cloudflare Pages domain once deployed.
-const API_URL = 'https://ai-loan-finder.pages.dev/api/search'
+const API_URL = 'https://mtg-loan-finder.pages.dev/api/search'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
