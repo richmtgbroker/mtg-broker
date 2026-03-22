@@ -1,0 +1,36 @@
+<!--
+  Navbar_App — HtmlEmbed Code
+  ============================
+  Paste this into the HtmlEmbed inside the Navbar_App Webflow component.
+
+  HOW TO DEPLOY:
+    1. Deploy the Worker first:
+       wrangler deploy workers/mtg-broker-navbar.js --name mtg-broker-navbar --compatibility-date 2024-01-01
+
+    2. Copy your Worker URL from the output, e.g.:
+       https://mtg-broker-navbar.rich-e00.workers.dev
+
+    3. In Webflow Designer:
+       - Open the Navbar_App component (double-click it on any app page)
+       - Double-click the HtmlEmbed inside it
+       - Paste this code (replacing whatever is there)
+       - Save & publish
+
+  HOW TO UPDATE LATER:
+    - Edit workers/mtg-broker-navbar.js
+    - Run: wrangler deploy workers/mtg-broker-navbar.js --name mtg-broker-navbar
+    - Done — all pages update automatically, no Webflow changes needed
+-->
+
+<!-- Mount point for the navbar -->
+<div id="mtg-navbar"></div>
+
+<!-- Load navbar from Cloudflare Worker -->
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.src = 'https://mtg-broker-navbar.rich-e00.workers.dev/navbar.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+</script>
