@@ -144,6 +144,12 @@ Set in Cloudflare dashboards, never committed to code:
 - `SUPABASE_URL` — Supabase project URL
 - `AIRTABLE_API_KEY` — Airtable personal access token (used by scripts)
 
+## File Output Rules
+
+- **Increment version on save** — When modifying an existing versioned file, save the updated version with an incremented version number in the filename (e.g., `v7_24` becomes `v7_25`). Keep the same naming convention as the original.
+- **Match naming convention** — When creating a new file, use the same naming convention as existing files in that folder (e.g., `Pages_App_Products_JS_v3_0.js` matches the `Pages_App_*` pattern).
+- **End-of-task file list** — At the end of every task, list ALL files created or modified with their full paths and a one-line summary of what changed.
+
 ## Workflow Rules
 
 - **Always act autonomously** — Do everything possible automatically without asking for confirmation first. Never ask the user to do something manually if Claude can do it instead.
@@ -167,8 +173,9 @@ Set in Cloudflare dashboards, never committed to code:
 9. **Percent fields** — Store as decimals (divide by 100 on save, multiply by 100 on load).
 10. **Currency fields** — Use precision 0 and $ symbol.
 11. **Worker JS in template literals** — For Worker JS embedding in template literals, use three-step Python escaping: backslash first, then backtick, then `${`.
-12. **Commit and push after every change** — After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
-13. **Use Webflow MCP tools** — Use Webflow MCP tools (`mcp__webflow__*`) to create pages, apply styles, and set element properties directly. Never ask the user to make Webflow Designer changes manually if it can be done via MCP.
+12. **Cloudflare Worker URL pattern** — All Worker deploy URLs follow the pattern `{worker-name}.rich-e00.workers.dev`. Staging pattern: `{worker-name}-staging.rich-e00.workers.dev`.
+13. **Commit and push after every change** — After completing any code changes, always commit with a descriptive message and push to GitHub. Don't ask, just do it.
+14. **Use Webflow MCP tools** — Use Webflow MCP tools (`mcp__webflow__*`) to create pages, apply styles, and set element properties directly. Never ask the user to make Webflow Designer changes manually if it can be done via MCP.
 
 ## Standard App Page Structure
 
