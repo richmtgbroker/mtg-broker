@@ -1060,16 +1060,7 @@ export default {
       });
     }
 
-    // Check API key
-    const apiKey = env.AIRTABLE_API_KEY;
-    if (!apiKey) {
-      return jsonResponse(
-        { success: false, error: 'AIRTABLE_API_KEY not configured' },
-        500, request
-      );
-    }
-
-    // ── Static assets ─────────────────────────────────────────
+    // ── Static assets (no API key required) ───────────────────
     if (path === '/property-type-detail.js') {
       return serveDetailJs(request);
     }
@@ -1077,17 +1068,24 @@ export default {
       return serveDetailCss(request);
     }
 
-    // ── Health check ──────────────────────────────────────────
+    // ── Health check (no API key required) ────────────────────
     if (path === '/health') {
       return jsonResponse({
         success: true,
         worker: 'mtg-broker-property-types',
-        version: '1.0',
+        version: '1.1',
         timestamp: new Date().toISOString()
       }, 200, request);
     }
 
-    // ── API routes ────────────────────────────────────────────
+    // ── API routes — require API key ──────────────────────────
+    const apiKey = env.AIRTABLE_API_KEY;
+    if (!apiKey) {
+      return jsonResponse(
+        { success: false, error: 'AIRTABLE_API_KEY not configured' },
+        500, request
+      );
+    }
 
     // GET /api/property-types — listing endpoint
     if (path === '/api/property-types' || path === '/api/property-types/') {
