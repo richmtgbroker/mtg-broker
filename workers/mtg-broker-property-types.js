@@ -429,6 +429,14 @@ const PROPERTY_TYPE_DETAIL_JS = `
 (function () {
   'use strict';
 
+  // Inject the detail page CSS from the Worker
+  (function () {
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://mtg-broker-property-types.rich-e00.workers.dev/property-type-detail.css';
+    document.head.appendChild(link);
+  })();
+
   var WORKER_BASE = 'https://mtg-broker-property-types.rich-e00.workers.dev';
   var ADMIN_EMAIL = 'rich@prestonlending.com';
 
@@ -828,6 +836,214 @@ function serveDetailJs(request) {
 
 
 // ============================
+// GET /property-type-detail.css
+// Serves the detail page CSS as a static file.
+// Injected by property-type-detail.js via a <link> tag.
+// ============================
+const PROPERTY_TYPE_DETAIL_CSS = `
+  /* ================================================
+     PROPERTY TYPE DETAIL PAGE - STYLES
+     Worker: mtg-broker-property-types.rich-e00.workers.dev
+     Version: 1.0 | March 2026
+     ================================================ */
+
+  /* 1. PROPERTY TYPE ICON */
+  .proptype-detail-icon {
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    max-width: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #2563EB;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    border: 1px solid #BFDBFE;
+    flex-shrink: 0;
+  }
+
+  .proptype-detail-subtitle {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #64748b;
+    margin: 4px 0 0 0;
+  }
+
+  @media (max-width: 768px) {
+    .proptype-detail-icon {
+      width: 72px;
+      height: 72px;
+      min-width: 72px;
+      max-width: 72px;
+      font-size: 28px;
+    }
+    .proptype-detail-subtitle {
+      text-align: center;
+    }
+  }
+
+  /* 2. HEADER ACTIONS (Copy + Admin Edit buttons) */
+  .proptype-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .proptype-share-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    background: #fff;
+    color: #64748B;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .proptype-share-btn:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+    color: #2563EB;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+  }
+
+  .proptype-share-btn.copied {
+    background: #ECFDF5;
+    border-color: #A7F3D0;
+    color: #059669;
+  }
+
+  .proptype-admin-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 14px;
+    background: #FEF3C7;
+    border: 1px solid #FCD34D;
+    border-radius: 8px;
+    color: #92400E;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Host Grotesk', sans-serif;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .proptype-admin-edit-btn:hover {
+    background: #FDE68A;
+    border-color: #F59E0B;
+    color: #78350F;
+  }
+
+  @media (max-width: 768px) {
+    .detail-title-row {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .proptype-header-actions {
+      gap: 8px;
+    }
+    .proptype-share-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+    }
+  }
+
+  /* 3. DESCRIPTION SECTION */
+  .proptype-description-content {
+    font-size: 15px;
+    line-height: 1.75;
+    color: #475569;
+  }
+
+  /* 4. LOADING SKELETON */
+  .proptype-detail-skeleton {
+    animation: proptypeShimmer 1.5s infinite;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  @keyframes proptypeShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skeleton-header  { height: 120px; }
+  .skeleton-section { height: 180px; }
+
+  /* 5. ERROR STATE */
+  .proptype-error-state {
+    padding: 60px 20px;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+  }
+
+  .proptype-error-state .error-icon {
+    font-size: 40px;
+    color: #f87171;
+    margin-bottom: 16px;
+  }
+
+  .proptype-error-state h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+  }
+
+  .proptype-error-state p {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0 0 20px 0;
+  }
+
+  .proptype-error-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #1a56db;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .proptype-error-back-btn:hover {
+    background: #1e40af;
+  }
+`;
+
+function serveDetailCss(request) {
+  return new Response(PROPERTY_TYPE_DETAIL_CSS, {
+    status: 200,
+    headers: {
+      ...getCorsHeaders(request),
+      'Content-Type': 'text/css',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600'
+    }
+  });
+}
+
+
+// ============================
 // MAIN FETCH HANDLER (routing)
 // ============================
 export default {
@@ -853,9 +1069,12 @@ export default {
       );
     }
 
-    // ── Static JS bundle ──────────────────────────────────────
+    // ── Static assets ─────────────────────────────────────────
     if (path === '/property-type-detail.js') {
       return serveDetailJs(request);
+    }
+    if (path === '/property-type-detail.css') {
+      return serveDetailCss(request);
     }
 
     // ── Health check ──────────────────────────────────────────

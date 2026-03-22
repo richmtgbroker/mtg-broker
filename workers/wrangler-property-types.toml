@@ -1,0 +1,4 @@
+name = "mtg-broker-property-types"
+main = "mtg-broker-property-types.js"
+compatibility_date = "2024-01-01"
+account_id = "e00ea2fe32b9a5cee69e55cbcf2da9ea"
