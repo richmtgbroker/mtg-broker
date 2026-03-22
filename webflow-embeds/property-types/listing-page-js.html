@@ -1,0 +1,560 @@
+<!-- ================================================================
+     PROPERTY TYPES LISTING PAGE - JS EMBED (v2.0)
+     Page: /app/property-types
+     Updated: March 2026
+
+     WHAT CHANGED IN v2.0:
+     - Replaced Webflow CMS DOM scraping with a direct API call to
+       the mtg-broker-property-types Cloudflare Worker.
+     - Added localStorage cache (30-min TTL) so repeat page visits
+       load instantly without a network round-trip.
+     - Cards now use the slug from the API for hrefs instead of
+       reading the href from CMS link elements.
+     - All UI is identical to v1.0: search, A-Z alphabet nav,
+       count badge, 2-column card grid, letter group headers,
+       loading skeletons, and empty state.
+
+     PLACE IN: Navigator > JS embed element on /app/property-types page
+
+     API: https://mtg-broker-property-types.rich-e00.workers.dev/api/property-types
+     ================================================================ -->
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================================================
+     CONFIG
+     ================================================ */
+  var API_URL = 'https://mtg-broker-property-types.rich-e00.workers.dev/api/property-types';
+  var CACHE_KEY = 'mtg_property_types_v2';
+  var CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+  /* ================================================
+     STATE
+     ================================================ */
+  var allPropTypes = [];   // full list from API
+  var activeLetter = null; // current A-Z filter
+  var searchTerm = '';     // current search string
+
+  /* ================================================
+     DOM REFERENCES
+     ================================================ */
+  var mainSection = null;
+  var toolbar = null;
+  var searchInput = null;
+  var clearBtn = null;
+  var resetBtn = null;
+  var countBadge = null;
+  var resultsGrid = null;
+  var emptyBox = null;
+  var loadingEl = null;
+
+
+  /* ================================================
+     INIT
+     Waits for DOM, then loads data from API (or cache),
+     sorts it, and builds the custom UI.
+     ================================================ */
+  document.addEventListener('DOMContentLoaded', function () {
+    mainSection = document.querySelector('.main-content-section');
+    if (!mainSection) return;
+
+    hideWebflowElements();
+    insertLoadingState();
+
+    loadPropertyTypes().then(function (propTypes) {
+      allPropTypes = propTypes;
+
+      removeLoadingState();
+      buildCountBadge();
+      buildToolbar();
+      insertResultsContainer();
+      renderPropTypes();
+
+      console.log('✅ Property Types page v2.0: Loaded ' + allPropTypes.length + ' property types');
+    }).catch(function (err) {
+      console.error('Property Types page v2.0: Failed to load data', err);
+      removeLoadingState();
+      showApiError();
+    });
+  });
+
+
+  /* ================================================
+     LOAD PROPERTY TYPES
+     Checks localStorage cache first (30-min TTL).
+     Falls back to Worker API if cache is missing or stale.
+     Returns a sorted array of property type objects.
+     ================================================ */
+  function loadPropertyTypes() {
+    return new Promise(function (resolve, reject) {
+      // Try localStorage cache first
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        if (raw) {
+          var cached = JSON.parse(raw);
+          var age = Date.now() - (cached.timestamp || 0);
+          if (age < CACHE_TTL_MS && Array.isArray(cached.data) && cached.data.length > 0) {
+            console.log('Property Types v2.0: Loaded ' + cached.data.length + ' from cache');
+            return resolve(addFirstLetters(cached.data));
+          }
+        }
+      } catch (e) {
+        // Cache read failed — fall through to API
+      }
+
+      // Fetch from Worker API
+      fetch(API_URL)
+        .then(function (res) {
+          if (!res.ok) throw new Error('API error: ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          if (!data.success || !Array.isArray(data.propertyTypes)) {
+            throw new Error('Unexpected API response format');
+          }
+
+          // Save to localStorage cache
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              data: data.propertyTypes
+            }));
+          } catch (e) {
+            // Storage quota exceeded or disabled — ignore
+          }
+
+          resolve(addFirstLetters(data.propertyTypes));
+        })
+        .catch(function (err) {
+          reject(err);
+        });
+    });
+  }
+
+  /**
+   * Add the computed firstLetter property to each property type.
+   * Uses sortName.charAt(0) for alphabetical grouping.
+   * The API returns sortName (already lowercase).
+   */
+  function addFirstLetters(propTypes) {
+    return propTypes.map(function (pt) {
+      var firstLetter = (pt.sortName || pt.name || '').charAt(0).toUpperCase();
+      if (!/[A-Z]/.test(firstLetter)) firstLetter = '#';
+      return {
+        name: pt.name,
+        slug: pt.slug,
+        sortName: pt.sortName || pt.name.toLowerCase(),
+        lenderCount: pt.lenderCount || 0,
+        firstLetter: firstLetter,
+        // Build the href using the slug
+        href: '/app/property-types/' + (pt.slug || '')
+      };
+    });
+  }
+
+
+  /* ================================================
+     HIDE WEBFLOW ELEMENTS
+     Hides the original Webflow collection list,
+     search bar, and empty state. The JS builds
+     its own UI to replace all of these.
+     ================================================ */
+  function hideWebflowElements() {
+    var selectorsToHide = [
+      '.search-form-block',
+      '.empty-state-box',
+      '.w-form-done',
+      '.w-form-fail',
+      '.w-dyn-list',
+      '.w-pagination-wrapper'
+    ];
+    var els = mainSection.querySelectorAll(selectorsToHide.join(', '));
+    els.forEach(function (el) { el.style.display = 'none'; });
+  }
+
+
+  /* ================================================
+     API ERROR STATE
+     Shown if the API request fails entirely.
+     ================================================ */
+  function showApiError() {
+    var errBox = document.createElement('div');
+    errBox.style.cssText = 'padding:40px 20px;text-align:center;background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-top:16px;';
+    errBox.innerHTML =
+      '<div style="font-size:32px;margin-bottom:12px;">⚠️</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:6px;">Unable to Load Property Types</div>' +
+      '<div style="font-size:15px;color:#64748b;margin-bottom:16px;">Please refresh the page to try again.</div>' +
+      '<button onclick="window.location.reload()" ' +
+        'style="background:#1a56db;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;">' +
+        'Refresh Page' +
+      '</button>';
+
+    var header = mainSection.querySelector('.page-header');
+    if (header && header.nextSibling) {
+      mainSection.insertBefore(errBox, header.nextSibling);
+    } else {
+      mainSection.appendChild(errBox);
+    }
+  }
+
+
+  /* ================================================
+     LOADING STATE
+     Shows shimmer skeleton cards while data loads.
+     ================================================ */
+  function insertLoadingState() {
+    loadingEl = document.createElement('div');
+    loadingEl.className = 'proptypes-loading';
+    var html = '';
+    for (var i = 0; i < 12; i++) html += '<div class="skeleton-card"></div>';
+    loadingEl.innerHTML = html;
+
+    var header = mainSection.querySelector('.page-header');
+    if (header && header.nextSibling) {
+      mainSection.insertBefore(loadingEl, header.nextSibling);
+    } else {
+      mainSection.appendChild(loadingEl);
+    }
+  }
+
+  function removeLoadingState() {
+    if (loadingEl && loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+  }
+
+
+  /* ================================================
+     COUNT BADGE
+     Appends a count badge next to the page title.
+     Shows total or "X of total" when filtered.
+     ================================================ */
+  function buildCountBadge() {
+    var header = mainSection.querySelector('.page-header');
+    if (!header) return;
+    countBadge = document.createElement('span');
+    countBadge.className = 'proptypes-count-badge';
+    countBadge.textContent = allPropTypes.length + ' property types';
+    header.appendChild(countBadge);
+  }
+
+  function updateCountBadge(count) {
+    if (!countBadge) return;
+    var total = allPropTypes.length;
+    if (count === total) {
+      countBadge.textContent = total + ' property types';
+      countBadge.classList.remove('is-filtered');
+    } else {
+      countBadge.textContent = count + ' of ' + total;
+      countBadge.classList.add('is-filtered');
+    }
+  }
+
+
+  /* ================================================
+     TOOLBAR (Search + Alphabet + Reset in one row)
+     ================================================ */
+  function buildToolbar() {
+    toolbar = document.createElement('div');
+    toolbar.className = 'proptypes-toolbar';
+
+    /* --- Search input --- */
+    var inputWrapper = document.createElement('div');
+    inputWrapper.className = 'search-input-wrapper';
+
+    searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'proptypes-search-input';
+    searchInput.placeholder = 'Search property types...';
+    searchInput.setAttribute('autocomplete', 'off');
+    searchInput.setAttribute('spellcheck', 'false');
+
+    clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'search-clear-btn';
+    clearBtn.innerHTML = '&#x2715;';
+    clearBtn.setAttribute('aria-label', 'Clear search');
+
+    inputWrapper.appendChild(searchInput);
+    inputWrapper.appendChild(clearBtn);
+    toolbar.appendChild(inputWrapper);
+
+    /* --- Vertical divider --- */
+    var divider = document.createElement('div');
+    divider.className = 'toolbar-divider';
+    toolbar.appendChild(divider);
+
+    /* --- Alphabet nav (inline) --- */
+    var alphaNav = document.createElement('div');
+    alphaNav.className = 'alpha-nav-inline';
+
+    /* Figure out which letters have property types */
+    var lettersWithItems = {};
+    allPropTypes.forEach(function (p) {
+      lettersWithItems[p.firstLetter] = true;
+    });
+
+    /* "All" button */
+    var allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = 'alpha-nav-letter is-active';
+    allBtn.textContent = 'All';
+    allBtn.style.width = 'auto';
+    allBtn.style.padding = '0 8px';
+    allBtn.style.fontSize = '11px';
+    allBtn.setAttribute('data-letter', 'all');
+    allBtn.addEventListener('click', function () { setActiveLetter(null); });
+    alphaNav.appendChild(allBtn);
+
+    /* A-Z buttons */
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function (letter) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'alpha-nav-letter';
+      btn.textContent = letter;
+      btn.setAttribute('data-letter', letter);
+      if (!lettersWithItems[letter]) {
+        btn.classList.add('is-disabled');
+      } else {
+        btn.addEventListener('click', function () { setActiveLetter(letter); });
+      }
+      alphaNav.appendChild(btn);
+    });
+
+    /* # button for numbers/special characters */
+    if (lettersWithItems['#']) {
+      var hashBtn = document.createElement('button');
+      hashBtn.type = 'button';
+      hashBtn.className = 'alpha-nav-letter';
+      hashBtn.textContent = '#';
+      hashBtn.setAttribute('data-letter', '#');
+      hashBtn.addEventListener('click', function () { setActiveLetter('#'); });
+      alphaNav.appendChild(hashBtn);
+    }
+
+    toolbar.appendChild(alphaNav);
+
+    /* --- Reset button --- */
+    resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'proptypes-reset-btn';
+    resetBtn.innerHTML = '<i class="fa-solid fa-rotate-left" style="font-size:11px;"></i> Reset';
+    toolbar.appendChild(resetBtn);
+
+    /* Insert toolbar after page header */
+    var header = mainSection.querySelector('.page-header');
+    if (header && header.nextSibling) {
+      mainSection.insertBefore(toolbar, header.nextSibling);
+    } else {
+      mainSection.appendChild(toolbar);
+    }
+
+    /* --- EVENT LISTENERS --- */
+
+    /* Search: filter as user types */
+    searchInput.addEventListener('input', function () {
+      searchTerm = searchInput.value.trim().toLowerCase();
+      clearBtn.classList.toggle('is-visible', searchTerm.length > 0);
+      updateResetVisibility();
+      renderPropTypes();
+    });
+
+    /* Clear button: reset search */
+    clearBtn.addEventListener('click', function () {
+      searchInput.value = '';
+      searchTerm = '';
+      clearBtn.classList.remove('is-visible');
+      searchInput.focus();
+      updateResetVisibility();
+      renderPropTypes();
+    });
+
+    /* Escape key: clear search */
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchTerm = '';
+        clearBtn.classList.remove('is-visible');
+        updateResetVisibility();
+        renderPropTypes();
+      }
+    });
+
+    /* Reset button: clear everything */
+    resetBtn.addEventListener('click', function () {
+      resetAllFilters();
+    });
+  }
+
+  /* Set the active alphabet letter filter */
+  function setActiveLetter(letter) {
+    activeLetter = letter;
+    updateAlphaNavState();
+    updateResetVisibility();
+    renderPropTypes();
+    if (resultsGrid) {
+      resultsGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  /* Highlight the active letter button */
+  function updateAlphaNavState() {
+    if (!toolbar) return;
+    toolbar.querySelectorAll('.alpha-nav-letter').forEach(function (btn) {
+      var l = btn.getAttribute('data-letter');
+      btn.classList.toggle('is-active',
+        (activeLetter === null && l === 'all') || l === activeLetter
+      );
+    });
+  }
+
+  /* Show/hide the Reset button based on active filters */
+  function updateResetVisibility() {
+    if (!resetBtn) return;
+    var active = searchTerm.length > 0 || activeLetter !== null;
+    resetBtn.classList.toggle('is-visible', active);
+  }
+
+
+  /* ================================================
+     RESULTS CONTAINER + EMPTY STATE
+     ================================================ */
+  function insertResultsContainer() {
+    resultsGrid = document.createElement('div');
+    resultsGrid.className = 'proptypes-results-grid';
+
+    emptyBox = document.createElement('div');
+    emptyBox.className = 'proptypes-empty-state';
+    emptyBox.style.display = 'none';
+    emptyBox.innerHTML =
+      '<div class="empty-state-icon">&#x1F50D;</div>' +
+      '<div class="empty-title">No property types found</div>' +
+      '<div class="empty-sub">Try a different search or adjust your filters</div>' +
+      '<span class="empty-reset-link" id="proptypes-reset-all">Reset all filters</span>';
+
+    if (toolbar && toolbar.nextSibling) {
+      mainSection.insertBefore(emptyBox, toolbar.nextSibling);
+      mainSection.insertBefore(resultsGrid, emptyBox);
+    } else {
+      mainSection.appendChild(resultsGrid);
+      mainSection.appendChild(emptyBox);
+    }
+
+    document.getElementById('proptypes-reset-all').addEventListener('click', function () {
+      resetAllFilters();
+    });
+  }
+
+
+  /* ================================================
+     RENDER PROPERTY TYPES
+     Filters the full list by search term and letter,
+     then builds the card grid with letter headers.
+     ================================================ */
+  function renderPropTypes() {
+    if (!resultsGrid) return;
+
+    var filtered = allPropTypes.filter(function (p) {
+      /* Search filter: match against sortName (already lowercase) */
+      if (searchTerm && p.sortName.indexOf(searchTerm) === -1) {
+        return false;
+      }
+      /* Alphabet filter: match first letter */
+      if (activeLetter && p.firstLetter !== activeLetter) {
+        return false;
+      }
+      return true;
+    });
+
+    updateCountBadge(filtered.length);
+
+    /* Show empty state if no results */
+    if (filtered.length === 0) {
+      resultsGrid.style.display = 'none';
+      emptyBox.style.display = 'block';
+      return;
+    }
+
+    resultsGrid.style.display = 'grid';
+    emptyBox.style.display = 'none';
+
+    var html = '';
+    var currentLetter = '';
+
+    filtered.forEach(function (propType) {
+      /* Letter group header (letter + thin line) */
+      if (propType.firstLetter !== currentLetter) {
+        currentLetter = propType.firstLetter;
+        html +=
+          '<div class="letter-group-header" id="letter-' + escapeAttr(currentLetter) + '">' +
+            '<span class="letter-group-label">' + escapeHtml(currentLetter) + '</span>' +
+            '<span class="letter-group-line"></span>' +
+          '</div>';
+      }
+
+      html += buildCardHtml(propType);
+    });
+
+    resultsGrid.innerHTML = html;
+  }
+
+
+  /* ================================================
+     BUILD CARD HTML
+     Simple card: name + chevron (via CSS ::after).
+     Search matches are highlighted with yellow.
+     ================================================ */
+  function buildCardHtml(propType) {
+    /* Highlight search match in name */
+    var displayName = escapeHtml(propType.name);
+    if (searchTerm) {
+      var escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var regex = new RegExp('(' + escapedTerm + ')', 'gi');
+      displayName = escapeHtml(propType.name).replace(
+        regex,
+        '<mark style="background:#fef08a;color:#0f172a;padding:0 1px;border-radius:2px;">$1</mark>'
+      );
+    }
+
+    return (
+      '<a href="' + escapeAttr(propType.href) + '" class="proptype-card">' +
+        '<span class="proptype-card-name">' + displayName + '</span>' +
+      '</a>'
+    );
+  }
+
+
+  /* ================================================
+     RESET ALL FILTERS
+     Clears search, alphabet selection, and re-renders.
+     ================================================ */
+  function resetAllFilters() {
+    if (searchInput) {
+      searchInput.value = '';
+      searchTerm = '';
+      if (clearBtn) clearBtn.classList.remove('is-visible');
+    }
+    activeLetter = null;
+    updateAlphaNavState();
+    updateResetVisibility();
+    renderPropTypes();
+  }
+
+
+  /* ================================================
+     UTILITIES
+     ================================================ */
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+  }
+
+})();
+</script>

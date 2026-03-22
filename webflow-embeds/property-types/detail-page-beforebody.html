@@ -1,0 +1,27 @@
+<!-- ================================================================
+     PROPERTY TYPE DETAIL PAGE - BEFORE </body> EMBED
+     Page: /app/property-types/{slug}
+     Version: 1.0 | March 2026
+
+     PURPOSE:
+     Loads the property-type-detail.js bundle from the Worker.
+     The script auto-injects all page containers and fetches
+     the property type data from the Worker API.
+
+     PLACE IN: Webflow Designer → Page Settings → Before </body> tag
+     (or in the Navigator as a code embed at the bottom of the page)
+
+     HOW IT WORKS:
+     Webflow strips src= attributes from <script> tags in embeds, so
+     we use a dynamic script injection pattern instead.
+     ================================================================ -->
+
+<div id="proptype-detail-app"></div>
+<script>
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'https://mtg-broker-property-types.rich-e00.workers.dev/property-type-detail.js?v=1.0';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+</script>
