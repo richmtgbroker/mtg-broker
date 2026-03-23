@@ -1,0 +1,30 @@
+<!-- ============================================================
+     SITE SETTINGS - FOOTER CODE (Before </body>)
+     mtg.broker — v3.4
+
+     All JS now served from Cloudflare Worker (mtg-broker-extras).
+     This file contains ONLY the HTML/CSS that can't be in JS.
+
+     Endpoints:
+       site-footer.js    — Sections 0-6 (Outseta cache, billing, gating)
+       feature-extras.js — Sections 7-8 (upgrade CTAs, limit pills)
+     ============================================================ -->
+
+<!-- Mobile bottom navigation (HTML only — must be inline) -->
+<nav class="mobile-bottom-nav">
+  <a href="/app/dashboard" class="nav-item" data-page="dashboard"><i class="fas fa-home"></i><span>Dashboard</span></a>
+  <a href="/app/lenders" class="nav-item" data-page="lenders"><i class="fas fa-building"></i><span>Lenders</span></a>
+  <a href="/app/loan-search" class="nav-item" data-page="search"><i class="fas fa-search"></i><span>Search</span></a>
+  <a href="/app/products" class="nav-item" data-page="products"><i class="fas fa-box"></i><span>Products</span></a>
+  <a href="/app/vendors" class="nav-item" data-page="vendors"><i class="fas fa-store"></i><span>Vendors</span></a>
+  <a href="/app/contacts" class="nav-item" data-page="contacts"><i class="fas fa-address-book"></i><span>Contacts</span></a>
+</nav>
+
+<!-- Nexa-only CSS (must be inline for immediate hide) -->
+<style>.nexa-only { display: none; }</style>
+
+<!-- Core platform JS (Outseta cache, fetch interceptor, billing, feature gating) -->
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/site-footer.js"></script>
+
+<!-- Upgrade CTAs + limit indicators (deferred, non-critical) -->
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/feature-extras.js" defer></script>
