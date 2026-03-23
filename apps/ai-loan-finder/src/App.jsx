@@ -875,7 +875,7 @@ function App() {
         <p className="hero-subtitle">
           {activeMode === 'find'
             ? 'Describe your borrower scenario in plain English and instantly find matching wholesale loan products.'
-            : 'Ask any question about lender guidelines and get AI-synthesized answers sourced directly from lender PDFs.'
+            : 'Ask any question about lender guidelines and get AI-synthesized answers with source citations.'
           }
         </p>
         <p className="beta-disclaimer">
