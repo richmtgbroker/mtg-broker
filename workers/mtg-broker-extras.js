@@ -6,7 +6,7 @@
  * URL: mtg-broker-extras.rich-e00.workers.dev
  * Called by: <script src="https://mtg-broker-extras.rich-e00.workers.dev/static/feature-extras.js" defer>
  *
- * v2.0 — March 22, 2026
+ * v2.1 — March 22, 2026
  *   Section 7 (LITE CTAs):
  *   - Dashboard card is now dismissible (persists via sessionStorage)
  *   - Fixed loan search CTA — uses reliable selector cascade instead of
@@ -24,6 +24,7 @@
  *   Cache-Control: updated to max-age=300 / stale-while-revalidate=3600
  *     (per fixed-URL deployment policy — 5 min refresh, no spinner)
  *
+ * v2.0 — see git history
  * v1.1 — prior version (placeholder CTAs, 1h cache)
  */
 
@@ -388,9 +389,15 @@ const FEATURE_EXTRAS_JS = String.raw`
     for (var i = 0; i < headerSelectors.length; i++) {
       var container = document.querySelector(headerSelectors[i]);
       if (container && !container.querySelector('.mtg-lpill')) {
+        // Only use insertBefore if the button is a DIRECT child of container.
+        // querySelector finds descendants too — if primaryBtn is nested deeper,
+        // insertBefore throws NotFoundError ("node is not a child of this node").
         var primaryBtn = container.querySelector('.btn-primary, button');
-        if (primaryBtn) container.insertBefore(wrap, primaryBtn);
-        else container.appendChild(wrap);
+        if (primaryBtn && primaryBtn.parentNode === container) {
+          container.insertBefore(wrap, primaryBtn);
+        } else {
+          container.appendChild(wrap);
+        }
         inserted = true;
         break;
       }
