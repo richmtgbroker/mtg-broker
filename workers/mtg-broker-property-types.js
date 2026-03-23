@@ -169,7 +169,7 @@ async function fetchLenderMap(apiKey, bypassCache) {
 
   do {
     let url = 'https://api.airtable.com/v0/' + AIRTABLE_BASE_ID + '/' + TABLES.LENDER_LIST +
-      '?fields%5B%5D=Name&fields%5B%5D=Webflow+Slug&pageSize=100';
+      '?fields%5B%5D=Lender+Name&fields%5B%5D=Webflow+Slug&pageSize=100';
     if (offset) url += '&offset=' + offset;
 
     const resp = await fetch(url, {
@@ -186,7 +186,7 @@ async function fetchLenderMap(apiKey, bypassCache) {
     const data = await resp.json();
 
     for (const record of data.records) {
-      const name = (record.fields['Name'] || '').trim();
+      const name = (record.fields['Lender Name'] || '').trim();
       const slug = (record.fields['Webflow Slug'] || toLenderSlug(name)).trim();
       if (name) {
         map.set(record.id, { name, slug });
@@ -236,12 +236,12 @@ async function getPropertyTypes(apiKey, request) {
     let offset = null;
 
     // Fields needed for the listing page cards
-    const listFields = ['Name', 'Webflow Slug', 'Sort Name Override', 'Lenders Available (Property Type)'];
+    const listFields = ['Property Type Name', 'Webflow Slug', 'Sort Name Override', 'Lenders Available (Property Type)'];
 
     do {
       let url = 'https://api.airtable.com/v0/' + AIRTABLE_BASE_ID + '/' + TABLES.PROPERTY_TYPES + '?';
       url += listFields.map(f => 'fields%5B%5D=' + encodeURIComponent(f)).join('&');
-      url += '&sort%5B0%5D%5Bfield%5D=Name&sort%5B0%5D%5Bdirection%5D=asc';
+      url += '&sort%5B0%5D%5Bfield%5D=Property+Type+Name&sort%5B0%5D%5Bdirection%5D=asc';
       url += '&pageSize=100';
       if (offset) url += '&offset=' + offset;
 
@@ -258,7 +258,7 @@ async function getPropertyTypes(apiKey, request) {
 
       for (const record of data.records) {
         const f = record.fields;
-        const name = (f['Name'] || '').trim();
+        const name = (f['Property Type Name'] || '').trim();
         if (!name) continue;
 
         const slug = (f['Webflow Slug'] || '').trim();
@@ -338,7 +338,7 @@ async function getPropertyTypeBySlug(slug, apiKey, request) {
     // Fetch the property type record and the lender map in parallel
     const filterFormula = encodeURIComponent('{Webflow Slug}=\'' + slug + '\'');
     const detailFields = [
-      'Name', 'Webflow Slug', 'Sort Name Override', 'Description',
+      'Property Type Name', 'Webflow Slug', 'Sort Name Override', 'Description',
       'Lenders Available (Property Type)'
     ];
     const params = 'filterByFormula=' + filterFormula +
@@ -360,7 +360,7 @@ async function getPropertyTypeBySlug(slug, apiKey, request) {
     const record = ptData.records[0];
     const f = record.fields;
 
-    const name = (f['Name'] || '').trim();
+    const name = (f['Property Type Name'] || '').trim();
     const description = (f['Description'] || '').trim();
     const sortName = toSortName(name, f['Sort Name Override']);
 
