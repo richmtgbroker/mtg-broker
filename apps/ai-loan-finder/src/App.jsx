@@ -641,6 +641,55 @@ function LoanResults({ data, onOpenModal }) {
 
 // ─── SEARCH GUIDELINES COMPONENTS ────────────────────────────────────────────
 
+// Renders **bold** inline markdown within a line of text
+function renderInline(text) {
+  const parts = text.split(/(\*\*(?:[^*]|\*(?!\*))+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>
+    }
+    return part || null
+  })
+}
+
+// Converts Claude's markdown response into structured JSX.
+// Handles: # h1, ## h2, ### h3, - bullets, **bold**, plain paragraphs.
+function GuidelineMarkdown({ text }) {
+  const lines = text.split('\n')
+  const elements = []
+  let listItems = []
+
+  const flushList = (key) => {
+    if (listItems.length > 0) {
+      elements.push(<ul key={`ul-${key}`} className="gs-md-list">{listItems}</ul>)
+      listItems = []
+    }
+  }
+
+  lines.forEach((line, i) => {
+    if (line.startsWith('# ')) {
+      flushList(i)
+      elements.push(<h3 key={i} className="gs-md-h1">{renderInline(line.slice(2))}</h3>)
+    } else if (line.startsWith('## ')) {
+      flushList(i)
+      elements.push(<h4 key={i} className="gs-md-h2">{renderInline(line.slice(3))}</h4>)
+    } else if (line.startsWith('### ')) {
+      flushList(i)
+      elements.push(<h5 key={i} className="gs-md-h3">{renderInline(line.slice(4))}</h5>)
+    } else if (line.match(/^[-*] /)) {
+      listItems.push(<li key={i}>{renderInline(line.slice(2))}</li>)
+    } else if (line.trim() === '') {
+      flushList(i)
+    } else {
+      flushList(i)
+      elements.push(<p key={i} className="gs-md-p">{renderInline(line)}</p>)
+    }
+  })
+
+  flushList('end')
+  return <>{elements}</>
+}
+
 // A single source citation card shown below the synthesized answer
 function GuidelineSourceCard({ source, rank }) {
   return (
@@ -683,7 +732,9 @@ function GuidelineResults({ data }) {
           <i className="fas fa-robot gs-answer-icon"></i>
           <span className="gs-answer-label">AI Answer</span>
         </div>
-        <div className="gs-answer-text">{data.answer}</div>
+        <div className="gs-answer-text">
+          <GuidelineMarkdown text={data.answer} />
+        </div>
         <p className="gs-answer-disclaimer">
           <i className="fas fa-circle-info"></i>{' '}
           Answer synthesized from lender PDF guidelines. Always verify directly with the lender before presenting to borrowers.
