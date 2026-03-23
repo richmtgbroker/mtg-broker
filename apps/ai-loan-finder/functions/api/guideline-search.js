@@ -13,15 +13,22 @@
 // Required env vars (set in Cloudflare Pages dashboard + .dev.vars):
 //   OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, ANTHROPIC_API_KEY
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': 'https://mtg.broker',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+const ALLOWED_ORIGINS = ['https://mtg.broker', 'https://www.mtg.broker']
+
+// Return CORS headers reflecting the request origin if it's allowed
+function getCorsHeaders(request) {
+  const origin = request ? request.headers.get('Origin') : null
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
 }
 
 // Handle CORS preflight
-export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS })
+export async function onRequestOptions({ request }) {
+  return new Response(null, { status: 204, headers: getCorsHeaders(request) })
 }
 
 // Main handler
@@ -33,7 +40,7 @@ export async function onRequestPost(context) {
     const { query } = body
 
     if (!query || typeof query !== 'string' || !query.trim()) {
-      return jsonError('query is required', 400)
+      return jsonError(request, 'query is required', 400)
     }
 
     const queryText = query.trim()
@@ -46,7 +53,7 @@ export async function onRequestPost(context) {
 
     // If no chunks exist yet (PDFs not processed), return a helpful message
     if (!chunks || chunks.length === 0) {
-      return jsonResponse({
+      return jsonResponse(request, {
         answer: 'No guideline documents have been indexed yet. Run the PDF processing script (`node scripts/process-pdfs.js --limit 5`) to start indexing lender guidelines.',
         sources: [],
         query: queryText,
@@ -56,11 +63,11 @@ export async function onRequestPost(context) {
     // Step 3: Synthesize an answer with Claude Haiku, citing sources
     const { answer, sources } = await synthesizeAnswer(queryText, chunks, env.ANTHROPIC_API_KEY)
 
-    return jsonResponse({ answer, sources, query: queryText })
+    return jsonResponse(request, { answer, sources, query: queryText })
 
   } catch (err) {
     console.error('Guideline search error:', err)
-    return jsonError(err.message || 'Internal server error', 500)
+    return jsonError(request, err.message || 'Internal server error', 500)
   }
 }
 
@@ -185,16 +192,16 @@ ${contextBlock}`
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(request, data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { ...getCorsHeaders(request), 'Content-Type': 'application/json' },
   })
 }
 
-function jsonError(message, status = 500) {
+function jsonError(request, message, status = 500) {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { ...getCorsHeaders(request), 'Content-Type': 'application/json' },
   })
 }
