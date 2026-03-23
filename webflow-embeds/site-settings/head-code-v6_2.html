@@ -1,0 +1,97 @@
+<!-- ================================================
+     MTGBROKER - SITE SETTINGS HEAD CODE
+     Version: 6.2 — Externalized to Cloudflare Worker
+
+     CSS + fetch interceptor now served from Worker.
+     This file contains ONLY inline-required elements.
+     ================================================ -->
+
+<!-- Adaptive SVG Favicon -->
+<link rel="icon" href="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69b4d53aa7b7dc239acc2e95_MtgBroker_Favicon_Adaptive.svg" type="image/svg+xml">
+
+<!-- Console Log Suppression (must run before all other scripts) -->
+<script>
+(function() {
+  var ADMIN_EMAILS = ['rich@prestonlending.com'];
+  var isDevEnv = (
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('webflow.io')
+  );
+  if (isDevEnv) return;
+  function getEmailFromJWT() {
+    try {
+      var token = localStorage.getItem('Outseta.nocode.accessToken');
+      if (!token) return null;
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      return (payload.email || payload['https://app.outseta.com/claims/email'] || '').toLowerCase();
+    } catch (e) { return null; }
+  }
+  var email = getEmailFromJWT();
+  var isAdmin = email && ADMIN_EMAILS.map(function(e){return e.toLowerCase();}).indexOf(email) !== -1;
+  if (!isAdmin) {
+    console.log = function() {};
+    console.info = function() {};
+    console.debug = function() {};
+  }
+})();
+</script>
+
+<!-- Fetch Interceptor (must run in head before body scripts capture fetch) -->
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/site-head.js"></script>
+
+<!-- Outseta Authentication (Staging-Aware + Redirect Support) -->
+<script>
+var __mtgIsStaging = window.location.hostname.indexOf('webflow.io') !== -1;
+var o_options = {
+    domain: 'mtgbroker.outseta.com',
+    load: 'auth,customForm,emailList,leadCapture,nocode,profile,support',
+    tokenStorage: 'local'
+};
+var __mtgRedirect = new URLSearchParams(window.location.search).get('redirect');
+if (__mtgIsStaging) {
+  o_options.auth = { authenticationCallbackUrl: window.location.origin + '/app/dashboard' };
+} else if (__mtgRedirect && __mtgRedirect.indexOf('/') === 0) {
+  o_options.auth = { authenticationCallbackUrl: window.location.origin + __mtgRedirect };
+}
+</script>
+<script src="https://cdn.outseta.com/outseta.min.js" data-options="o_options"></script>
+
+<!-- Staging indicator badge -->
+<script>
+if (window.__mtgIsStaging) {
+  document.addEventListener('DOMContentLoaded', function() {
+    var badge = document.createElement('div');
+    badge.textContent = 'STAGING';
+    badge.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:999999;background:#e74c3c;color:#fff;padding:6px 14px;border-radius:6px;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;letter-spacing:1px;opacity:0.92;pointer-events:none;';
+    document.body.appendChild(badge);
+  });
+}
+</script>
+
+<!-- Rewardful Referral Tracking -->
+<script>(function(w,r){w._rwq=r;w[r]=w[r]||function(){(w[r].q=w[r].q||[]).push(arguments)}})(window,'rewardful');</script>
+<script async src='https://r.wdfl.co/rw.js' data-rewardful='a3ca66'></script>
+
+<!-- Finsweet Attributes -->
+<script async src="https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsload@1/cmsload.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmsfilter@1/cmsfilter.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmssort@1/cmssort.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@finsweet/attributes-cmscombine@1/cmscombine.js"></script>
+
+<!-- Jetboost -->
+<script id="jetboost-script" type="text/javascript"> window.JETBOOST_SITE_ID = "cmklqysrv000p0yve9yaogny7"; (function(d) { var s = d.createElement("script"); s.src = "https://cdn.jetboost.io/jetboost.js"; s.async = 1; d.getElementsByTagName("head")[0].appendChild(s); })(document); </script>
+
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- PWA Configuration -->
+<link rel="manifest" href="https://mtg-broker-api.rich-e00.workers.dev/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MtgBroker">
+<link rel="apple-touch-icon" href="https://i.ibb.co/Rkg1kd76/web-app-manifest-192x192.png">
+
+<!-- Global Platform Styles (served from Cloudflare Worker) -->
+<link rel="stylesheet" href="https://mtg-broker-extras.rich-e00.workers.dev/static/site-head.css">

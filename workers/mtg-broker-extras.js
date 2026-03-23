@@ -46,6 +46,16 @@ function jsResponse(body, request) {
   });
 }
 
+function cssResponse(body, request) {
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'text/css; charset=utf-8',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+      ...getCorsHeaders(request)
+    }
+  });
+}
+
 export default {
   async fetch(request) {
     if (request.method === 'OPTIONS') {
@@ -62,6 +72,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    if (path === '/static/site-head.css') {
+      return cssResponse(SITE_HEAD_CSS, request);
+    }
+
+    if (path === '/static/site-head.js') {
+      return jsResponse(SITE_HEAD_JS, request);
+    }
+
     if (path === '/static/site-footer.js') {
       return jsResponse(SITE_FOOTER_JS, request);
     }
@@ -73,6 +91,8 @@ export default {
     // Default: list available endpoints
     return new Response(JSON.stringify({
       endpoints: [
+        'GET /static/site-head.css',
+        'GET /static/site-head.js',
         'GET /static/site-footer.js',
         'GET /static/feature-extras.js'
       ]
@@ -86,6 +106,1190 @@ export default {
 };
 
 
+
+// ============================================================
+// SITE HEAD CSS — Global platform styles
+// Previously inline in Webflow Site Settings Head Code
+// ============================================================
+const SITE_HEAD_CSS = String.raw`
+/* ================================================
+   1. BASE & LAYOUT FIXES
+   ================================================ */
+
+/* Fix: Body height issue causing footer cutoff */
+html, body {
+  height: auto !important;
+  min-height: 100vh !important;
+  overflow-x: hidden;
+}
+
+/* CSS Variables */
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --navbar-height: 77px;
+}
+
+body {
+  background-color: #f8fafc;
+}
+
+/* Sticky footer for app pages — pushes footer to bottom
+   on short-content pages (like sparse product detail pages).
+   Scoped to body.app-page so home/marketing pages are unaffected.
+   Navbar & sidebar are position:fixed so flex doesn't affect them. */
+body.app-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content grows to fill remaining space, pushing footer down */
+body.app-page .main-content-section {
+  flex: 1 0 auto;
+}
+
+/* Footer stays at its natural size at the bottom */
+body.app-page .mtg-footer,
+body.app-page .simple-calc-footer {
+  flex-shrink: 0;
+}
+
+
+/* ================================================
+   2. APP PAGE NAVBAR
+   ================================================ */
+
+/* Navbar - Full width on app pages */
+body.app-page .mb-navWrap {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  transition: none;
+}
+
+/* Navbar inner content - full width edge to edge */
+body.app-page .mb-header {
+  width: 100% !important;
+  max-width: none !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+/* Navbar links container - push to right */
+body.app-page .mb-nav {
+  margin-left: auto !important;
+}
+
+@media (max-width: 991px) {
+  body.app-page .mb-header {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+}
+
+
+/* ================================================
+   3. MAIN CONTENT SECTION
+   Used by: Loan Search, Lenders, Products, Vendors, Property Types
+   
+   UPDATED: Using percentage-based width only (no max-width px constraint)
+   so content expands properly on larger screens while staying
+   centered with sidebar expanded or collapsed.
+   ================================================ */
+
+/* Main content section - fills available space next to sidebar */
+body.app-page .main-content-section {
+  padding-top: calc(var(--navbar-height) + 20px) !important;
+  margin-left: var(--sidebar-width) !important;
+  box-sizing: border-box;
+}
+
+/* When sidebar is collapsed */
+body.app-page.sidebar-collapsed .main-content-section {
+  margin-left: var(--sidebar-collapsed-width) !important;
+}
+
+/* Inner content - percentage-based width, NO max-width constraint */
+.main-content-section > * {
+  width: 94%;
+  max-width: none !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Fix: Remove top gap on app pages */
+body.app-page .mb-navSpacer {
+  height: 0 !important;
+  display: block !important;
+}
+
+/* Mobile: Remove sidebar offset, full width content (UNCHANGED) */
+@media (max-width: 991px) {
+  .main-content-section {
+    margin-left: 0 !important;
+  }
+  
+  .main-content-section > * {
+    width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+  
+  body.app-page .main-content-section {
+    margin-left: 0 !important;
+    padding-top: calc(var(--navbar-height) + 15px) !important;
+  }
+}
+
+
+/* ================================================
+   4. APP PAGE CONTENT (HTML Embed pages)
+   Used by: Calculators, Dashboard, etc.
+   ================================================ */
+
+.app-page-content {
+  margin-left: var(--sidebar-width);
+  padding-top: calc(var(--navbar-height) + 20px);
+  padding-bottom: 40px;
+  min-height: calc(100vh - var(--navbar-height));
+  transition: margin-left 0.3s ease;
+  box-sizing: border-box;
+}
+
+body.sidebar-collapsed .app-page-content {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* App Container - percentage-based width, NO max-width constraint */
+.app-container {
+  width: 94%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 991px) {
+  .app-page-content {
+    margin-left: 0;
+    padding-top: calc(var(--navbar-height) + 15px);
+    padding-bottom: 20px;
+  }
+  
+  .app-container {
+    width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+}
+
+
+/* ================================================
+   5. FOOTER
+   ================================================ */
+
+/* App Footer - offset by sidebar on app pages */
+body.app-page .simple-calc-footer {
+  margin-left: var(--sidebar-width);
+  transition: margin-left 0.3s ease;
+}
+
+body.app-page.sidebar-collapsed .simple-calc-footer {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Main Site Footer - never offset, always full width */
+.global-footer {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Ensure footers are always visible */
+.mtg-footer,
+.simple-calc-footer,
+.global-footer {
+  position: relative;
+  clear: both;
+}
+
+@media (max-width: 991px) {
+  body.app-page .simple-calc-footer {
+    margin-left: 0;
+  }
+}
+
+
+/* ================================================
+   6. REUSABLE BUTTONS & COMPONENTS
+   ================================================ */
+
+/* --- Breadcrumb Trail (Detail Pages) --- */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.breadcrumb-link-item {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-link-item:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #94a3b8;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.breadcrumb-current {
+  color: #64748b;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+@media (max-width: 768px) {
+  .breadcrumb-nav {
+    gap: 8px;
+    font-size: 13px;
+  }
+  
+  .breadcrumb-current {
+    max-width: 180px;
+  }
+}
+
+/* --- Breadcrumb Link (Old Style - Back Button) --- */
+.breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb-link:hover { 
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Breadcrumb wrapper alignment - matches main content width */
+.main-content-section > [class*="Breadcrumb"],
+.main-content-section > .w-embed:has(.breadcrumb-link),
+.main-content-section > .w-embed:has(.breadcrumb-nav) {
+  width: 94%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 16px;
+  display: block;
+}
+
+/* --- Matrix Button (Primary Action) --- */
+.matrix-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.matrix-btn::after {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.matrix-btn:hover {
+  background: #1d4ed8;
+}
+
+/* --- Reset Button (Search Clear) --- */
+.reset-button {
+  background-color: #ffffff;
+  color: #2563EB;
+  padding: 0 18px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: 1px solid #2563EB;
+  box-sizing: border-box;
+}
+
+.reset-button:hover {
+  background-color: #2563EB;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.reset-button:active {
+  transform: translateY(0px);
+  background-color: #1d4ed8;
+}
+
+.search-input:placeholder-shown + .reset-button {
+  display: none;
+}
+
+@media screen and (max-width: 479px) {
+  .reset-button {
+    padding: 0 12px;
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+/* --- Profile Action Buttons --- */
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  margin-bottom: 24px;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+}
+
+.profile-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}
+
+.profile-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  background: #fff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.profile-btn-secondary:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+@media (max-width: 768px) {
+  .profile-actions {
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .profile-btn, 
+  .profile-btn-secondary {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+}
+
+
+/* ================================================
+   7. DETAIL PAGE COMPONENTS
+   Used by: Lender Details, Vendor Details, Product Details, etc.
+   ================================================ */
+
+/* --- Detail Header (top card with title) --- */
+.detail-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.detail-logo {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.detail-emphasis {
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0 0 2px;
+}
+
+.detail-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+  text-align: left;
+}
+
+.detail-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* --- Detail Section Container --- */
+.detail-section {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+/* --- Detail Section Title --- */
+.detail-section-title {
+  margin-top: 0;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- Details List (Key-Value Pairs) --- */
+.details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.details-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.details-row:first-child {
+  padding-top: 0;
+}
+
+.details-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.details-label {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.details-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .detail-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+  }
+  
+  .detail-logo {
+    width: 88px;
+    height: 88px;
+    min-width: 88px;
+    max-width: 88px;
+  }
+  
+  .detail-info {
+    align-items: center;
+  }
+  
+  .detail-title {
+    font-size: 26px;
+    text-align: center;
+  }
+  
+  .details-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .details-value {
+    text-align: left;
+  }
+}
+
+
+/* ================================================
+   8. AE CARDS (Contact Cards)
+   Used on: Lender Details, Vendor Details, etc.
+   ================================================ */
+
+.ae-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.ae-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 24px 16px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 180px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ae-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  opacity: 1;
+}
+
+.ae-card:hover {
+  background: #f8fafc;
+  border-color: #93c5fd;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
+.ae-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.ae-photo {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.ae-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ae-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.ae-title {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Hide Call/Email buttons (handled by modal) */
+.ae-actions {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .ae-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .ae-card {
+    padding: 20px 12px;
+    min-height: 160px;
+  }
+  
+  .ae-photo {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+  }
+  
+  .ae-name {
+    font-size: 14px;
+  }
+  
+  .ae-title {
+    font-size: 12px;
+  }
+}
+
+
+/* ================================================
+   9. QUICK LINKS CARDS
+   Used on: Lender Details, Vendor Details, etc.
+   ================================================ */
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.quick-link-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.quick-link-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  opacity: 1;
+}
+
+.quick-link-card:hover {
+  background: #f8fafc;
+  border-color: #93c5fd;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+}
+
+.quick-link-icon {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-radius: 12px;
+}
+
+.quick-link-card:hover .quick-link-icon {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+}
+
+@media (max-width: 768px) {
+  .quick-links-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .quick-link-card {
+    padding: 20px 12px;
+    font-size: 13px;
+    min-height: 160px;
+  }
+  
+  .quick-link-icon {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+}
+
+
+/* ================================================
+   10. EMPTY STATE
+   ================================================ */
+
+.empty-state-box {
+  padding: 24px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+
+/* ================================================
+   11. COLLECTION LIST CARDS
+   Used on: Products page, Lender Details, Product Details
+   
+   Main Page: Uses CSS Grid (horizontal flow)
+   Relational Lists: Uses CSS Columns (vertical flow)
+   
+   Main Page Classes (full-size cards):
+   - product-list-wrapper, product-list, product-list-item
+   - product-card, product-card-name
+   
+   Relational List Classes (compact cards on detail pages):
+   - lender-list-wrapper, lender-list, lender-list-item
+   - lender-card, lender-card-name
+   ================================================ */
+
+/* --- List Wrapper --- */
+.product-list-wrapper,
+.lender-list-wrapper {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  margin-bottom: 0;
+}
+
+/* --- Main Products Page: CSS Grid (Horizontal Flow) --- */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.product-list-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: none;
+}
+
+/* --- Relational Lists: CSS Columns (Vertical Flow) --- */
+/* Items flow top-to-bottom, then to next column */
+.lender-list,
+.detail-section .product-list {
+  display: block;
+  column-count: 4;
+  column-gap: 8px;
+}
+
+/* Prevent cards from breaking across columns */
+.lender-list-item,
+.detail-section .product-list-item {
+  display: block;
+  break-inside: avoid;
+  margin-bottom: 8px;
+}
+
+/* --- Main Page Card (Products page) --- */
+.product-card {
+  background: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 60px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.product-card:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.product-card:active {
+  transform: translateX(2px);
+  background: #F1F5F9;
+}
+
+.product-card-name { 
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.product-card::after {
+  content: '\203A';
+  font-size: 24px;
+  color: #94A3B8;
+  font-weight: 300;
+  margin-left: 12px;
+  transition: all 0.15s ease;
+}
+
+.product-card:hover::after {
+  color: #2563EB;
+  transform: translateX(4px);
+}
+
+/* --- Compact Relational Card (Detail pages) --- */
+/* Used for lender-card everywhere and product-card inside detail-section */
+.lender-card,
+.detail-section .product-card {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  padding-left: 18px; /* Extra padding for left highlight */
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: auto;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Blue LEFT side highlight */
+.lender-card::before,
+.detail-section .product-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #2563eb, #3b82f6);
+}
+
+/* Hover: lift up effect */
+.lender-card:hover,
+.detail-section .product-card:hover {
+  background: #f8fafc;
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.15);
+}
+
+.lender-card:active,
+.detail-section .product-card:active {
+  transform: translateY(-1px);
+  background: #F1F5F9;
+}
+
+/* Compact card name text */
+.lender-card-name,
+.detail-section .product-card-name { 
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+}
+
+/* Smaller chevron for compact cards */
+.lender-card::after,
+.detail-section .product-card::after {
+  content: '\203A';
+  font-size: 18px;
+  color: #94A3B8;
+  font-weight: 300;
+  margin-left: 8px;
+  transition: all 0.15s ease;
+}
+
+.lender-card:hover::after,
+.detail-section .product-card:hover::after {
+  color: #2563EB;
+  transform: translateX(2px);
+}
+
+/* --- Large Tablet: 3 columns for relational --- */
+@media screen and (max-width: 991px) {
+  .lender-list,
+  .detail-section .product-list {
+    column-count: 3;
+  }
+}
+
+/* --- Tablet Portrait: 2 columns for all --- */
+@media screen and (max-width: 768px) {
+  .product-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .lender-list,
+  .detail-section .product-list {
+    column-count: 2;
+  }
+}
+
+/* --- Mobile: Single column --- */
+@media screen and (max-width: 479px) {
+  .product-list {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  
+  .lender-list,
+  .detail-section .product-list {
+    column-count: 1;
+  }
+  
+  .lender-list-item,
+  .detail-section .product-list-item {
+    margin-bottom: 6px;
+  }
+  
+  .product-card {
+    padding: 14px 16px;
+    min-height: 56px;
+  }
+
+  .product-card-name { 
+    font-size: 14px;
+  }
+  
+  .lender-card,
+  .detail-section .product-card {
+    padding: 8px 12px;
+    padding-left: 16px;
+  }
+  
+  .lender-card-name,
+  .detail-section .product-card-name { 
+    font-size: 12px;
+  }
+  
+  .lender-card::after,
+  .detail-section .product-card::after {
+    font-size: 16px;
+  }
+}
+
+
+/* ================================================
+   12. MOBILE BOTTOM NAVIGATION
+   ================================================ */
+
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 991px) {
+  .mobile-bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+  
+  body {
+    padding-bottom: 70px;
+  }
+}
+
+.mobile-bottom-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #666666;
+  font-size: 11px;
+  font-weight: 500;
+  flex: 1;
+  padding: 4px 2px;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.mobile-bottom-nav .nav-item i {
+  font-size: 20px;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.mobile-bottom-nav .nav-item span {
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.mobile-bottom-nav .nav-item:hover {
+  color: #007bff;
+}
+
+.mobile-bottom-nav .nav-item:hover i {
+  transform: scale(1.1);
+}
+
+.mobile-bottom-nav .nav-item.active {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.mobile-bottom-nav .nav-item.active i {
+  color: #007bff;
+}
+
+@media (max-width: 479px) {
+  .mobile-bottom-nav .nav-item {
+    font-size: 10px;
+  }
+  
+  .mobile-bottom-nav .nav-item i {
+    font-size: 18px;
+  }
+  
+  .mobile-bottom-nav .nav-item span {
+    font-size: 9px;
+  }
+}
+`;
+
+
+// ============================================================
+// SITE HEAD JS — Fetch interceptor (retry-on-401)
+// Must load in <head> before body scripts capture window.fetch
+// ============================================================
+const SITE_HEAD_JS = String.raw`
+(function() {
+  var API = 'https://mtg-broker-api.rich-e00.workers.dev';
+  var _f = window.fetch;
+  window.fetch = async function(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url.indexOf(API) !== 0) return _f.call(this, input, init);
+    function patch(i) {
+      try {
+        var t = localStorage.getItem('Outseta.nocode.accessToken');
+        if (t && i && i.headers) {
+          i = Object.assign({}, i);
+          i.headers = Object.assign({}, i.headers);
+          i.headers['Authorization'] = 'Bearer ' + t;
+        }
+      } catch(e) {}
+      return i;
+    }
+    init = patch(init);
+    var resp = await _f.call(this, input, init);
+    if (resp.status === 401) {
+      for (var r = 0; r < 5; r++) {
+        await new Promise(function(ok) { setTimeout(ok, 1000 * (r + 1)); });
+        init = patch(init);
+        resp = await _f.call(this, input, init);
+        if (resp.status !== 401) break;
+      }
+    }
+    return resp;
+  };
+})();
+`;
 // ============================================================
 // SITE FOOTER JS — Sections 0–6
 // Global Outseta cache, fetch interceptor, billing, feature gating
