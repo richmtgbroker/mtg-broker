@@ -92,7 +92,7 @@ export default {
 // ============================================================
 const SITE_FOOTER_JS = String.raw`
 // ============================================================
-// mtg.broker — Site Footer JS v3.4
+// mtg.broker — Site Footer JS v3.5
 // Served from: /static/site-footer.js via Cloudflare Worker
 // Sections 0–6 (previously inline in Webflow Site Settings)
 // ============================================================
@@ -142,25 +142,32 @@ const SITE_FOOTER_JS = String.raw`
 
   console.log('✅ Global Outseta cache initialized');
 
-  // -- GLOBAL API FETCH INTERCEPTOR (v3.3) --
-  // Intercepts fetch() calls to the API, waits for a non-expired JWT,
-  // then patches the Authorization header with the fresh token.
+  // -- GLOBAL API FETCH INTERCEPTOR (v3.4) --
+  // Intercepts fetch() calls to the API. On 401, retries up to 3 times
+  // with increasing delays, re-reading the JWT from localStorage each
+  // time. Outseta's background refresh eventually replaces the expired
+  // token — the retry catches it whenever it lands.
   (function() {
     var API_BASE = 'https://mtg-broker-api.rich-e00.workers.dev';
     var _origFetch = window.fetch;
 
-    function isJWTExpired(token) {
+    function patchAuth(init) {
       try {
-        var payload = JSON.parse(atob(token.split('.')[1]));
-        return !payload.exp || (payload.exp * 1000) < (Date.now() + 10000);
-      } catch (e) { return true; }
+        var t = localStorage.getItem('Outseta.nocode.accessToken');
+        if (t && init && init.headers) {
+          init = Object.assign({}, init);
+          init.headers = Object.assign({}, init.headers);
+          init.headers['Authorization'] = 'Bearer ' + t;
+        }
+      } catch(e) {}
+      return init;
     }
 
     window.fetch = async function(input, init) {
       var url = typeof input === 'string' ? input : (input && input.url) || '';
 
       if (url.indexOf(API_BASE) === 0) {
-        // 1. Wait for Outseta SDK to load
+        // Wait for Outseta SDK to load (so getUser can trigger)
         var attempts = 0;
         while (attempts < 30) {
           if (window.Outseta && typeof window.Outseta.getUser === 'function') {
@@ -171,29 +178,22 @@ const SITE_FOOTER_JS = String.raw`
           attempts++;
         }
 
-        // 2. If token is expired, wait for Outseta's background refresh
-        var token;
-        try { token = localStorage.getItem('Outseta.nocode.accessToken'); } catch(e) {}
+        // Patch with current token and make the request
+        init = patchAuth(init);
+        var response = await _origFetch.call(this, input, init);
 
-        if (token && isJWTExpired(token)) {
-          var rAttempts = 0;
-          while (rAttempts < 30) {
-            await new Promise(function(r) { setTimeout(r, 100); });
-            try { token = localStorage.getItem('Outseta.nocode.accessToken'); } catch(e) {}
-            if (token && !isJWTExpired(token)) break;
-            rAttempts++;
+        // On 401, retry up to 3 times (1s, 2s, 3s delays)
+        // Outseta's background refresh will eventually replace the token
+        if (response.status === 401) {
+          for (var retry = 0; retry < 3; retry++) {
+            await new Promise(function(r) { setTimeout(r, 1000 * (retry + 1)); });
+            init = patchAuth(init);
+            response = await _origFetch.call(this, input, init);
+            if (response.status !== 401) break;
           }
         }
 
-        // 3. Patch the Authorization header with the fresh token
-        try {
-          var freshToken = localStorage.getItem('Outseta.nocode.accessToken');
-          if (freshToken && init && init.headers) {
-            init = Object.assign({}, init);
-            init.headers = Object.assign({}, init.headers);
-            init.headers['Authorization'] = 'Bearer ' + freshToken;
-          }
-        } catch(e) {}
+        return response;
       }
 
       return _origFetch.call(this, input, init);
