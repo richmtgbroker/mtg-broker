@@ -1,0 +1,199 @@
+<footer class="mtg-footer global-footer">
+  <div class="footer-container">
+    
+    <div class="footer-grid">
+      
+      <!-- BRAND COLUMN -->
+      <div class="footer-col">
+        <a href="/" class="footer-brand">
+          <img src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576e67f7f11199c4541bdb_Logo_Horizontal_White.png" alt="MtgBroker Logo" class="footer-logo">
+        </a>
+        <p class="footer-desc">
+          The complete toolkit for modern Loan Officers.
+        </p>
+        <div class="contact-info">
+          <p>2172 W 9 Mile Rd, Pensacola, FL 32534</p>
+          <a href="mailto:support@mtg.broker" class="footer-link">support@mtg.broker</a>
+        </div>
+      </div>
+
+      <!-- PRODUCT COLUMN -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Product</h4>
+        <ul class="footer-menu">
+          <li><a href="/#features" class="footer-link">Features</a></li>
+          <!-- CHANGED: Now points to /pricing page instead of /#pricing section -->
+          <li><a href="/pricing" class="footer-link">Pricing</a></li>
+          <li><a href="https://mtgbroker.outseta.com/auth?widgetMode=login#o-anonymous" class="footer-link">Login</a></li>
+          <li><a href="https://mtgbroker.outseta.com/auth?widgetMode=register#o-anonymous" class="footer-link">Signup</a></li>
+        </ul>
+      </div>
+
+      <!-- COMPANY COLUMN -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Company</h4>
+        <ul class="footer-menu">
+          <li><a href="https://mtgbroker.outseta.com/support/kb/categories" target="_blank" class="footer-link" onclick="window.open(this.href, '_blank'); return false;">Help Center</a></li>
+          <li><a href="https://mtgbroker.outseta.com/support/kb" target="_blank" class="footer-link">Submit a Ticket</a></li>
+          <li><a href="mailto:support@mtg.broker" class="footer-link">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- LEGAL COLUMN -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Legal</h4>
+        <ul class="footer-menu">
+          <li><a href="/privacy-policy" class="footer-link">Privacy Policy</a></li>
+          <li><a href="/terms-of-service" class="footer-link">Terms of Service</a></li>
+        </ul>
+        <p class="footer-disclaimer">
+          MtgBroker, LLC provides informational tools only. Results are estimates. We are not a lender.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <div class="footer-bottom">
+      <div class="copyright">
+        &copy; <script>document.write(new Date().getFullYear())</script> MtgBroker, LLC.
+      </div>
+      
+      <div class="compliance-row">
+        <div class="eho-icon" title="Equal Housing Opportunity">
+           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </div>
+        <span class="eho-text">Equal Housing Opportunity</span>
+      </div>
+
+      <div class="social-links">
+        <a href="https://www.facebook.com/mtgbrokerllc" target="_blank" class="social-icon" aria-label="Facebook">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+        </a>
+        <a href="https://www.linkedin.com/company/108294435/" target="_blank" class="social-icon" aria-label="LinkedIn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+        </a>
+        <a href="https://x.com/mtgbrokerllc" target="_blank" class="social-icon" aria-label="X (Twitter)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+<style>
+  /* --- COMPACT FOOTER STYLES --- */
+  .mtg-footer {
+    background-color: #0f172a; 
+    color: #94A3B8; 
+    padding: 48px 0 24px 0;
+    font-family: 'Host Grotesk', system-ui, sans-serif;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    font-size: 14px;
+  }
+   
+  .footer-container {
+    width: 90%;
+    max-width: 1280px; 
+    margin: 0 auto;
+  }
+
+  /* Grid Layout */
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+
+  /* Brand Column */
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    margin-bottom: 12px;
+  }
+   
+  .footer-logo { height: 28px; width: auto; }
+   
+  .footer-desc { 
+    font-size: 14px; 
+    line-height: 1.5; 
+    margin-bottom: 16px; 
+    color: #94A3B8; 
+    max-width: 280px;
+  }
+   
+  .contact-info p { font-size: 13px; margin: 0 0 8px 0; color: #E2E8F0; }
+   
+  /* Headings & Links */
+  .footer-heading {
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .footer-menu { list-style: none; padding: 0; margin: 0; }
+  .footer-menu li { margin-bottom: 8px; }
+   
+  .footer-link {
+    color: #94A3B8;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    display: inline-block;
+  }
+  .footer-link:hover { color: #FFFFFF; transform: translateX(2px); }
+
+  /* Disclaimer */
+  .footer-disclaimer {
+    margin-top: 16px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #64748B;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 12px;
+  }
+
+  /* Divider */
+  .footer-divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 24px; }
+
+  /* Bottom Row */
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+   
+  .copyright { font-size: 13px; color: #64748B; }
+   
+  .compliance-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #64748B;
+  }
+  .eho-text { font-size: 12px; }
+
+  .social-links { display: flex; gap: 16px; }
+  .social-icon { color: #94A3B8; transition: color 0.2s; }
+  .social-icon:hover { color: #FFFFFF; }
+
+  /* Responsive */
+  @media (max-width: 991px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  }
+  @media (max-width: 479px) {
+    .mtg-footer { padding: 40px 0 24px 0; }
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>

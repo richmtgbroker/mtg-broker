@@ -1,0 +1,20 @@
+<!--
+  Global Footer — Webflow Embed Loader (Worker-powered)
+  =====================================================
+  Paste this into the Webflow HtmlEmbed on every PUBLIC (non-app) page
+  that should show the global marketing footer.
+
+  HOW TO DEPLOY THE WORKER:
+    wrangler deploy workers/mtg-broker-extras.js --name mtg-broker-extras --compatibility-date 2024-01-01
+
+  HOW TO UPDATE THE FOOTER LATER (no Webflow changes needed):
+    1. Edit the GLOBAL_FOOTER_HTML / GLOBAL_FOOTER_CSS sections
+       in workers/mtg-broker-extras.js
+    2. Run: wrangler deploy workers/mtg-broker-extras.js --name mtg-broker-extras
+    3. All pages update automatically — no Webflow edits needed.
+
+  NOTE: This embed code never needs to change after initial setup.
+-->
+
+<div id="mb-global-footer-root"></div>
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/global-footer.js?v=1"></script>

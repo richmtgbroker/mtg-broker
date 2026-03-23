@@ -1,0 +1,20 @@
+<!--
+  Global Navbar — Webflow Embed Loader (Worker-powered)
+  =====================================================
+  Paste this into the Webflow HtmlEmbed on every PUBLIC (non-app) page
+  that should show the global marketing navbar.
+
+  HOW TO DEPLOY THE WORKER:
+    wrangler deploy workers/mtg-broker-extras.js --name mtg-broker-extras --compatibility-date 2024-01-01
+
+  HOW TO UPDATE THE NAVBAR LATER (no Webflow changes needed):
+    1. Edit the GLOBAL_NAVBAR_HTML / GLOBAL_NAVBAR_CSS / GLOBAL_NAVBAR_JS sections
+       in workers/mtg-broker-extras.js
+    2. Run: wrangler deploy workers/mtg-broker-extras.js --name mtg-broker-extras
+    3. All pages update automatically — no Webflow edits needed.
+
+  NOTE: This embed code never needs to change after initial setup.
+-->
+
+<div id="mb-global-navbar-root"></div>
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/global-navbar.js?v=1"></script>

@@ -1,0 +1,1236 @@
+<!-- MTGBROKER NAVBAR (FULL WIDTH) - HYBRID VERSION
+     ✅ Works independently (doesn't wait for footer)
+     ✅ Uses global cache if available
+     ✅ Creates global cache if it doesn't exist
+     ✅ Prevents profile picture flash (authConfirmed flag)
+     ✅ UPDATED: Clean & Grouped mobile marketing menu design
+     ✅ FIX: Signup buttons now go to /pricing instead of modal
+     ✅ FIX: Explicit font-family for consistent rendering across all pages
+-->
+<div class="mb-navSpacer" aria-hidden="true"></div>
+
+<header class="mb-navWrap" role="banner">
+  <div class="mb-header">
+    <!-- Brand (logo only) -->
+    <a class="mb-brand" href="/" aria-label="MtgBroker home">
+      <img
+        class="mb-brandLogo"
+        src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png"
+        alt="MtgBroker"
+        loading="eager"
+      />
+    </a>
+
+    <!-- Desktop Nav (middle menu) -->
+    <nav class="mb-nav" aria-label="Primary navigation">
+      <a class="mb-link" href="/#features">Features</a>
+      <a class="mb-link" href="https://www.mtg.broker/pricing">Pricing</a>
+      
+      <!-- App Dashboard (Sharp Blue Style) -->
+      <a class="mb-link mb-linkLaunch" href="https://www.mtg.broker/app/dashboard">App Dashboard</a>
+    </nav>
+
+    <!-- Right Actions -->
+    <div class="mb-actions" aria-label="User actions">
+      <!-- Logged OUT -->
+      <div class="mb-authOut" data-mb-auth="out">
+        <a class="mb-authBtn mb-authBtnGray" href="/login">Login</a>
+        <!-- ✅ CHANGED: Now goes to pricing page instead of Outseta modal -->
+        <a class="mb-authBtn mb-authBtnBlue" href="https://www.mtg.broker/pricing">Signup</a>
+      </div>
+
+      <!-- Logged IN (Logout as button) -->
+      <div class="mb-authIn" data-mb-auth="in" style="display:none;">
+        <a class="mb-authBtn mb-authBtnGray" href="/#o-logout-link">Logout</a>
+      </div>
+
+      <!-- Logged IN (Profile avatar FAR RIGHT) -->
+      <a class="mb-avatarBtn" data-mb-auth="in" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile" aria-label="Profile" style="display:none;">
+        <span class="mb-avatarFallback" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/>
+            <path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+      </a>
+
+      <!-- Mobile toggle -->
+      <button class="mb-burger" type="button" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MOBILE MENU
+       ============================================================ -->
+  <div class="mb-mobile" hidden>
+
+    <!-- ========================================================
+         MARKETING NAV (default - shown on main site)
+         UPDATED: Option A "Clean & Grouped" design
+         ======================================================== -->
+    <div class="mb-mobile-marketing">
+
+      <!-- Dashboard CTA Button (prominent, always at top) -->
+      <a class="mb-mkt-dashBtn" href="https://www.mtg.broker/app/dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <span>Go to Dashboard</span>
+        <svg class="mb-mkt-dashArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+
+      <!-- Navigation Section -->
+      <div class="mb-mkt-sectionLabel">Navigation</div>
+      <div class="mb-mkt-group">
+        <a class="mb-mkt-item" href="/#features">
+          <span class="mb-mkt-icon mb-mkt-iconBlue">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </span>
+          <span class="mb-mkt-itemText">
+            <span class="mb-mkt-itemTitle">Features</span>
+            <span class="mb-mkt-itemSub">What's included</span>
+          </span>
+          <svg class="mb-mkt-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+        <a class="mb-mkt-item" href="https://www.mtg.broker/pricing">
+          <span class="mb-mkt-icon mb-mkt-iconGreen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+          </span>
+          <span class="mb-mkt-itemText">
+            <span class="mb-mkt-itemTitle">Pricing</span>
+            <span class="mb-mkt-itemSub">Plans & billing</span>
+          </span>
+          <svg class="mb-mkt-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </a>
+      </div>
+
+      <div class="mb-mkt-divider"></div>
+
+      <!-- LOGGED OUT: Login / Signup Buttons -->
+      <div class="mb-mobileAuthOut" data-mb-auth="out">
+        <div class="mb-mkt-sectionLabel">Get Started</div>
+        <div class="mb-mkt-authButtons">
+          <!-- ✅ CHANGED: Now goes to pricing page instead of Outseta modal -->
+          <a class="mb-mkt-authBtn mb-mkt-authBtnBlue" href="https://www.mtg.broker/pricing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <line x1="20" y1="8" x2="20" y2="14"></line>
+              <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            Sign Up Free
+          </a>
+          <a class="mb-mkt-authBtn mb-mkt-authBtnGray" href="/login">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Login
+          </a>
+        </div>
+      </div>
+
+      <!-- LOGGED IN: Profile Card + Sign Out -->
+      <div class="mb-mobileAuthIn" data-mb-auth="in" style="display:none;">
+        <div class="mb-mkt-sectionLabel">Account</div>
+
+        <!-- Profile Card -->
+        <a class="mb-mkt-profileCard" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile">
+          <span class="mb-mAvatar mb-mkt-profileAvatar">
+            <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+            <span class="mb-avatarFallback" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </span>
+          <span class="mb-mkt-profileInfo">
+            <span class="mb-mkt-profileName" data-mb-user-name>My Profile</span>
+            <span class="mb-mkt-profileEmail" data-mb-user-email></span>
+          </span>
+          <span class="mb-mkt-profileEdit">Edit</span>
+        </a>
+
+        <!-- Sign Out Button -->
+        <a class="mb-mkt-signOut" href="/#o-logout-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Sign Out
+        </a>
+      </div>
+    </div>
+
+    <!-- ========================================================
+         APP NAV (shown on /app/* pages) - UNCHANGED
+         ======================================================== -->
+    <div class="mb-mobile-app" style="display:none;">
+      <div class="mb-mobile-section">
+        <div class="mb-mobile-label">Menu</div>
+        
+        <a href="https://www.mtg.broker/app/dashboard" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Dashboard
+        </a>
+
+        <a href="https://www.mtg.broker/app/loan-search" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Loan Search
+        </a>
+
+        <a href="https://www.mtg.broker/app/lenders" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path>
+          </svg>
+          Lenders
+        </a>
+
+        <a href="https://www.mtg.broker/app/products" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          Products
+        </a>
+
+        <a href="https://www.mtg.broker/app/property-types" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path>
+            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
+            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path>
+            <path d="M10 6h4"></path>
+            <path d="M10 10h4"></path>
+            <path d="M10 14h4"></path>
+            <path d="M10 18h4"></path>
+          </svg>
+          Property Types
+        </a>
+
+        <a href="https://www.mtg.broker/app/vendors" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="8" cy="21" r="1"></circle>
+            <circle cx="19" cy="21" r="1"></circle>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+          </svg>
+          Vendors
+        </a>
+
+        <a href="https://www.mtg.broker/app/contacts" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Contacts
+        </a>
+
+        <a href="https://www.mtg.broker/app/calculators" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+            <line x1="8" x2="16" y1="6" y2="6"></line>
+            <line x1="16" x2="16" y1="14" y2="14"></line>
+            <line x1="12" x2="12" y1="14" y2="14"></line>
+            <line x1="8" x2="8" y1="14" y2="14"></line>
+            <line x1="16" x2="16" y1="18" y2="18"></line>
+            <line x1="12" x2="12" y1="18" y2="18"></line>
+            <line x1="8" x2="8" y1="18" y2="18"></line>
+          </svg>
+          Calculators
+        </a>
+
+        <a href="https://www.mtg.broker/app/tools" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          </svg>
+          Tools
+        </a>
+      </div>
+
+      <div class="mb-mobile-section">
+        <div class="mb-mobile-label">My Workspace</div>
+        
+        <a href="/app/saved" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          Saved Items
+        </a>
+
+        <a href="/app/settings" class="mb-mLink mb-mLinkApp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Settings
+        </a>
+      </div>
+
+      <div class="mb-mobile-divider"></div>
+
+      <div class="mb-mobileAuthIn" data-mb-auth="in" style="display:none;">
+        <a class="mb-mLink mb-mProfile" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile">
+          <span class="mb-mAvatar">
+            <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+            <span class="mb-avatarFallback" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/>
+                <path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </span>
+          Profile
+        </a>
+
+        <a class="mb-authBtn mb-authBtnGray mb-authBtnFull" href="/#o-logout-link">Logout</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* =============================================================
+     NAVBAR STYLES
+     ============================================================= */
+
+  /* ===== Sticky / Layout (FULL WIDTH) ===== */
+  .mb-navWrap{
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    padding: 0;
+    background: #ffffff;
+    border-bottom: 1px solid #E7EAF0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    /* ✅ FIX: Explicit font-family so navbar looks the same on ALL pages.
+       Without this, the navbar inherits whatever font the page body sets
+       (Host Grotesk on home page, system font on pricing page, etc.)
+       which causes inconsistent button text weight/size. */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  .mb-header{
+    width: 90%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 0;
+    display: flex;
+    align-items: center;   
+    justify-content: space-between;
+    gap: 18px;
+  }
+
+  .mb-navSpacer{ height: 0; }
+
+  /* ===== Brand ===== */
+  .mb-brand{
+    display:flex;
+    align-items:center;
+    height: 44px;              
+    text-decoration:none;
+    min-width: 220px;
+  }
+  .mb-brandLogo{
+    height: 32px;             
+    width: auto;
+    display:block;             
+  }
+
+  /* ===== Desktop nav ===== */
+  .mb-nav{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .mb-link{
+    color:#0f172a;
+    font-weight:600;
+    text-decoration:none;
+    font-size:16px;
+    line-height: 1;
+    padding: 10px 6px;
+    border-radius: 10px;
+  }
+  .mb-link:hover{ background: rgba(15,23,42,0.04); }
+
+  /* --- APP DASHBOARD BUTTON (Sharp Modern Style) --- */
+  .mb-linkLaunch{
+    font-weight: 800;
+    color: #ffffff;
+    padding: 11px 20px;
+    border-radius: 6px;
+    background: #2563eb;
+    border: none;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+  }
+  .mb-linkLaunch:hover{
+    background: #1E40AF;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.25);
+    transform: translateY(-1px);
+  }
+
+  /* ===== Right actions ===== */
+  .mb-actions{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+  }
+
+  /* Auth buttons */
+  .mb-authBtn{
+    height: 44px;
+    min-width: 110px;           
+    padding: 0 18px;
+    border-radius: 12px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .mb-authBtnGray{
+    background:#EEF2F7;
+    border-color:#E7EAF0;
+    color:#0f172a;
+  }
+  .mb-authBtnGray:hover{ filter: brightness(0.98); }
+
+  .mb-authBtnBlue{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+  }
+  .mb-authBtnBlue:hover{ filter: brightness(0.96); }
+
+  .mb-authBtnFull{
+    width: 100%;
+    min-width: 0;
+    margin-top: 10px;
+  }
+
+  /* Avatar */
+  .mb-avatarBtn{
+    width:44px;
+    height:44px;
+    border-radius:999px;
+    border: 1px solid #E7EAF0;
+    background:#fff;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    text-decoration:none;
+    color:#0f172a;
+  }
+  .mb-avatarImg{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:none;
+  }
+  .mb-avatarBtn.has-img .mb-avatarImg{ display:block; }
+  .mb-avatarBtn.has-img .mb-avatarFallback{ display:none; }
+  .mb-avatarFallback{ display:inline-flex; opacity:0.75; }
+
+  /* Burger (mobile) */
+  .mb-burger{
+    display:none;
+    width:44px; height:44px;
+    border-radius:12px;
+    border: 1px solid #E7EAF0;
+    background:#fff; 
+    cursor:pointer;
+    padding: 10px;
+  }
+  .mb-burger span{
+    display:block;
+    height:2px;
+    background:#0f172a;
+    border-radius: 2px;
+    margin: 5px 0;
+  }
+
+  /* ===== Mobile panel (shared container) ===== */
+  .mb-mobile{
+    pointer-events: auto;
+    width: 100%;
+    background:#fff;
+    border-bottom: 1px solid #E7EAF0;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+    padding: 20px;
+    max-height: calc(100vh - 77px);
+    overflow-y: auto;
+  }
+
+  /* ===== App Nav Sections (unchanged) ===== */
+  .mb-mobile-section {
+    margin-bottom: 24px;
+  }
+
+  .mb-mobile-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0 12px 8px 12px;
+  }
+
+  .mb-mobile-divider {
+    height: 1px;
+    background: #E7EAF0;
+    margin: 20px 0;
+  }
+
+  .mb-mLink{
+    display:block;
+    padding: 12px 12px;
+    border-radius: 12px;
+    text-decoration:none;
+    color:#0f172a;
+    font-weight: 800;
+  }
+  .mb-mLink:hover{ background: rgba(15,23,42,0.04); }
+
+  /* App nav links with icons */
+  .mb-mLinkApp {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .mb-mLinkApp svg {
+    color: #64748B;
+    flex-shrink: 0;
+  }
+
+  .mb-mLinkApp:hover svg {
+    color: #0f172a;
+  }
+
+  /* Active state for app links */
+  .mb-mLinkApp.w--current {
+    background: #EFF6FF;
+    color: #2563EB;
+  }
+
+  .mb-mLinkApp.w--current svg {
+    color: #2563EB;
+  }
+
+  /* Mobile App Dashboard Button (used in app nav) */
+  .mb-mLinkLaunch{
+    color: #ffffff;
+    background: #2563eb;
+    font-weight: 800;
+    margin-top: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  .mb-mLinkLaunch:hover{
+    background: #1E40AF;
+  }
+
+  .mb-mProfile{ display:flex; align-items:center; gap: 10px; }
+  .mb-mAvatar{
+    width:28px; height:28px;
+    border-radius:999px;
+    border:1px solid #E7EAF0;
+    overflow:hidden;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    flex: 0 0 auto;
+  }
+  .mb-mAvatar .mb-avatarImg{ width:100%; height:100%; object-fit:cover; display:none; }
+  .mb-mAvatar.has-img .mb-avatarImg{ display:block; }
+  .mb-mAvatar.has-img .mb-avatarFallback{ display:none; }
+
+
+  /* =============================================================
+     MARKETING MOBILE MENU - "Clean & Grouped" Design
+     Only shows on homepage/marketing pages (not /app/* pages)
+     ============================================================= */
+
+  /* --- Dashboard CTA Button --- */
+  .mb-mkt-dashBtn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 16px;
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 15px;
+    border-radius: 12px;
+    text-decoration: none;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    transition: all 0.2s ease;
+  }
+
+  .mb-mkt-dashBtn:hover {
+    background: #1e40af;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  }
+
+  .mb-mkt-dashBtn span {
+    flex: 1;
+  }
+
+  .mb-mkt-dashArrow {
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  /* --- Section Labels --- */
+  .mb-mkt-sectionLabel {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 6px 8px;
+  }
+
+  /* --- Navigation Item Group --- */
+  .mb-mkt-group {
+    margin-bottom: 8px;
+  }
+
+  /* --- Navigation Item (with icon square) --- */
+  .mb-mkt-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #0f172a;
+    transition: background 0.15s ease;
+  }
+
+  .mb-mkt-item:hover {
+    background: #f8fafc;
+  }
+
+  /* --- Colored Icon Square --- */
+  .mb-mkt-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .mb-mkt-iconBlue {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .mb-mkt-iconGreen {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .mb-mkt-iconPurple {
+    background: #faf5ff;
+    color: #9333ea;
+  }
+
+  .mb-mkt-iconAmber {
+    background: #fffbeb;
+    color: #d97706;
+  }
+
+  /* --- Item Text (Title + Subtitle) --- */
+  .mb-mkt-itemText {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mb-mkt-itemTitle {
+    font-weight: 600;
+    font-size: 15px;
+    color: #0f172a;
+    line-height: 1.3;
+  }
+
+  .mb-mkt-itemSub {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-top: 1px;
+    line-height: 1.3;
+  }
+
+  /* --- Chevron Arrow --- */
+  .mb-mkt-chevron {
+    color: #cbd5e1;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+  }
+
+  .mb-mkt-item:hover .mb-mkt-chevron {
+    color: #94a3b8;
+  }
+
+  /* --- Divider --- */
+  .mb-mkt-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 12px 0 16px;
+  }
+
+  /* --- Auth Buttons (Logged Out) --- */
+  .mb-mkt-authButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mb-mkt-authBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+  }
+
+  .mb-mkt-authBtnBlue {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+  }
+
+  .mb-mkt-authBtnBlue:hover {
+    background: #1e40af;
+  }
+
+  .mb-mkt-authBtnGray {
+    background: #f8fafc;
+    color: #334155;
+    border-color: #e2e8f0;
+  }
+
+  .mb-mkt-authBtnGray:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  /* --- Profile Card (Logged In) --- */
+  .mb-mkt-profileCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 10px;
+    transition: all 0.15s ease;
+  }
+
+  .mb-mkt-profileCard:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  /* Profile Avatar inside the card */
+  .mb-mkt-profileAvatar {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 999px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .mb-mkt-profileAvatar .mb-avatarFallback {
+    opacity: 0.6;
+  }
+
+  /* Profile Name & Email */
+  .mb-mkt-profileInfo {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mb-mkt-profileName {
+    font-weight: 700;
+    font-size: 14px;
+    color: #0f172a;
+    line-height: 1.3;
+  }
+
+  .mb-mkt-profileEmail {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* "Edit" label on the right */
+  .mb-mkt-profileEdit {
+    font-size: 12px;
+    color: #2563eb;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* --- Sign Out Button --- */
+  .mb-mkt-signOut {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    border: 1px solid #e2e8f0;
+    transition: all 0.15s ease;
+  }
+
+  .mb-mkt-signOut:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fecaca;
+  }
+
+
+  /* =============================================================
+     RESPONSIVE BREAKPOINTS
+     ============================================================= */
+  @media (max-width: 991px){
+    .mb-nav{ display:none; }
+    .mb-burger{ display:inline-block; }
+  }
+  @media (max-width: 767px){
+    .mb-brand{ min-width: auto; }
+    .mb-authOut, .mb-authIn{ display:none; }
+  }
+</style>
+
+<script>
+(function () {
+  /* ==========================================================================
+     MAIN NAVBAR - HYBRID VERSION
+     
+     ✅ Works independently (calls Outseta directly if needed)
+     ✅ Uses global cache if available (from footer)
+     ✅ Creates global cache if it doesn't exist
+     ✅ Prevents profile flash with authConfirmed flag
+     ✅ Populates profile name/email in marketing mobile menu
+     
+     Result: Only 1 call to Outseta.getUser() total across entire site
+     ========================================================================== */
+  
+  const navWrap = document.querySelector('.mb-navWrap');
+  const spacer = document.querySelector('.mb-navSpacer');
+  const burger = document.querySelector('.mb-burger');
+  const mobile = document.querySelector('.mb-mobile');
+  const mobileMarketing = document.querySelector('.mb-mobile-marketing');
+  const mobileApp = document.querySelector('.mb-mobile-app');
+
+  let authConfirmed = false;
+
+  /* --------------------------------------------------------------------------
+     HYBRID USER GETTER - THIS IS THE KEY!
+     Uses global cache if available, otherwise calls Outseta directly
+     -------------------------------------------------------------------------- */
+  async function getUser() {
+    // Try global cache first (from footer)
+    if (typeof window.getCachedOutsetaUser === 'function') {
+      return await window.getCachedOutsetaUser();
+    }
+    
+    // Fallback: Call Outseta directly and populate global cache
+    if (!window.Outseta || typeof window.Outseta.getUser !== 'function') {
+      return null;
+    }
+    
+    try {
+      const user = await window.Outseta.getUser();
+      
+      // Create global cache if it doesn't exist yet
+      if (!window.OUTSETA_USER_CACHE && user) {
+        window.OUTSETA_USER_CACHE = user;
+        console.log('✅ Main navbar: Created global cache');
+      }
+      
+      return user;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Check if we're on an app page
+  function isAppPage() {
+    return window.location.pathname.startsWith('/app');
+  }
+
+  // Switch mobile menu content based on page
+  function updateMobileMenu() {
+    if (!mobileMarketing || !mobileApp) return;
+    
+    if (isAppPage()) {
+      mobileMarketing.style.display = 'none';
+      mobileApp.style.display = 'block';
+      highlightCurrentAppLink();
+    } else {
+      mobileMarketing.style.display = 'block';
+      mobileApp.style.display = 'none';
+    }
+  }
+
+  // Highlight current page in app nav
+  function highlightCurrentAppLink() {
+    const currentPath = window.location.pathname.replace(/\/$/, "");
+    const appLinks = document.querySelectorAll('.mb-mLinkApp');
+    
+    appLinks.forEach(function(link) {
+      try {
+        const linkUrl = new URL(link.href, window.location.origin);
+        const linkPath = linkUrl.pathname.replace(/\/$/, "");
+        
+        if (currentPath === linkPath) {
+          link.classList.add('w--current');
+        } else {
+          link.classList.remove('w--current');
+        }
+      } catch (e) {
+        // Ignore invalid links
+      }
+    });
+  }
+
+  // Spacer
+  function setSpacerHeight() {
+    if (!navWrap || !spacer) return;
+    spacer.style.height = navWrap.offsetHeight + 'px';
+  }
+
+  // Mobile menu
+  function closeMobile() {
+    if (!mobile || !burger) return;
+    mobile.hidden = true;
+    burger.setAttribute('aria-expanded','false');
+  }
+  
+  function toggleMobile() {
+    if (!mobile || !burger) return;
+    const open = mobile.hidden;
+    mobile.hidden = !open;
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  // Auth UI
+  function setAuthUI(isAuthed) {
+    document.querySelectorAll('[data-mb-auth="out"]').forEach(function(el) {
+      el.style.display = isAuthed ? 'none' : '';
+    });
+    
+    document.querySelectorAll('[data-mb-auth="in"]').forEach(function(el) {
+      if (isAuthed) {
+        el.style.removeProperty('display');
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  function looksLikeUrl(v) {
+    return typeof v === 'string' && /^https?:\/\//i.test(v) && v.length < 1200;
+  }
+
+  // Pull profile photo from Outseta widget DOM
+  function getDomProfileImgSrc() {
+    const img =
+      document.querySelector('#widget-outseta_profile .o--Person-profileImageS3Url img') ||
+      document.querySelector('#widget-outseta_profile img[src*="outseta-production"]') ||
+      null;
+    return img ? (img.getAttribute('src') || img.src) : null;
+  }
+
+  // Get profile image from user object
+  function getUserProfileImgFromUserObject(user) {
+    if (!user) return null;
+    
+    const candidates = [
+      user.person?.profileImageS3Url,
+      user.person?.ProfileImageS3Url,
+      user.person?.oAuthGoogleProfileImageUrl,
+      user.person?.OAuthGoogleProfileImageUrl,
+      user.profileImageS3Url,
+      user.ProfileImageS3Url
+    ];
+    
+    for (const c of candidates) {
+      if (looksLikeUrl(c)) return c;
+    }
+    return null;
+  }
+
+  function applyAvatar(url) {
+    const imgs = document.querySelectorAll('img[data-mb-avatar]');
+    
+    imgs.forEach(function(img) {
+      const btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
+      
+      if (!url) {
+        if (btn) btn.classList.remove('has-img');
+        img.removeAttribute('src');
+        return;
+      }
+      
+      img.src = url;
+      img.onload = function() { 
+        if (btn) btn.classList.add('has-img'); 
+      };
+      img.onerror = function() { 
+        if (btn) btn.classList.remove('has-img'); 
+      };
+    });
+
+    document.querySelectorAll('.mb-mAvatar').forEach(function(w) {
+      if (url) {
+        w.classList.add('has-img');
+      } else {
+        w.classList.remove('has-img');
+      }
+    });
+  }
+
+  /* --------------------------------------------------------------------------
+     POPULATE PROFILE NAME & EMAIL IN MARKETING MOBILE MENU
+     Fills in the [data-mb-user-name] and [data-mb-user-email] elements
+     -------------------------------------------------------------------------- */
+  function populateProfileCard(user) {
+    if (!user) return;
+
+    // Get the user's display name (try multiple fields)
+    var firstName = '';
+    var lastName = '';
+    var email = '';
+
+    if (user.person) {
+      firstName = user.person.firstName || user.person.FirstName || '';
+      lastName = user.person.lastName || user.person.LastName || '';
+    }
+    if (!firstName) {
+      firstName = user.firstName || user.FirstName || '';
+    }
+    if (!lastName) {
+      lastName = user.lastName || user.LastName || '';
+    }
+    email = user.Email || user.email || '';
+
+    var displayName = (firstName + ' ' + lastName).trim();
+    if (!displayName) displayName = 'My Profile';
+
+    // Set the name
+    var nameEls = document.querySelectorAll('[data-mb-user-name]');
+    nameEls.forEach(function(el) {
+      el.textContent = displayName;
+    });
+
+    // Set the email
+    var emailEls = document.querySelectorAll('[data-mb-user-email]');
+    emailEls.forEach(function(el) {
+      if (email) {
+        el.textContent = email;
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  // Watch Outseta profile widget
+  function observeOutsetaProfileImage() {
+    var root = document.getElementById('widget-outseta_profile');
+    if (!root || root.__mbObserved) return;
+    root.__mbObserved = true;
+
+    var obs = new MutationObserver(function() {
+      var src = getDomProfileImgSrc();
+      if (looksLikeUrl(src)) {
+        applyAvatar(src);
+      } else if (!src) {
+        applyAvatar(null);
+      }
+    });
+
+    obs.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['src']
+    });
+  }
+
+  /* --------------------------------------------------------------------------
+     MAIN AUTH SYNC - USES HYBRID getUser()
+     -------------------------------------------------------------------------- */
+  async function syncAuthAndAvatar() {
+    try {
+      var user = await getUser(); // Hybrid: cache or direct call
+      
+      // Only update UI if we got a clear answer
+      if (user) {
+        authConfirmed = true;
+        setAuthUI(true);
+
+        // Populate profile name & email in marketing mobile menu
+        populateProfileCard(user);
+
+        var domSrc = getDomProfileImgSrc();
+        if (looksLikeUrl(domSrc)) {
+          applyAvatar(domSrc);
+        } else {
+          var userSrc = getUserProfileImgFromUserObject(user);
+          applyAvatar(userSrc);
+        }
+
+        observeOutsetaProfileImage();
+        
+      } else if (!authConfirmed) {
+        setAuthUI(false);
+        applyAvatar(null);
+      }
+      
+    } catch (e) {
+      if (!authConfirmed) {
+        console.log('Main navbar: Auth check error');
+      }
+    }
+  }
+
+  // Events
+  if (burger) {
+    burger.addEventListener('click', function(e) { 
+      e.preventDefault(); 
+      toggleMobile(); 
+    });
+  }
+
+  // Close mobile menu when clicking nav links (updated selector to include new classes)
+  document.addEventListener('click', function(e) {
+    if (mobile && !mobile.hidden && e.target.closest('.mb-mLink, .mb-authBtn, .mb-mLinkApp, .mb-mkt-item, .mb-mkt-dashBtn, .mb-mkt-authBtn, .mb-mkt-profileCard, .mb-mkt-signOut')) {
+      closeMobile();
+    }
+  });
+
+  document.querySelectorAll('[data-mb-profile-link]').forEach(function(a) {
+    a.addEventListener('click', function() {
+      setTimeout(function() { 
+        observeOutsetaProfileImage(); 
+        syncAuthAndAvatar(); 
+      }, 600);
+      setTimeout(function() { 
+        syncAuthAndAvatar(); 
+      }, 2000);
+    });
+  });
+
+  window.addEventListener('resize', function() { 
+    setSpacerHeight(); 
+  });
+
+  window.addEventListener('hashchange', function() {
+    closeMobile();
+    if (window.location.hash.includes('logout')) {
+      authConfirmed = false;
+      if (typeof window.clearOutsetaUserCache === 'function') {
+        window.clearOutsetaUserCache();
+      }
+    }
+    setTimeout(syncAuthAndAvatar, 200);
+  });
+
+  /* --------------------------------------------------------------------------
+     INITIALIZATION
+     -------------------------------------------------------------------------- */
+  setSpacerHeight();
+  closeMobile();
+  updateMobileMenu();
+
+  // Sync immediately and retry a few times (Outseta might not be loaded yet)
+  syncAuthAndAvatar();
+  setTimeout(syncAuthAndAvatar, 300);
+  setTimeout(syncAuthAndAvatar, 1000);
+  setTimeout(syncAuthAndAvatar, 2000);
+  setTimeout(observeOutsetaProfileImage, 2500);
+
+  console.log('✅ Main navbar: Initialized (hybrid mode)');
+
+})();
+</script>

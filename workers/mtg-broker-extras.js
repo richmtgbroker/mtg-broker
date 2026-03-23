@@ -88,13 +88,23 @@ export default {
       return jsResponse(FEATURE_EXTRAS_JS, request);
     }
 
+    if (path === '/static/global-navbar.js') {
+      return jsResponse(buildGlobalNavbarScript(), request);
+    }
+
+    if (path === '/static/global-footer.js') {
+      return jsResponse(buildGlobalFooterScript(), request);
+    }
+
     // Default: list available endpoints
     return new Response(JSON.stringify({
       endpoints: [
         'GET /static/site-head.css',
         'GET /static/site-head.js',
         'GET /static/site-footer.js',
-        'GET /static/feature-extras.js'
+        'GET /static/feature-extras.js',
+        'GET /static/global-navbar.js',
+        'GET /static/global-footer.js'
       ]
     }), {
       headers: {
@@ -2124,3 +2134,580 @@ const FEATURE_EXTRAS_JS = String.raw`
   else { initialize(); }
 })();
 `;
+
+
+// ============================================================
+// GLOBAL NAVBAR — Public-facing navbar (non-app marketing pages)
+// Source: global-navbar-v2.html
+// buildGlobalNavbarScript() returns injectable JS served at
+// GET /static/global-navbar.js
+//
+// Loader (paste into Webflow embed on each public page):
+//   <div id="mb-global-navbar-root"></div>
+//   <script src="https://mtg-broker-extras.rich-e00.workers.dev/static/global-navbar.js?v=1"></script>
+// ============================================================
+
+const GLOBAL_NAVBAR_HTML = String.raw`<div class="mb-navSpacer" aria-hidden="true"></div>
+<header class="mb-navWrap" role="banner">
+  <div class="mb-header">
+    <a class="mb-brand" href="/" aria-label="MtgBroker home">
+      <img class="mb-brandLogo" src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png" alt="MtgBroker" loading="eager" />
+    </a>
+    <nav class="mb-nav" aria-label="Primary navigation">
+      <a class="mb-link" href="/#features">Features</a>
+      <a class="mb-link" href="https://www.mtg.broker/pricing">Pricing</a>
+      <a class="mb-link mb-linkLaunch" href="https://www.mtg.broker/app/dashboard">App Dashboard</a>
+    </nav>
+    <div class="mb-actions" aria-label="User actions">
+      <div class="mb-authOut" data-mb-auth="out">
+        <a class="mb-authBtn mb-authBtnGray" href="/login">Login</a>
+        <a class="mb-authBtn mb-authBtnBlue" href="https://www.mtg.broker/pricing">Signup</a>
+      </div>
+      <div class="mb-authIn" data-mb-auth="in" style="display:none;">
+        <a class="mb-authBtn mb-authBtnGray" href="/#o-logout-link">Logout</a>
+      </div>
+      <a class="mb-avatarBtn" data-mb-auth="in" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile" aria-label="Profile" style="display:none;">
+        <span class="mb-avatarFallback" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+        <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+      </a>
+      <button class="mb-burger" type="button" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div class="mb-mobile" hidden>
+    <div class="mb-mobile-marketing">
+      <a class="mb-mkt-dashBtn" href="https://www.mtg.broker/app/dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Go to Dashboard</span>
+        <svg class="mb-mkt-dashArrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+      <div class="mb-mkt-sectionLabel">Navigation</div>
+      <div class="mb-mkt-group">
+        <a class="mb-mkt-item" href="/#features">
+          <span class="mb-mkt-icon mb-mkt-iconBlue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>
+          <span class="mb-mkt-itemText"><span class="mb-mkt-itemTitle">Features</span><span class="mb-mkt-itemSub">What's included</span></span>
+          <svg class="mb-mkt-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+        <a class="mb-mkt-item" href="https://www.mtg.broker/pricing">
+          <span class="mb-mkt-icon mb-mkt-iconGreen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span>
+          <span class="mb-mkt-itemText"><span class="mb-mkt-itemTitle">Pricing</span><span class="mb-mkt-itemSub">Plans & billing</span></span>
+          <svg class="mb-mkt-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </a>
+      </div>
+      <div class="mb-mkt-divider"></div>
+      <div class="mb-mobileAuthOut" data-mb-auth="out">
+        <div class="mb-mkt-sectionLabel">Get Started</div>
+        <div class="mb-mkt-authButtons">
+          <a class="mb-mkt-authBtn mb-mkt-authBtnBlue" href="https://www.mtg.broker/pricing">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Sign Up Free
+          </a>
+          <a class="mb-mkt-authBtn mb-mkt-authBtnGray" href="/login">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            Login
+          </a>
+        </div>
+      </div>
+      <div class="mb-mobileAuthIn" data-mb-auth="in" style="display:none;">
+        <div class="mb-mkt-sectionLabel">Account</div>
+        <a class="mb-mkt-profileCard" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile">
+          <span class="mb-mAvatar mb-mkt-profileAvatar">
+            <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+            <span class="mb-avatarFallback" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+          </span>
+          <span class="mb-mkt-profileInfo">
+            <span class="mb-mkt-profileName" data-mb-user-name>My Profile</span>
+            <span class="mb-mkt-profileEmail" data-mb-user-email></span>
+          </span>
+          <span class="mb-mkt-profileEdit">Edit</span>
+        </a>
+        <a class="mb-mkt-signOut" href="/#o-logout-link">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Sign Out
+        </a>
+      </div>
+    </div>
+    <div class="mb-mobile-app" style="display:none;">
+      <div class="mb-mobile-section">
+        <div class="mb-mobile-label">Menu</div>
+        <a href="https://www.mtg.broker/app/dashboard" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Dashboard</a>
+        <a href="https://www.mtg.broker/app/loan-search" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Loan Search</a>
+        <a href="https://www.mtg.broker/app/lenders" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path></svg>Lenders</a>
+        <a href="https://www.mtg.broker/app/products" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>Products</a>
+        <a href="https://www.mtg.broker/app/property-types" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>Property Types</a>
+        <a href="https://www.mtg.broker/app/vendors" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>Vendors</a>
+        <a href="https://www.mtg.broker/app/contacts" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Contacts</a>
+        <a href="https://www.mtg.broker/app/calculators" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" x2="16" y1="6" y2="6"></line><line x1="16" x2="16" y1="14" y2="14"></line><line x1="12" x2="12" y1="14" y2="14"></line><line x1="8" x2="8" y1="14" y2="14"></line><line x1="16" x2="16" y1="18" y2="18"></line><line x1="12" x2="12" y1="18" y2="18"></line><line x1="8" x2="8" y1="18" y2="18"></line></svg>Calculators</a>
+        <a href="https://www.mtg.broker/app/tools" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>Tools</a>
+      </div>
+      <div class="mb-mobile-section">
+        <div class="mb-mobile-label">My Workspace</div>
+        <a href="/app/saved" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>Saved Items</a>
+        <a href="/app/settings" class="mb-mLink mb-mLinkApp"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>Settings</a>
+      </div>
+      <div class="mb-mobile-divider"></div>
+      <div class="mb-mobileAuthIn" data-mb-auth="in" style="display:none;">
+        <a class="mb-mLink mb-mProfile" data-mb-profile-link href="https://mtgbroker.outseta.com/widgets/profile">
+          <span class="mb-mAvatar">
+            <img class="mb-avatarImg" data-mb-avatar alt="User profile photo" loading="lazy" referrerpolicy="no-referrer" />
+            <span class="mb-avatarFallback" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+          </span>
+          Profile
+        </a>
+        <a class="mb-authBtn mb-authBtnGray mb-authBtnFull" href="/#o-logout-link">Logout</a>
+      </div>
+    </div>
+  </div>
+</header>`;
+
+const GLOBAL_NAVBAR_CSS = String.raw`
+.mb-navWrap{position:fixed;top:0;left:0;right:0;z-index:9999;padding:0;background:#ffffff;border-bottom:1px solid #E7EAF0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;}
+.mb-header{width:90%;max-width:1280px;margin:0 auto;padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:18px;}
+.mb-navSpacer{height:0;}
+.mb-brand{display:flex;align-items:center;height:44px;text-decoration:none;min-width:220px;}
+.mb-brandLogo{height:32px;width:auto;display:block;}
+.mb-nav{display:flex;align-items:center;gap:20px;flex:1 1 auto;justify-content:center;}
+.mb-link{color:#0f172a;font-weight:600;text-decoration:none;font-size:16px;line-height:1;padding:10px 6px;border-radius:10px;}
+.mb-link:hover{background:rgba(15,23,42,0.04);}
+.mb-linkLaunch{font-weight:800;color:#ffffff;padding:11px 20px;border-radius:6px;background:#2563eb;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.05);transition:all 0.2s ease;}
+.mb-linkLaunch:hover{background:#1E40AF;box-shadow:0 4px 8px rgba(37,99,235,0.25);transform:translateY(-1px);}
+.mb-actions{display:flex;align-items:center;gap:12px;justify-content:flex-end;flex:0 0 auto;}
+.mb-authBtn{height:44px;min-width:110px;padding:0 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border:1px solid transparent;white-space:nowrap;}
+.mb-authBtnGray{background:#EEF2F7;border-color:#E7EAF0;color:#0f172a;}
+.mb-authBtnGray:hover{filter:brightness(0.98);}
+.mb-authBtnBlue{background:#2563eb;border-color:#2563eb;color:#fff;}
+.mb-authBtnBlue:hover{filter:brightness(0.96);}
+.mb-authBtnFull{width:100%;min-width:0;margin-top:10px;}
+.mb-avatarBtn{width:44px;height:44px;border-radius:999px;border:1px solid #E7EAF0;background:#fff;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;text-decoration:none;color:#0f172a;}
+.mb-avatarImg{width:100%;height:100%;object-fit:cover;display:none;}
+.mb-avatarBtn.has-img .mb-avatarImg{display:block;}
+.mb-avatarBtn.has-img .mb-avatarFallback{display:none;}
+.mb-avatarFallback{display:inline-flex;opacity:0.75;}
+.mb-burger{display:none;width:44px;height:44px;border-radius:12px;border:1px solid #E7EAF0;background:#fff;cursor:pointer;padding:10px;}
+.mb-burger span{display:block;height:2px;background:#0f172a;border-radius:2px;margin:5px 0;}
+.mb-mobile{pointer-events:auto;width:100%;background:#fff;border-bottom:1px solid #E7EAF0;box-shadow:0 10px 20px rgba(15,23,42,0.05);padding:20px;max-height:calc(100vh - 77px);overflow-y:auto;}
+.mb-mobile-section{margin-bottom:24px;}
+.mb-mobile-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;padding:0 12px 8px 12px;}
+.mb-mobile-divider{height:1px;background:#E7EAF0;margin:20px 0;}
+.mb-mLink{display:block;padding:12px 12px;border-radius:12px;text-decoration:none;color:#0f172a;font-weight:800;}
+.mb-mLink:hover{background:rgba(15,23,42,0.04);}
+.mb-mLinkApp{display:flex;align-items:center;gap:12px;padding:10px 12px;font-weight:600;font-size:15px;}
+.mb-mLinkApp svg{color:#64748B;flex-shrink:0;}
+.mb-mLinkApp:hover svg{color:#0f172a;}
+.mb-mLinkApp.w--current{background:#EFF6FF;color:#2563EB;}
+.mb-mLinkApp.w--current svg{color:#2563EB;}
+.mb-mLinkLaunch{color:#ffffff;background:#2563eb;font-weight:800;margin-top:12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+.mb-mLinkLaunch:hover{background:#1E40AF;}
+.mb-mProfile{display:flex;align-items:center;gap:10px;}
+.mb-mAvatar{width:28px;height:28px;border-radius:999px;border:1px solid #E7EAF0;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:#fff;flex:0 0 auto;}
+.mb-mAvatar .mb-avatarImg{width:100%;height:100%;object-fit:cover;display:none;}
+.mb-mAvatar.has-img .mb-avatarImg{display:block;}
+.mb-mAvatar.has-img .mb-avatarFallback{display:none;}
+.mb-mkt-dashBtn{display:flex;align-items:center;gap:10px;padding:15px 16px;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;border-radius:12px;text-decoration:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(37,99,235,0.25);transition:all 0.2s ease;}
+.mb-mkt-dashBtn:hover{background:#1e40af;box-shadow:0 4px 12px rgba(37,99,235,0.35);}
+.mb-mkt-dashBtn span{flex:1;}
+.mb-mkt-dashArrow{opacity:0.7;flex-shrink:0;}
+.mb-mkt-sectionLabel{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;padding:0 6px 8px;}
+.mb-mkt-group{margin-bottom:8px;}
+.mb-mkt-item{display:flex;align-items:center;gap:14px;padding:12px 10px;border-radius:12px;text-decoration:none;color:#0f172a;transition:background 0.15s ease;}
+.mb-mkt-item:hover{background:#f8fafc;}
+.mb-mkt-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mb-mkt-iconBlue{background:#eff6ff;color:#2563eb;}
+.mb-mkt-iconGreen{background:#f0fdf4;color:#16a34a;}
+.mb-mkt-iconPurple{background:#faf5ff;color:#9333ea;}
+.mb-mkt-iconAmber{background:#fffbeb;color:#d97706;}
+.mb-mkt-itemText{display:flex;flex-direction:column;flex:1;min-width:0;}
+.mb-mkt-itemTitle{font-weight:600;font-size:15px;color:#0f172a;line-height:1.3;}
+.mb-mkt-itemSub{font-size:12px;color:#94a3b8;font-weight:400;margin-top:1px;line-height:1.3;}
+.mb-mkt-chevron{color:#cbd5e1;flex-shrink:0;transition:color 0.15s ease;}
+.mb-mkt-item:hover .mb-mkt-chevron{color:#94a3b8;}
+.mb-mkt-divider{height:1px;background:#f1f5f9;margin:12px 0 16px;}
+.mb-mkt-authButtons{display:flex;flex-direction:column;gap:8px;}
+.mb-mkt-authBtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;transition:all 0.15s ease;border:1px solid transparent;}
+.mb-mkt-authBtnBlue{background:#2563eb;color:#ffffff;border-color:#2563eb;}
+.mb-mkt-authBtnBlue:hover{background:#1e40af;}
+.mb-mkt-authBtnGray{background:#f8fafc;color:#334155;border-color:#e2e8f0;}
+.mb-mkt-authBtnGray:hover{background:#f1f5f9;border-color:#cbd5e1;}
+.mb-mkt-profileCard{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;text-decoration:none;color:inherit;margin-bottom:10px;transition:all 0.15s ease;}
+.mb-mkt-profileCard:hover{background:#f1f5f9;border-color:#cbd5e1;}
+.mb-mkt-profileAvatar{width:42px !important;height:42px !important;border-radius:999px;border:2px solid #e2e8f0;background:#fff;flex-shrink:0;}
+.mb-mkt-profileAvatar .mb-avatarFallback{opacity:0.6;}
+.mb-mkt-profileInfo{display:flex;flex-direction:column;flex:1;min-width:0;}
+.mb-mkt-profileName{font-weight:700;font-size:14px;color:#0f172a;line-height:1.3;}
+.mb-mkt-profileEmail{font-size:12px;color:#64748b;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mb-mkt-profileEdit{font-size:12px;color:#2563eb;font-weight:600;flex-shrink:0;}
+.mb-mkt-signOut{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;color:#64748b;font-weight:600;font-size:14px;border-radius:10px;text-decoration:none;border:1px solid #e2e8f0;transition:all 0.15s ease;}
+.mb-mkt-signOut:hover{background:#fef2f2;color:#dc2626;border-color:#fecaca;}
+@media (max-width:991px){.mb-nav{display:none;}.mb-burger{display:inline-block;}}
+@media (max-width:767px){.mb-brand{min-width:auto;}.mb-authOut,.mb-authIn{display:none;}}
+`;
+
+const GLOBAL_NAVBAR_JS = `
+(function () {
+  var navWrap = document.querySelector('.mb-navWrap');
+  var spacer = document.querySelector('.mb-navSpacer');
+  var burger = document.querySelector('.mb-burger');
+  var mobile = document.querySelector('.mb-mobile');
+  var mobileMarketing = document.querySelector('.mb-mobile-marketing');
+  var mobileApp = document.querySelector('.mb-mobile-app');
+
+  var authConfirmed = false;
+
+  async function getUser() {
+    if (typeof window.getCachedOutsetaUser === 'function') {
+      return await window.getCachedOutsetaUser();
+    }
+    if (!window.Outseta || typeof window.Outseta.getUser !== 'function') {
+      return null;
+    }
+    try {
+      var user = await window.Outseta.getUser();
+      if (!window.OUTSETA_USER_CACHE && user) {
+        window.OUTSETA_USER_CACHE = user;
+      }
+      return user;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function isAppPage() {
+    return window.location.pathname.startsWith('/app');
+  }
+
+  function updateMobileMenu() {
+    if (!mobileMarketing || !mobileApp) return;
+    if (isAppPage()) {
+      mobileMarketing.style.display = 'none';
+      mobileApp.style.display = 'block';
+      highlightCurrentAppLink();
+    } else {
+      mobileMarketing.style.display = 'block';
+      mobileApp.style.display = 'none';
+    }
+  }
+
+  function highlightCurrentAppLink() {
+    var currentPath = window.location.pathname.replace(/\\/$/, '');
+    var appLinks = document.querySelectorAll('.mb-mLinkApp');
+    appLinks.forEach(function(link) {
+      try {
+        var linkUrl = new URL(link.href, window.location.origin);
+        var linkPath = linkUrl.pathname.replace(/\\/$/, '');
+        if (currentPath === linkPath) {
+          link.classList.add('w--current');
+        } else {
+          link.classList.remove('w--current');
+        }
+      } catch (e) {}
+    });
+  }
+
+  function setSpacerHeight() {
+    if (!navWrap || !spacer) return;
+    spacer.style.height = navWrap.offsetHeight + 'px';
+  }
+
+  function closeMobile() {
+    if (!mobile || !burger) return;
+    mobile.hidden = true;
+    burger.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleMobile() {
+    if (!mobile || !burger) return;
+    var open = mobile.hidden;
+    mobile.hidden = !open;
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function setAuthUI(isAuthed) {
+    document.querySelectorAll('[data-mb-auth="out"]').forEach(function(el) {
+      el.style.display = isAuthed ? 'none' : '';
+    });
+    document.querySelectorAll('[data-mb-auth="in"]').forEach(function(el) {
+      if (isAuthed) {
+        el.style.removeProperty('display');
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  function looksLikeUrl(v) {
+    return typeof v === 'string' && /^https?:\\/\\//i.test(v) && v.length < 1200;
+  }
+
+  function getDomProfileImgSrc() {
+    var img =
+      document.querySelector('#widget-outseta_profile .o--Person-profileImageS3Url img') ||
+      document.querySelector('#widget-outseta_profile img[src*="outseta-production"]') ||
+      null;
+    return img ? (img.getAttribute('src') || img.src) : null;
+  }
+
+  function getUserProfileImgFromUserObject(user) {
+    if (!user) return null;
+    var candidates = [
+      user.person && user.person.profileImageS3Url,
+      user.person && user.person.ProfileImageS3Url,
+      user.person && user.person.oAuthGoogleProfileImageUrl,
+      user.person && user.person.OAuthGoogleProfileImageUrl,
+      user.profileImageS3Url,
+      user.ProfileImageS3Url
+    ];
+    for (var i = 0; i < candidates.length; i++) {
+      if (looksLikeUrl(candidates[i])) return candidates[i];
+    }
+    return null;
+  }
+
+  function applyAvatar(url) {
+    var imgs = document.querySelectorAll('img[data-mb-avatar]');
+    imgs.forEach(function(img) {
+      var btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
+      if (!url) {
+        if (btn) btn.classList.remove('has-img');
+        img.removeAttribute('src');
+        return;
+      }
+      img.src = url;
+      img.onload = function() { if (btn) btn.classList.add('has-img'); };
+      img.onerror = function() { if (btn) btn.classList.remove('has-img'); };
+    });
+    document.querySelectorAll('.mb-mAvatar').forEach(function(w) {
+      if (url) { w.classList.add('has-img'); } else { w.classList.remove('has-img'); }
+    });
+  }
+
+  function populateProfileCard(user) {
+    if (!user) return;
+    var firstName = '';
+    var lastName = '';
+    var email = '';
+    if (user.person) {
+      firstName = user.person.firstName || user.person.FirstName || '';
+      lastName = user.person.lastName || user.person.LastName || '';
+    }
+    if (!firstName) firstName = user.firstName || user.FirstName || '';
+    if (!lastName) lastName = user.lastName || user.LastName || '';
+    email = user.Email || user.email || '';
+    var displayName = (firstName + ' ' + lastName).trim();
+    if (!displayName) displayName = 'My Profile';
+    document.querySelectorAll('[data-mb-user-name]').forEach(function(el) { el.textContent = displayName; });
+    document.querySelectorAll('[data-mb-user-email]').forEach(function(el) {
+      if (email) { el.textContent = email; el.style.display = ''; } else { el.style.display = 'none'; }
+    });
+  }
+
+  function observeOutsetaProfileImage() {
+    var root = document.getElementById('widget-outseta_profile');
+    if (!root || root.__mbObserved) return;
+    root.__mbObserved = true;
+    var obs = new MutationObserver(function() {
+      var src = getDomProfileImgSrc();
+      if (looksLikeUrl(src)) { applyAvatar(src); } else if (!src) { applyAvatar(null); }
+    });
+    obs.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+  }
+
+  async function syncAuthAndAvatar() {
+    try {
+      var user = await getUser();
+      if (user) {
+        authConfirmed = true;
+        setAuthUI(true);
+        populateProfileCard(user);
+        var domSrc = getDomProfileImgSrc();
+        if (looksLikeUrl(domSrc)) {
+          applyAvatar(domSrc);
+        } else {
+          applyAvatar(getUserProfileImgFromUserObject(user));
+        }
+        observeOutsetaProfileImage();
+      } else if (!authConfirmed) {
+        setAuthUI(false);
+        applyAvatar(null);
+      }
+    } catch (e) {
+      if (!authConfirmed) console.log('Global navbar: Auth check error');
+    }
+  }
+
+  if (burger) {
+    burger.addEventListener('click', function(e) { e.preventDefault(); toggleMobile(); });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (mobile && !mobile.hidden && e.target.closest('.mb-mLink, .mb-authBtn, .mb-mLinkApp, .mb-mkt-item, .mb-mkt-dashBtn, .mb-mkt-authBtn, .mb-mkt-profileCard, .mb-mkt-signOut')) {
+      closeMobile();
+    }
+  });
+
+  document.querySelectorAll('[data-mb-profile-link]').forEach(function(a) {
+    a.addEventListener('click', function() {
+      setTimeout(function() { observeOutsetaProfileImage(); syncAuthAndAvatar(); }, 600);
+      setTimeout(function() { syncAuthAndAvatar(); }, 2000);
+    });
+  });
+
+  window.addEventListener('resize', function() { setSpacerHeight(); });
+
+  window.addEventListener('hashchange', function() {
+    closeMobile();
+    if (window.location.hash.includes('logout')) {
+      authConfirmed = false;
+      if (typeof window.clearOutsetaUserCache === 'function') window.clearOutsetaUserCache();
+    }
+    setTimeout(syncAuthAndAvatar, 200);
+  });
+
+  setSpacerHeight();
+  closeMobile();
+  updateMobileMenu();
+  syncAuthAndAvatar();
+  setTimeout(syncAuthAndAvatar, 300);
+  setTimeout(syncAuthAndAvatar, 1000);
+  setTimeout(syncAuthAndAvatar, 2000);
+  setTimeout(observeOutsetaProfileImage, 2500);
+  console.log('global-navbar v2 initialized (Worker-served)');
+})();
+`;
+
+function buildGlobalNavbarScript() {
+  var css = JSON.stringify(GLOBAL_NAVBAR_CSS);
+  var html = JSON.stringify(GLOBAL_NAVBAR_HTML);
+  return [
+    '// global-navbar v2 — served by mtg-broker-extras Cloudflare Worker',
+    '(function(){',
+    '  var s=document.createElement("style");s.textContent=' + css + ';document.head.appendChild(s);',
+    '  var root=document.getElementById("mb-global-navbar-root");',
+    '  if(root){',
+    '    var tmp=document.createElement("div");',
+    '    tmp.innerHTML=' + html + ';',
+    '    while(tmp.firstChild){root.parentNode.insertBefore(tmp.firstChild,root);}',
+    '    root.parentNode.removeChild(root);',
+    '  }',
+    '})();',
+    '',
+    GLOBAL_NAVBAR_JS
+  ].join('\n');
+}
+
+
+// ============================================================
+// GLOBAL FOOTER — Public-facing footer (non-app marketing pages)
+// Source: Global_Footer_Embed_v1_1.html
+// buildGlobalFooterScript() returns injectable JS served at
+// GET /static/global-footer.js
+//
+// Loader (paste into Webflow embed on each public page):
+//   <div id="mb-global-footer-root"></div>
+//   <script src="https://mtg-broker-extras.rich-e00.workers.dev/static/global-footer.js?v=1"></script>
+// ============================================================
+
+const GLOBAL_FOOTER_HTML = String.raw`<footer class="mtg-footer global-footer">
+  <div class="footer-container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <a href="/" class="footer-brand">
+          <img src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576e67f7f11199c4541bdb_Logo_Horizontal_White.png" alt="MtgBroker Logo" class="footer-logo">
+        </a>
+        <p class="footer-desc">The complete toolkit for modern Loan Officers.</p>
+        <div class="contact-info">
+          <p>2172 W 9 Mile Rd, Pensacola, FL 32534</p>
+          <a href="mailto:support@mtg.broker" class="footer-link">support@mtg.broker</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-heading">Product</h4>
+        <ul class="footer-menu">
+          <li><a href="/#features" class="footer-link">Features</a></li>
+          <li><a href="/pricing" class="footer-link">Pricing</a></li>
+          <li><a href="https://mtgbroker.outseta.com/auth?widgetMode=login#o-anonymous" class="footer-link">Login</a></li>
+          <li><a href="https://mtgbroker.outseta.com/auth?widgetMode=register#o-anonymous" class="footer-link">Signup</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-heading">Company</h4>
+        <ul class="footer-menu">
+          <li><a href="https://mtgbroker.outseta.com/support/kb/categories" target="_blank" class="footer-link">Help Center</a></li>
+          <li><a href="https://mtgbroker.outseta.com/support/kb" target="_blank" class="footer-link">Submit a Ticket</a></li>
+          <li><a href="mailto:support@mtg.broker" class="footer-link">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4 class="footer-heading">Legal</h4>
+        <ul class="footer-menu">
+          <li><a href="/privacy-policy" class="footer-link">Privacy Policy</a></li>
+          <li><a href="/terms-of-service" class="footer-link">Terms of Service</a></li>
+        </ul>
+        <p class="footer-disclaimer">MtgBroker, LLC provides informational tools only. Results are estimates. We are not a lender.</p>
+      </div>
+    </div>
+    <div class="footer-divider"></div>
+    <div class="footer-bottom">
+      <div class="copyright">&copy; <span id="mb-footer-year"></span> MtgBroker, LLC.</div>
+      <div class="compliance-row">
+        <div class="eho-icon" title="Equal Housing Opportunity">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </div>
+        <span class="eho-text">Equal Housing Opportunity</span>
+      </div>
+      <div class="social-links">
+        <a href="https://www.facebook.com/mtgbrokerllc" target="_blank" class="social-icon" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
+        <a href="https://www.linkedin.com/company/108294435/" target="_blank" class="social-icon" aria-label="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+        <a href="https://x.com/mtgbrokerllc" target="_blank" class="social-icon" aria-label="X (Twitter)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      </div>
+    </div>
+  </div>
+</footer>`;
+
+const GLOBAL_FOOTER_CSS = String.raw`
+.mtg-footer{background-color:#0f172a;color:#94A3B8;padding:48px 0 24px 0;font-family:'Host Grotesk',system-ui,sans-serif;border-top:1px solid rgba(255,255,255,0.05);font-size:14px;}
+.footer-container{width:90%;max-width:1280px;margin:0 auto;}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.2fr;gap:32px;margin-bottom:32px;}
+.footer-brand{display:flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:12px;}
+.footer-logo{height:28px;width:auto;}
+.footer-desc{font-size:14px;line-height:1.5;margin-bottom:16px;color:#94A3B8;max-width:280px;}
+.contact-info p{font-size:13px;margin:0 0 8px 0;color:#E2E8F0;}
+.footer-heading{color:#FFFFFF;font-size:14px;font-weight:700;margin-top:0;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.05em;}
+.footer-menu{list-style:none;padding:0;margin:0;}
+.footer-menu li{margin-bottom:8px;}
+.footer-link{color:#94A3B8;text-decoration:none;font-size:14px;transition:all 0.2s ease;display:inline-block;}
+.footer-link:hover{color:#FFFFFF;transform:translateX(2px);}
+.footer-disclaimer{margin-top:16px;font-size:11px;line-height:1.5;color:#64748B;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;}
+.footer-divider{height:1px;background:rgba(255,255,255,0.1);margin-bottom:24px;}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+.copyright{font-size:13px;color:#64748B;}
+.compliance-row{display:flex;align-items:center;gap:6px;color:#64748B;}
+.eho-text{font-size:12px;}
+.social-links{display:flex;gap:16px;}
+.social-icon{color:#94A3B8;transition:color 0.2s;}
+.social-icon:hover{color:#FFFFFF;}
+@media (max-width:991px){.footer-grid{grid-template-columns:1fr 1fr;gap:32px;}}
+@media (max-width:479px){.mtg-footer{padding:40px 0 24px 0;}.footer-grid{grid-template-columns:1fr;gap:32px;}.footer-bottom{flex-direction:column;align-items:flex-start;gap:16px;}}
+`;
+
+function buildGlobalFooterScript() {
+  var css = JSON.stringify(GLOBAL_FOOTER_CSS);
+  var html = JSON.stringify(GLOBAL_FOOTER_HTML);
+  return [
+    '// global-footer v1.1 — served by mtg-broker-extras Cloudflare Worker',
+    '(function(){',
+    '  var s=document.createElement("style");s.textContent=' + css + ';document.head.appendChild(s);',
+    '  var root=document.getElementById("mb-global-footer-root");',
+    '  if(root){',
+    '    var tmp=document.createElement("div");',
+    '    tmp.innerHTML=' + html + ';',
+    '    while(tmp.firstChild){root.parentNode.insertBefore(tmp.firstChild,root);}',
+    '    root.parentNode.removeChild(root);',
+    '  }',
+    '  var yr=document.getElementById("mb-footer-year");',
+    '  if(yr){yr.textContent=new Date().getFullYear();}',
+    '})();'
+  ].join('\n');
+}
