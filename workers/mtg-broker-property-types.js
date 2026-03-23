@@ -532,9 +532,17 @@ const PROPERTY_TYPE_DETAIL_JS = `
   /* ============================================================
      GET SLUG FROM URL
      e.g. /app/property-types/single-family → "single-family"
+     NOTE: Avoid \/ regex inside template literal — backslash gets
+     consumed, turning // into a line comment in the output JS.
+     Use charAt instead.
      ============================================================ */
   function getSlugFromUrl() {
-    var parts = window.location.pathname.replace(/\/$/, '').split('/');
+    var pathname = window.location.pathname;
+    // Strip trailing slash without regex (avoids template literal escape issue)
+    if (pathname.charAt(pathname.length - 1) === '/') {
+      pathname = pathname.slice(0, -1);
+    }
+    var parts = pathname.split('/');
     return parts[parts.length - 1] || '';
   }
 
