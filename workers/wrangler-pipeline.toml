@@ -1,0 +1,13 @@
+name = "mtg-broker-pipeline"
+main = "mtg-broker-pipeline.js"
+compatibility_date = "2024-01-01"
+account_id = "e00ea2fe32b9a5cee69e55cbcf2da9ea"
+
+# ============================================================
+# Environment Variables (secrets)
+# These are NOT stored here — they live in the Cloudflare dashboard.
+# Set them at: Workers & Pages → mtg-broker-pipeline → Settings → Variables
+#
+#   AIRTABLE_API_KEY    — Airtable personal access token
+#   ANTHROPIC_API_KEY   — Claude API key (for purchase agreement extraction)
+# ============================================================

@@ -2,7 +2,12 @@
  * MTG Broker API - Cloudflare Worker
  * Handles Pipeline, Billing, Calculator saves, Mortgage Rates, Loan Products, Credit Vendors, Goal Plans, Broker Profiles, and other user data
  * 
- * UPDATED: March 22, 2026 - v7.25
+ * UPDATED: March 23, 2026 - v7.27
+ * v7.27: CRIT-1 security fix — JWT signature verification. Server now verifies
+ *        the Outseta RS256 JWT before trusting any user identity. Plain emails
+ *        in Authorization headers are rejected. verifyOutsetaJWT() added.
+ * v7.26: Security fixes — CRIT-2 (plan self-promotion), HIGH-2 (formula injection),
+ *        HIGH-3 (task ownership), MED-2 (cache-clear token), MED-3 (error leakage).
  * v7.25: Fixed /api/plan-limits pipelineLoans count — was reading stale
  *        counter from Usage table; now counts actual LOANS table records.
  * v7.24: Added /api/products-list endpoint for Products listing page (/app/products).
@@ -349,6 +354,94 @@ function sanitizeEmailForFormula(email) {
   if (!email || typeof email !== 'string') return null;
   const safe = email.replace(/['"(){}[\],\\]/g, '').trim().toLowerCase();
   return (safe.includes('@') && safe.length > 3) ? safe : null;
+}
+
+// ============================================================
+// JWT VERIFICATION (CRIT-1 Security Fix)
+// Verifies Outseta RS256 JWT signatures using JWKS public keys.
+// The server NEVER trusts a plain email from the Authorization header —
+// it must be extracted from a cryptographically verified JWT.
+// ============================================================
+
+// Cache for JWKS keys (1-hour TTL, resets on worker restart)
+let outsetaJwksCache = null;
+let outsetaJwksCacheTimestamp = null;
+const JWKS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Fetch and cache Outseta public JWKS keys
+ */
+async function getOutsetaJwks() {
+  const now = Date.now();
+  if (outsetaJwksCache && outsetaJwksCacheTimestamp && (now - outsetaJwksCacheTimestamp < JWKS_CACHE_DURATION)) {
+    return outsetaJwksCache;
+  }
+  const res = await fetch('https://mtgbroker.outseta.com/.well-known/jwks');
+  if (!res.ok) throw new Error('Failed to fetch JWKS');
+  outsetaJwksCache = await res.json();
+  outsetaJwksCacheTimestamp = now;
+  return outsetaJwksCache;
+}
+
+/**
+ * Verify an Outseta RS256 JWT and return the decoded payload.
+ * Returns null if the token is missing, malformed, expired, or fails signature check.
+ */
+async function verifyOutsetaJWT(token) {
+  try {
+    if (!token || typeof token !== 'string') return null;
+
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+
+    // base64url → base64 helper
+    const b64 = (s) => s.replace(/-/g, '+').replace(/_/g, '/');
+
+    const header  = JSON.parse(atob(b64(parts[0])));
+    const payload = JSON.parse(atob(b64(parts[1])));
+
+    // Outseta uses RS256
+    if (header.alg !== 'RS256') return null;
+
+    // Check expiration
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+
+    // Check issuer
+    if (payload.iss !== 'https://mtgbroker.outseta.com') return null;
+
+    // Fetch JWKS and find the matching key by kid, falling back to first key
+    const jwks = await getOutsetaJwks();
+    const key = (header.kid ? jwks.keys?.find(k => k.kid === header.kid) : null) || jwks.keys?.[0];
+    if (!key) return null;
+
+    // Import the RSA public key for signature verification
+    const publicKey = await crypto.subtle.importKey(
+      'jwk',
+      key,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    // Verify the signature over "header.payload"
+    const encoder  = new TextEncoder();
+    const data     = encoder.encode(`${parts[0]}.${parts[1]}`);
+    const sigBytes = Uint8Array.from(atob(b64(parts[2])), c => c.charCodeAt(0));
+
+    const isValid = await crypto.subtle.verify(
+      { name: 'RSASSA-PKCS1-v1_5' },
+      publicKey,
+      sigBytes,
+      data
+    );
+
+    return isValid ? payload : null;
+
+  } catch (e) {
+    console.error('JWT verification error:', e.message);
+    return null;
+  }
 }
 
 async function airtableRequest(endpoint, apiKey, method = 'GET', body = null) {
@@ -3867,13 +3960,13 @@ export default {
 
     const apiKey = env.AIRTABLE_API_KEY;
 
+    // CRIT-1: Verify the JWT signature before trusting any user identity.
+    // verifyOutsetaJWT() checks the RS256 signature, expiration, and issuer.
+    // userEmail is extracted from the verified payload — never from the raw header.
     const authHeader = request.headers.get('Authorization');
-    // Sanitize the email immediately on extraction to prevent Airtable formula injection (HIGH-2).
-    // sanitizeEmailForFormula() strips chars that could break filterByFormula strings.
-    // NOTE: This auth line still needs to be upgraded to full JWT verification (CRIT-1 — see security audit).
-    // When that's done, userEmail will come from the verified JWT payload, not the raw header.
-    const rawEmail = authHeader?.replace('Bearer ', '') || '';
-    const userEmail = sanitizeEmailForFormula(rawEmail);
+    const token = authHeader?.replace('Bearer ', '') || '';
+    const jwtPayload = await verifyOutsetaJWT(token);
+    const userEmail = jwtPayload ? sanitizeEmailForFormula(jwtPayload.email) : null;
 
     // ============================================================
     // PUBLIC ROUTES (No authentication required)
