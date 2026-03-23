@@ -653,36 +653,54 @@ function renderInline(text) {
 }
 
 // Converts Claude's markdown response into structured JSX.
-// Handles: # h1, ## h2, ### h3, - bullets, **bold**, plain paragraphs.
+// Handles: # h1, ## h2, ### h3, - bullets, 1. numbered lists, --- hr, **bold**, plain paragraphs.
 function GuidelineMarkdown({ text }) {
   const lines = text.split('\n')
   const elements = []
   let listItems = []
+  let listType = null // 'ul' or 'ol'
 
   const flushList = (key) => {
     if (listItems.length > 0) {
-      elements.push(<ul key={`ul-${key}`} className="gs-md-list">{listItems}</ul>)
+      if (listType === 'ol') {
+        elements.push(<ol key={`ol-${key}`} className="gs-md-list gs-md-ol">{listItems}</ol>)
+      } else {
+        elements.push(<ul key={`ul-${key}`} className="gs-md-list">{listItems}</ul>)
+      }
       listItems = []
+      listType = null
     }
   }
 
   lines.forEach((line, i) => {
-    if (line.startsWith('# ')) {
+    const trimmed = line.trim()
+    // Horizontal rule
+    if (trimmed.match(/^-{3,}$/) || trimmed.match(/^\*{3,}$/)) {
       flushList(i)
-      elements.push(<h3 key={i} className="gs-md-h1">{renderInline(line.slice(2))}</h3>)
-    } else if (line.startsWith('## ')) {
+      elements.push(<hr key={i} className="gs-md-hr" />)
+    } else if (trimmed.startsWith('# ')) {
       flushList(i)
-      elements.push(<h4 key={i} className="gs-md-h2">{renderInline(line.slice(3))}</h4>)
-    } else if (line.startsWith('### ')) {
+      elements.push(<h3 key={i} className="gs-md-h1">{renderInline(trimmed.slice(2))}</h3>)
+    } else if (trimmed.startsWith('## ')) {
       flushList(i)
-      elements.push(<h5 key={i} className="gs-md-h3">{renderInline(line.slice(4))}</h5>)
-    } else if (line.match(/^[-*] /)) {
-      listItems.push(<li key={i}>{renderInline(line.slice(2))}</li>)
-    } else if (line.trim() === '') {
+      elements.push(<h4 key={i} className="gs-md-h2">{renderInline(trimmed.slice(3))}</h4>)
+    } else if (trimmed.startsWith('### ')) {
+      flushList(i)
+      elements.push(<h5 key={i} className="gs-md-h3">{renderInline(trimmed.slice(4))}</h5>)
+    } else if (trimmed.match(/^[-*] /)) {
+      if (listType === 'ol') flushList(i)
+      listType = 'ul'
+      listItems.push(<li key={i}>{renderInline(trimmed.slice(2))}</li>)
+    } else if (trimmed.match(/^\d+\.\s/)) {
+      if (listType === 'ul') flushList(i)
+      listType = 'ol'
+      const content = trimmed.replace(/^\d+\.\s/, '')
+      listItems.push(<li key={i}>{renderInline(content)}</li>)
+    } else if (trimmed === '') {
       flushList(i)
     } else {
       flushList(i)
-      elements.push(<p key={i} className="gs-md-p">{renderInline(line)}</p>)
+      elements.push(<p key={i} className="gs-md-p">{renderInline(trimmed)}</p>)
     }
   })
 
