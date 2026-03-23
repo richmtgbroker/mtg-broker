@@ -1,3 +1,12 @@
-# Copy this file to .dev.vars and add your Anthropic API key
-# This file is used by wrangler for local development
-ANTHROPIC_API_KEY=your-api-key-here
+# Copy this file to .dev.vars and fill in your keys.
+# Used by wrangler for local development and by scripts/process-pdfs.js.
+
+# ── Existing (required for all functionality) ──
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+SUPABASE_URL=https://tcmahfwhdknxhhdvqpum.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key-here
+
+# ── Vector Search (required for Search Guidelines feature) ──
+OPENAI_API_KEY=your-openai-api-key-here          # for text-embedding-3-small
+SUPABASE_SERVICE_KEY=your-supabase-service-role-key-here  # for write access (scripts only)
+AIRTABLE_API_KEY=your-airtable-personal-access-token-here # for downloading PDFs

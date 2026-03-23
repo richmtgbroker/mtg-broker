@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const API_URL = 'https://mtg-loan-finder.pages.dev/api/search'
+const API_URL           = 'https://mtg-loan-finder.pages.dev/api/search'
+const GUIDELINE_API_URL = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+// ─── CONSTANTS — FIND A LOAN MODE ─────────────────────────────────────────────
 
-// Each example has a short label (shown on the chip) and the full query (filled into textarea on click)
 const EXAMPLE_SCENARIOS = [
   {
     label: 'Self-employed investor',
@@ -45,6 +45,49 @@ const PROGRESS_MESSAGES = [
   "Matching criteria against 625+ products...",
   "Ranking best fits for your scenario...",
   "Preparing results..."
+]
+
+// ─── CONSTANTS — SEARCH GUIDELINES MODE ───────────────────────────────────────
+
+const GUIDELINE_EXAMPLES = [
+  {
+    label: 'Gift funds',
+    icon: 'fa-gift',
+    query: 'Which lenders allow gift funds on investment properties?',
+  },
+  {
+    label: 'Bankruptcy seasoning',
+    icon: 'fa-clock',
+    query: 'What are the seasoning requirements after bankruptcy for non-QM loans?',
+  },
+  {
+    label: 'LLC vesting',
+    icon: 'fa-building',
+    query: 'Which products allow vesting title in an LLC?',
+  },
+  {
+    label: 'STR income',
+    icon: 'fa-house',
+    query: 'Can short-term rental income be used for DSCR qualification?',
+  },
+  {
+    label: 'ITIN requirements',
+    icon: 'fa-id-card',
+    query: 'What documentation is required for ITIN borrowers?',
+  },
+  {
+    label: 'Non-warrantable condo',
+    icon: 'fa-city',
+    query: 'Which lenders finance non-warrantable condos?',
+  },
+]
+
+const GUIDELINE_PROGRESS_MESSAGES = [
+  "Searching guideline documents...",
+  "Finding relevant lender policies...",
+  "Reading through the guidelines...",
+  "Synthesizing answer from sources...",
+  "Preparing response..."
 ]
 
 // ─── MODAL FIELD SECTIONS ─────────────────────────────────────────────────────
@@ -226,9 +269,32 @@ function findRawProduct(match, rawProducts) {
   return found || null
 }
 
-// ─── COMPONENTS ───────────────────────────────────────────────────────────────
+// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
-function SearchInput({ value, onChange, onSubmit, isLoading }) {
+// Tab switcher between "Find a Loan" and "Search Guidelines" modes
+function ModeSwitcher({ activeMode, onChange }) {
+  return (
+    <div className="mode-tabs">
+      <button
+        className={`mode-tab ${activeMode === 'find' ? 'active' : ''}`}
+        onClick={() => onChange('find')}
+      >
+        <i className="fas fa-magnifying-glass-dollar"></i>
+        Find a Loan
+      </button>
+      <button
+        className={`mode-tab ${activeMode === 'guidelines' ? 'active' : ''}`}
+        onClick={() => onChange('guidelines')}
+      >
+        <i className="fas fa-book-open"></i>
+        Search Guidelines
+      </button>
+    </div>
+  )
+}
+
+// Search textarea + submit button (shared by both modes via props)
+function SearchInput({ value, onChange, onSubmit, isLoading, placeholder, buttonLabel }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (value.trim() && !isLoading) onSubmit()
@@ -239,7 +305,7 @@ function SearchInput({ value, onChange, onSubmit, isLoading }) {
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Describe your borrower scenario in plain English... (e.g., '680 FICO, self-employed, buying investment property with 20% down')"
+        placeholder={placeholder}
         className="search-input"
         rows={3}
         disabled={isLoading}
@@ -257,7 +323,7 @@ function SearchInput({ value, onChange, onSubmit, isLoading }) {
         ) : (
           <>
             <i className="fas fa-magnifying-glass"></i>
-            Find Loan Products
+            {buttonLabel}
           </>
         )}
       </button>
@@ -265,7 +331,8 @@ function SearchInput({ value, onChange, onSubmit, isLoading }) {
   )
 }
 
-function ExampleChips({ onSelect, disabled }) {
+// Clickable example chips (shared by both modes via scenarios prop)
+function ExampleChips({ scenarios, onSelect, disabled }) {
   return (
     <div className="example-section">
       <p className="example-label">
@@ -273,7 +340,7 @@ function ExampleChips({ onSelect, disabled }) {
         Try an example:
       </p>
       <div className="example-chips">
-        {EXAMPLE_SCENARIOS.map((scenario, index) => (
+        {scenarios.map((scenario, index) => (
           <button
             key={index}
             onClick={() => onSelect(scenario.query)}
@@ -298,6 +365,20 @@ function LoadingState({ message }) {
     </div>
   )
 }
+
+function ErrorMessage({ error, onRetry }) {
+  return (
+    <div className="error-message">
+      <h3>Something went wrong</h3>
+      <p>{error}</p>
+      <button onClick={onRetry} className="retry-button">
+        Try Again
+      </button>
+    </div>
+  )
+}
+
+// ─── FIND A LOAN COMPONENTS ───────────────────────────────────────────────────
 
 function ParsedScenario({ data }) {
   if (!data) return null
@@ -505,9 +586,9 @@ function ProductModal({ product, onClose }) {
   )
 }
 
-// ─── RESULTS ──────────────────────────────────────────────────────────────────
+// ─── FIND A LOAN RESULTS ──────────────────────────────────────────────────────
 
-function Results({ data, onOpenModal }) {
+function LoanResults({ data, onOpenModal }) {
   if (!data) return null
 
   return (
@@ -558,14 +639,74 @@ function Results({ data, onOpenModal }) {
   )
 }
 
-function ErrorMessage({ error, onRetry }) {
+// ─── SEARCH GUIDELINES COMPONENTS ────────────────────────────────────────────
+
+// A single source citation card shown below the synthesized answer
+function GuidelineSourceCard({ source, rank }) {
   return (
-    <div className="error-message">
-      <h3>Something went wrong</h3>
-      <p>{error}</p>
-      <button onClick={onRetry} className="retry-button">
-        Try Again
-      </button>
+    <div className="gs-source-card">
+      <div className="gs-source-rank">{rank}</div>
+      <div className="gs-source-body">
+        <div className="gs-source-header">
+          <span className="gs-source-lender">
+            <i className="fas fa-building"></i>
+            {source.lender_name}
+          </span>
+          <span className="gs-source-product">{source.product_name}</span>
+          {source.similarity > 0 && (
+            <span
+              className="gs-source-relevance"
+              title={`${source.similarity}% similarity to your question`}
+            >
+              {source.similarity}% match
+            </span>
+          )}
+        </div>
+        {source.excerpt && (
+          <p className="gs-source-excerpt">{source.excerpt}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// The full guidelines search results: synthesized answer + source citations
+function GuidelineResults({ data }) {
+  if (!data) return null
+
+  return (
+    <div className="gs-results">
+
+      {/* Synthesized answer box */}
+      <div className="gs-answer">
+        <div className="gs-answer-header">
+          <i className="fas fa-robot gs-answer-icon"></i>
+          <span className="gs-answer-label">AI Answer</span>
+        </div>
+        <div className="gs-answer-text">{data.answer}</div>
+        <p className="gs-answer-disclaimer">
+          <i className="fas fa-circle-info"></i>{' '}
+          Answer synthesized from lender PDF guidelines. Always verify directly with the lender before presenting to borrowers.
+        </p>
+      </div>
+
+      {/* Source citations */}
+      {data.sources && data.sources.length > 0 && (
+        <div className="gs-sources">
+          <div className="gs-sources-heading">
+            <h3>
+              <i className="fas fa-file-pdf"></i>
+              Sources
+            </h3>
+            <span className="results-count">{data.sources.length} document{data.sources.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="gs-source-list">
+            {data.sources.map((source, i) => (
+              <GuidelineSourceCard key={i} source={source} rank={i + 1} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -575,25 +716,37 @@ function ErrorMessage({ error, onRetry }) {
 // Sidebar_App, Footer_App components). Auth gating is handled by Outseta.
 
 function App() {
+  // Which search mode is active
+  const [activeMode, setActiveMode] = useState('find')
+
+  // ── Find a Loan state ──
   const [scenario, setScenario] = useState('')
-  const [results, setResults] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [progressMessage, setProgressMessage] = useState('')
+  const [loanResults, setLoanResults] = useState(null)
+  const [loanLoading, setLoanLoading] = useState(false)
+  const [loanError, setLoanError] = useState(null)
+  const [loanProgress, setLoanProgress] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
 
-  const handleSearch = async () => {
+  // ── Search Guidelines state ──
+  const [guidelineQuery, setGuidelineQuery] = useState('')
+  const [guidelineResults, setGuidelineResults] = useState(null)
+  const [guidelineLoading, setGuidelineLoading] = useState(false)
+  const [guidelineError, setGuidelineError] = useState(null)
+  const [guidelineProgress, setGuidelineProgress] = useState('')
+
+  // ── Loan search handler ──
+  const handleLoanSearch = async () => {
     if (!scenario.trim()) return
 
-    setIsLoading(true)
-    setError(null)
-    setResults(null)
+    setLoanLoading(true)
+    setLoanError(null)
+    setLoanResults(null)
 
-    let messageIndex = 0
-    setProgressMessage(PROGRESS_MESSAGES[0])
-    const progressInterval = setInterval(() => {
-      messageIndex = (messageIndex + 1) % PROGRESS_MESSAGES.length
-      setProgressMessage(PROGRESS_MESSAGES[messageIndex])
+    let msgIdx = 0
+    setLoanProgress(PROGRESS_MESSAGES[0])
+    const interval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % PROGRESS_MESSAGES.length
+      setLoanProgress(PROGRESS_MESSAGES[msgIdx])
     }, 3000)
 
     try {
@@ -609,22 +762,57 @@ function App() {
       }
 
       const data = await response.json()
-      setResults(data)
+      setLoanResults(data)
     } catch (err) {
-      console.error('Search error:', err)
-      setError(err.message || 'Failed to search for loan products. Please try again.')
+      console.error('Loan search error:', err)
+      setLoanError(err.message || 'Failed to search for loan products. Please try again.')
     } finally {
-      clearInterval(progressInterval)
-      setIsLoading(false)
-      setProgressMessage('')
+      clearInterval(interval)
+      setLoanLoading(false)
+      setLoanProgress('')
     }
   }
 
-  const handleExampleSelect = (query) => {
-    setScenario(query)
-    setResults(null)
-    setError(null)
+  // ── Guideline search handler ──
+  const handleGuidelineSearch = async () => {
+    if (!guidelineQuery.trim()) return
+
+    setGuidelineLoading(true)
+    setGuidelineError(null)
+    setGuidelineResults(null)
+
+    let msgIdx = 0
+    setGuidelineProgress(GUIDELINE_PROGRESS_MESSAGES[0])
+    const interval = setInterval(() => {
+      msgIdx = (msgIdx + 1) % GUIDELINE_PROGRESS_MESSAGES.length
+      setGuidelineProgress(GUIDELINE_PROGRESS_MESSAGES[msgIdx])
+    }, 3000)
+
+    try {
+      const response = await fetch(GUIDELINE_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: guidelineQuery }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Request failed with status ${response.status}`)
+      }
+
+      const data = await response.json()
+      setGuidelineResults(data)
+    } catch (err) {
+      console.error('Guideline search error:', err)
+      setGuidelineError(err.message || 'Failed to search guidelines. Please try again.')
+    } finally {
+      clearInterval(interval)
+      setGuidelineLoading(false)
+      setGuidelineProgress('')
+    }
   }
+
+  const isAnyLoading = loanLoading || guidelineLoading
 
   return (
     <main className="main-content">
@@ -637,7 +825,10 @@ function App() {
           </span>
         </h1>
         <p className="hero-subtitle">
-          Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
+          {activeMode === 'find'
+            ? 'Describe your borrower scenario in plain English and instantly find matching wholesale loan products.'
+            : 'Ask any question about lender guidelines and get AI-synthesized answers sourced directly from lender PDFs.'
+          }
         </p>
         <p className="beta-disclaimer">
           <i className="fas fa-circle-info"></i>{' '}
@@ -645,31 +836,73 @@ function App() {
         </p>
       </div>
 
-      <div className="search-container">
-        <SearchInput
-          value={scenario}
-          onChange={setScenario}
-          onSubmit={handleSearch}
-          isLoading={isLoading}
-        />
-        <ExampleChips
-          onSelect={handleExampleSelect}
-          disabled={isLoading}
-        />
+      {/* Mode tabs */}
+      <div className="mode-tabs-container">
+        <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} />
       </div>
 
-      <div className="results-container">
-        {isLoading && <LoadingState message={progressMessage} />}
-        {error && <ErrorMessage error={error} onRetry={handleSearch} />}
-        {results && !isLoading && (
-          <Results
-            data={results}
-            onOpenModal={(product) => setSelectedProduct(product)}
-          />
-        )}
-      </div>
+      {/* ── Find a Loan Mode ── */}
+      {activeMode === 'find' && (
+        <>
+          <div className="search-container">
+            <SearchInput
+              value={scenario}
+              onChange={setScenario}
+              onSubmit={handleLoanSearch}
+              isLoading={loanLoading}
+              placeholder="Describe your borrower scenario in plain English... (e.g., '680 FICO, self-employed, buying investment property with 20% down')"
+              buttonLabel="Find Loan Products"
+            />
+            <ExampleChips
+              scenarios={EXAMPLE_SCENARIOS}
+              onSelect={(q) => { setScenario(q); setLoanResults(null); setLoanError(null) }}
+              disabled={isAnyLoading}
+            />
+          </div>
 
-      {/* Product Detail Modal */}
+          <div className="results-container">
+            {loanLoading && <LoadingState message={loanProgress} />}
+            {loanError && <ErrorMessage error={loanError} onRetry={handleLoanSearch} />}
+            {loanResults && !loanLoading && (
+              <LoanResults
+                data={loanResults}
+                onOpenModal={(product) => setSelectedProduct(product)}
+              />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Search Guidelines Mode ── */}
+      {activeMode === 'guidelines' && (
+        <>
+          <div className="search-container">
+            <SearchInput
+              value={guidelineQuery}
+              onChange={setGuidelineQuery}
+              onSubmit={handleGuidelineSearch}
+              isLoading={guidelineLoading}
+              placeholder="Ask about lender guidelines... (e.g., 'Which lenders allow gift funds on investment properties?')"
+              buttonLabel="Search Guidelines"
+            />
+            <ExampleChips
+              scenarios={GUIDELINE_EXAMPLES}
+              onSelect={(q) => { setGuidelineQuery(q); setGuidelineResults(null); setGuidelineError(null) }}
+              disabled={isAnyLoading}
+            />
+          </div>
+
+          <div className="results-container">
+            {guidelineLoading && <LoadingState message={guidelineProgress} />}
+            {guidelineError && <ErrorMessage error={guidelineError} onRetry={handleGuidelineSearch} />}
+            {guidelineResults && !guidelineLoading && (
+              <GuidelineResults data={guidelineResults} />
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Product Detail Modal — only used in Find a Loan mode */}
       {selectedProduct && (
         <ProductModal
           product={selectedProduct}
