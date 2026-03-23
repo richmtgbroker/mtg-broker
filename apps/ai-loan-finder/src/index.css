@@ -977,3 +977,274 @@ html {
     font-size: 1rem;
   }
 }
+
+/* ─── Mode Tabs ──────────────────────────────────────────────────────────── */
+
+.mode-tabs-container {
+  max-width: 800px;
+  margin: 0 auto 1.5rem;
+}
+
+.mode-tabs {
+  display: inline-flex;
+  gap: 0;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  padding: 4px;
+}
+
+.mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--border-radius) - 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mode-tab:hover:not(.active) {
+  color: var(--text-dark);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.mode-tab.active {
+  color: var(--primary-blue);
+  background: var(--white);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mode-tab i {
+  font-size: 0.8125rem;
+}
+
+/* ─── Guideline Search Results ───────────────────────────────────────────── */
+
+.gs-results {
+  animation: fadeIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Synthesized answer box */
+.gs-answer {
+  background: #f0f5ff;
+  border: 1px solid #c7d9ff;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.gs-answer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--primary-blue);
+  color: var(--white);
+}
+
+.gs-answer-icon {
+  font-size: 0.9375rem;
+  opacity: 0.9;
+}
+
+.gs-answer-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The answer text itself — preserve whitespace for line breaks and bullets */
+.gs-answer-text {
+  padding: 1.25rem;
+  font-size: 0.9375rem;
+  color: var(--text-dark);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gs-answer-disclaimer {
+  margin: 0 1.25rem 1rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #c7d9ff;
+  border-radius: var(--border-radius-sm);
+  line-height: 1.5;
+}
+
+.gs-answer-disclaimer .fa-circle-info {
+  color: var(--primary-blue);
+  margin-right: 0.25rem;
+  opacity: 0.8;
+}
+
+/* Sources section */
+.gs-sources {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.gs-sources-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.gs-sources-heading h3 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gs-sources-heading h3 .fa-file-pdf {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.gs-source-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Individual source citation card */
+.gs-source-card {
+  display: flex;
+  gap: 0.875rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--gray-100);
+  transition: background 0.15s ease;
+}
+
+.gs-source-card:last-child {
+  border-bottom: none;
+}
+
+.gs-source-card:hover {
+  background: var(--gray-50);
+}
+
+.gs-source-rank {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  background: var(--light-blue-bg);
+  border-radius: 50%;
+  margin-top: 1px;
+}
+
+.gs-source-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gs-source-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.gs-source-lender {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.gs-source-lender .fa-building {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.gs-source-product {
+  font-size: 0.75rem;
+  color: var(--primary-blue);
+  background: var(--light-blue-bg);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.gs-source-relevance {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 0.125rem 0.4rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.gs-source-excerpt {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mode-tabs {
+    width: 100%;
+  }
+
+  .mode-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .gs-source-product {
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .gs-answer-text {
+    font-size: 0.875rem;
+    padding: 1rem;
+  }
+
+  .gs-answer-disclaimer {
+    margin: 0 1rem 0.875rem;
+  }
+}
