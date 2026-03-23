@@ -338,6 +338,19 @@ function jsonResponse(data, status = 200, request) {
   });
 }
 
+/**
+ * Sanitize a user email before embedding it in an Airtable filterByFormula.
+ * Removes characters that could break the formula string or enable injection.
+ * A valid email only needs: letters, digits, @, ., _, -, +
+ * Single quotes, parens, braces, and commas are the dangerous Airtable formula chars.
+ * Returns null if the result doesn't look like an email (missing @).
+ */
+function sanitizeEmailForFormula(email) {
+  if (!email || typeof email !== 'string') return null;
+  const safe = email.replace(/['"(){}[\],\\]/g, '').trim().toLowerCase();
+  return (safe.includes('@') && safe.length > 3) ? safe : null;
+}
+
 async function airtableRequest(endpoint, apiKey, method = 'GET', body = null) {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${endpoint}`;
   const options = {
@@ -465,12 +478,22 @@ async function createTask(userEmail, fields, apiKey, request) {
   return jsonResponse(data, 201, request);
 }
 
-async function updateTask(recordId, fields, apiKey, request) {
+async function updateTask(userEmail, recordId, fields, apiKey, request) {
+  // Verify ownership — only the user who owns the task can update it (HIGH-3 security fix)
+  const existing = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey);
+  if (!existing.fields || existing.fields['Assigned To'] !== userEmail) {
+    return jsonResponse({ error: 'Unauthorized' }, 403, request);
+  }
   const data = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey, 'PATCH', { fields });
   return jsonResponse(data, 200, request);
 }
 
-async function deleteTask(recordId, apiKey, request) {
+async function deleteTask(userEmail, recordId, apiKey, request) {
+  // Verify ownership — only the user who owns the task can delete it (HIGH-3 security fix)
+  const existing = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey);
+  if (!existing.fields || existing.fields['Assigned To'] !== userEmail) {
+    return jsonResponse({ error: 'Unauthorized' }, 403, request);
+  }
   await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey, 'DELETE');
   return jsonResponse({ success: true }, 200, request);
 }
@@ -2171,7 +2194,8 @@ async function getFavorites(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   const favorites = result.records.map(record => ({
@@ -2223,7 +2247,8 @@ async function createFavorite(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   return jsonResponse({
@@ -2272,7 +2297,8 @@ async function getScenarios(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   const scenarios = result.records.map(record => ({
@@ -2314,7 +2340,8 @@ async function createScenario(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   return jsonResponse({
@@ -2357,7 +2384,8 @@ async function updateScenario(userEmail, apiKey, request, scenarioId) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   return jsonResponse({
@@ -2399,7 +2427,8 @@ async function getUsage(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   if (!result.records || result.records.length === 0) {
@@ -2419,9 +2448,10 @@ async function getUsage(userEmail, apiKey, request) {
     );
     
     if (createResult.error) {
-      return jsonResponse({ error: createResult.error.message }, 500, request);
+      console.error('Usage create (getUsage) error:', createResult.error.message);
+      return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
     }
-    
+
     return jsonResponse({
       usage: {
         currentPlan: 'LITE',
@@ -2451,18 +2481,21 @@ async function updateUsage(userEmail, apiKey, request) {
   );
   
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
   
   const body = await request.json();
   const updateFields = {};
-  
-  if (body.currentPlan) updateFields['Current Plan'] = body.currentPlan;
-  if (body.pipelineLoanCount !== undefined) updateFields['Pipeline Loan Count'] = body.pipelineLoanCount;
+
+  // SECURITY (CRIT-2): currentPlan and pipelineLoanCount are intentionally NOT
+  // user-writeable. Plan is managed by Outseta billing, never by the user.
+  // Loan count is computed from actual records in checkPlanLimits, not a counter.
+  // Only calculatorSavesCount is tracked here (per-type saves, incremented by the app).
   if (body.calculatorSavesCount) updateFields['Calculator Saves Count'] = JSON.stringify(body.calculatorSavesCount);
-  
+
   let recordId;
-  
+
   if (!result.records || result.records.length === 0) {
     const createResult = await airtableRequest(
       TABLES.USAGE,
@@ -2471,8 +2504,8 @@ async function updateUsage(userEmail, apiKey, request) {
       {
         fields: {
           'User Email': userEmail,
-          'Current Plan': body.currentPlan || 'LITE',
-          'Pipeline Loan Count': body.pipelineLoanCount || 0,
+          'Current Plan': 'LITE',         // Always starts as LITE — Outseta webhook upgrades this
+          'Pipeline Loan Count': 0,        // Legacy field — not used for limit checks (see checkPlanLimits)
           'Calculator Saves Count': JSON.stringify(body.calculatorSavesCount || {}),
           'Account Created': new Date().toISOString()
         }
@@ -2480,9 +2513,10 @@ async function updateUsage(userEmail, apiKey, request) {
     );
     
     if (createResult.error) {
-      return jsonResponse({ error: createResult.error.message }, 500, request);
+      console.error('Usage create error:', createResult.error.message);
+      return jsonResponse({ error: 'Failed to initialize usage record' }, 500, request);
     }
-    
+
     return jsonResponse({
       usage: {
         currentPlan: createResult.fields['Current Plan'],
@@ -2493,17 +2527,31 @@ async function updateUsage(userEmail, apiKey, request) {
     }, 200, request);
   }
   
+  // If there's nothing to update (e.g. caller only sent currentPlan which is now blocked), return current state
+  if (Object.keys(updateFields).length === 0) {
+    const r = result.records[0];
+    return jsonResponse({
+      usage: {
+        currentPlan: r.fields['Current Plan'] || 'LITE',
+        pipelineLoanCount: r.fields['Pipeline Loan Count'] || 0,
+        calculatorSavesCount: JSON.parse(r.fields['Calculator Saves Count'] || '{}'),
+        accountCreated: r.fields['Account Created']
+      }
+    }, 200, request);
+  }
+
   recordId = result.records[0].id;
-  
+
   const updateResult = await airtableRequest(
     `${TABLES.USAGE}/${recordId}`,
     apiKey,
     'PATCH',
     { fields: updateFields }
   );
-  
+
   if (updateResult.error) {
-    return jsonResponse({ error: updateResult.error.message }, 500, request);
+    console.error('Usage update error:', updateResult.error.message);
+    return jsonResponse({ error: 'Failed to update usage data' }, 500, request);
   }
   
   return jsonResponse({
@@ -2636,7 +2684,8 @@ async function getGoalPlan(userEmail, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   if (!result.records || result.records.length === 0) {
@@ -2685,7 +2734,8 @@ async function createGoalPlan(userEmail, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   return jsonResponse({
@@ -2731,7 +2781,8 @@ async function updateGoalPlan(userEmail, recordId, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   return jsonResponse({
@@ -2760,7 +2811,8 @@ async function getBrokerProfile(userEmail, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   // No profile found yet - return null (user hasn't saved settings)
@@ -2812,7 +2864,8 @@ async function createBrokerProfile(userEmail, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   return jsonResponse({
@@ -2860,7 +2913,8 @@ async function updateBrokerProfile(userEmail, recordId, apiKey, request) {
   );
 
   if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
+    console.error('Airtable error:', result.error.message);
+    return jsonResponse({ error: 'A server error occurred. Please try again.' }, 500, request);
   }
 
   return jsonResponse({
@@ -3814,7 +3868,12 @@ export default {
     const apiKey = env.AIRTABLE_API_KEY;
 
     const authHeader = request.headers.get('Authorization');
-    const userEmail = authHeader?.replace('Bearer ', '');
+    // Sanitize the email immediately on extraction to prevent Airtable formula injection (HIGH-2).
+    // sanitizeEmailForFormula() strips chars that could break filterByFormula strings.
+    // NOTE: This auth line still needs to be upgraded to full JWT verification (CRIT-1 — see security audit).
+    // When that's done, userEmail will come from the verified JWT payload, not the raw header.
+    const rawEmail = authHeader?.replace('Bearer ', '') || '';
+    const userEmail = sanitizeEmailForFormula(rawEmail);
 
     // ============================================================
     // PUBLIC ROUTES (No authentication required)
@@ -3839,6 +3898,11 @@ export default {
     }
     
     if (path === '/api/loan-products/clear-cache' && method === 'GET') {
+      // MED-2: Require admin token to prevent unauthenticated cache-busting / Airtable rate exhaustion
+      const cacheToken = request.headers.get('X-Admin-Token');
+      if (!cacheToken || cacheToken !== env.CACHE_CLEAR_TOKEN) {
+        return jsonResponse({ error: 'Unauthorized' }, 401, request);
+      }
       return await clearLoanProductsCache(request);
     }
 
@@ -3853,6 +3917,11 @@ export default {
     }
 
     if (path === '/api/products-list/clear-cache' && method === 'GET') {
+      // MED-2: Require admin token
+      const cacheToken = request.headers.get('X-Admin-Token');
+      if (!cacheToken || cacheToken !== env.CACHE_CLEAR_TOKEN) {
+        return jsonResponse({ error: 'Unauthorized' }, 401, request);
+      }
       return await clearProductsListCache(request);
     }
 
@@ -3957,11 +4026,11 @@ export default {
       if (path.match(/^\/api\/pipeline\/tasks\/rec\w+$/) && method === 'PUT') {
         const recordId = path.split('/').pop();
         const body = await request.json();
-        return await updateTask(recordId, body, apiKey, request);
+        return await updateTask(userEmail, recordId, body, apiKey, request);
       }
       if (path.match(/^\/api\/pipeline\/tasks\/rec\w+$/) && method === 'DELETE') {
         const recordId = path.split('/').pop();
-        return await deleteTask(recordId, apiKey, request);
+        return await deleteTask(userEmail, recordId, apiKey, request);
       }
 
       // FAVORITES
