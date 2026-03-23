@@ -1,0 +1,14 @@
+<!-- MTG.BROKER Home Page — Single Embed (replaces all 5 previous embeds) -->
+<!-- Loads Hero, Features, Pricing, CTA sections from Cloudflare Worker -->
+<!-- Worker URL: https://mtg-broker-home.rich-e00.workers.dev/home.js -->
+<!-- Version: 1.0 -->
+
+<div id="mtg-home"></div>
+<script>
+  (function() {
+    var s = document.createElement('script');
+    s.src = 'https://mtg-broker-home.rich-e00.workers.dev/home.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+</script>
