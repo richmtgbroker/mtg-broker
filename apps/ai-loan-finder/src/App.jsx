@@ -711,9 +711,6 @@ function GuidelineSourceCard({ source, rank }) {
             </span>
           )}
         </div>
-        {source.excerpt && (
-          <p className="gs-source-excerpt">{source.excerpt}</p>
-        )}
       </div>
     </div>
   )
@@ -737,7 +734,7 @@ function GuidelineResults({ data }) {
         </div>
         <p className="gs-answer-disclaimer">
           <i className="fas fa-circle-info"></i>{' '}
-          Answer synthesized from lender PDF guidelines. Always verify directly with the lender before presenting to borrowers.
+          Always verify directly with the lender before presenting to borrowers.
         </p>
       </div>
 
