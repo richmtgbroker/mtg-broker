@@ -11,7 +11,7 @@ account_id = "e00ea2fe32b9a5cee69e55cbcf2da9ea"
 # ============================================================
 [[r2_buckets]]
 binding     = "LOGO_BUCKET"
-bucket_name = "YOUR_R2_BUCKET_NAME"   # ← replace with real name before deploying
+bucket_name = "mtg-broker-logos"
 
 # ============================================================
 # Environment Variables (secrets)
