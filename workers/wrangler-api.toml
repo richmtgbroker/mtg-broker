@@ -1,0 +1,24 @@
+name = "mtg-broker-api"
+main = "mtg-broker-api.js"
+compatibility_date = "2024-01-01"
+account_id = "e00ea2fe32b9a5cee69e55cbcf2da9ea"
+
+# ============================================================
+# R2 Bucket — logo and avatar storage
+# Binding name must stay "LOGO_BUCKET" (that's what the worker code uses).
+# bucket_name is the actual name of your R2 bucket in Cloudflare.
+# Find it at: dash.cloudflare.com → R2 Object Storage → your bucket name
+# ============================================================
+[[r2_buckets]]
+binding     = "LOGO_BUCKET"
+bucket_name = "YOUR_R2_BUCKET_NAME"   # ← replace with real name before deploying
+
+# ============================================================
+# Environment Variables (secrets)
+# These are NOT stored here — they live in the Cloudflare dashboard.
+# Set them at: Workers & Pages → mtg-broker-api → Settings → Variables
+#
+#   AIRTABLE_API_KEY    — Airtable personal access token
+#   REWARDFUL_API_KEY   — Rewardful affiliate API key
+#   CACHE_CLEAR_TOKEN   — Admin token for /clear-cache endpoints (new — add this!)
+# ============================================================
