@@ -1,6 +1,6 @@
 <!-- ============================================================
      SITE SETTINGS - FOOTER CODE (Before </body>)
-     mtg.broker — v3.2
+     mtg.broker — v3.3
 
      ✅ Section 0: Global Outseta cache (1 API call only)
      ✅ Section 1: Card profile photo fallback
@@ -10,6 +10,18 @@
      ✅ Section 5: Billing system core (state = 'ready')
      ✅ Section 6: Feature Gating v2.0
      ✅ Section 7-8: Loaded externally (feature-extras.js v2.0)
+
+     CHANGES IN v3.3:
+     - FIX: Dashboard 401 persisted even with v3.2 fetch interceptor.
+       Root cause: Outseta.getUser() resolves but does NOT refresh the JWT
+       in localStorage — the token refresh is a separate background process.
+       The dashboard embed reads the stale token into the Authorization header
+       BEFORE calling fetch(), so even after the interceptor waits, the
+       request still carries the expired JWT.
+       Fix: the fetch interceptor now (a) decodes the JWT to check its exp
+       claim, (b) if expired, polls localStorage until Outseta's background
+       refresh replaces it with a fresh token (up to 3s), and (c) patches
+       the Authorization header with the fresh token before the request fires.
 
      CHANGES IN v3.2:
      - FIX: Dashboard pipeline data still 401 on first load even after v3.1.
@@ -128,26 +140,42 @@
   console.log('✅ Global Outseta cache initialized');
 
   // ============================================================
-  // GLOBAL API FETCH INTERCEPTOR
+  // GLOBAL API FETCH INTERCEPTOR (v3.3)
   //
-  // Some pages (e.g. Dashboard) call fetch() directly instead of
-  // going through window.MTG_Billing.apiRequest(). This interceptor
-  // catches ALL fetch calls to the API base URL and waits for
-  // getCachedOutsetaUser() to resolve first, ensuring Outseta has
-  // had a chance to refresh an expired JWT before the request fires.
+  // Problem: page embeds (Dashboard) read the JWT from localStorage
+  // and set the Authorization header BEFORE calling fetch(). If the
+  // JWT is expired, the request carries a stale token → 401.
+  // Outseta refreshes the token via a background process that is
+  // separate from getUser() — so just awaiting getUser() is not
+  // enough.
   //
-  // After the first call, getCachedOutsetaUser() returns instantly
-  // from the in-memory cache — no performance overhead.
+  // Solution:
+  //  1. Wait for Outseta SDK to load.
+  //  2. Decode the JWT's `exp` claim. If expired, poll localStorage
+  //     until Outseta's background refresh replaces it (up to 3s).
+  //  3. Patch the Authorization header with the fresh token so the
+  //     request uses the new JWT instead of the stale one the caller
+  //     set earlier.
+  //
+  // If the token is NOT expired, steps 2–3 are skipped — zero delay.
   // ============================================================
   (function() {
     var API_BASE = 'https://mtg-broker-api.rich-e00.workers.dev';
     var _origFetch = window.fetch;
 
+    function isJWTExpired(token) {
+      try {
+        var payload = JSON.parse(atob(token.split('.')[1]));
+        // Treat as expired if within 10 seconds of expiry
+        return !payload.exp || (payload.exp * 1000) < (Date.now() + 10000);
+      } catch (e) { return true; }
+    }
+
     window.fetch = async function(input, init) {
       var url = typeof input === 'string' ? input : (input && input.url) || '';
 
       if (url.indexOf(API_BASE) === 0) {
-        // Wait up to 3 seconds for Outseta to load, then refresh the token
+        // 1. Wait for Outseta SDK to load
         var attempts = 0;
         while (attempts < 30) {
           if (window.Outseta && typeof window.Outseta.getUser === 'function') {
@@ -157,6 +185,31 @@
           await new Promise(function(r) { setTimeout(r, 100); });
           attempts++;
         }
+
+        // 2. If token is expired, wait for Outseta's background refresh
+        var token;
+        try { token = localStorage.getItem('Outseta.nocode.accessToken'); } catch(e) {}
+
+        if (token && isJWTExpired(token)) {
+          var rAttempts = 0;
+          while (rAttempts < 30) {
+            await new Promise(function(r) { setTimeout(r, 100); });
+            try { token = localStorage.getItem('Outseta.nocode.accessToken'); } catch(e) {}
+            if (token && !isJWTExpired(token)) break;
+            rAttempts++;
+          }
+        }
+
+        // 3. Patch the Authorization header with the (potentially refreshed) token.
+        //    The calling code may have already set it with the stale JWT.
+        try {
+          var freshToken = localStorage.getItem('Outseta.nocode.accessToken');
+          if (freshToken && init && init.headers) {
+            init = Object.assign({}, init);
+            init.headers = Object.assign({}, init.headers);
+            init.headers['Authorization'] = 'Bearer ' + freshToken;
+          }
+        } catch(e) {}
       }
 
       return _origFetch.call(this, input, init);
