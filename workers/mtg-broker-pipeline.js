@@ -1701,15 +1701,23 @@ async function loadLoans(forceRefresh = false) {
   try {
     if (!forceRefresh) {
       const cd = getCachedPipelineData();
-      if (cd) {
+      // Guard: only use cache if it's a valid array (prevents crash if an error object was cached)
+      if (cd && Array.isArray(cd)) {
         loans = cd.map(r => ({ id: r.id, ...r.fields }));
         document.getElementById('loading-state').classList.add('hidden');
         if (loans.length === 0) document.getElementById('empty-state').classList.remove('hidden');
         else { updateStats(); renderCurrentView(); }
         return;
+      } else if (cd) {
+        // Cache has bad data (e.g. an error object from a failed request) — clear it
+        clearPipelineCache();
       }
     }
     const data = await apiCall('/api/pipeline/loans');
+    // Guard: only cache and map if API returned a valid array
+    if (!Array.isArray(data)) {
+      throw new Error(data?.error || 'Unexpected response from server');
+    }
     setCachedPipelineData(data);
     loans = data.map(r => ({ id: r.id, ...r.fields }));
     document.getElementById('loading-state').classList.add('hidden');

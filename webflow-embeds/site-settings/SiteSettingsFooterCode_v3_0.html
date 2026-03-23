@@ -1,0 +1,1307 @@
+<!-- ============================================================
+     SITE SETTINGS - FOOTER CODE (Before </body>)
+     mtg.broker — v3.0
+
+     ✅ Section 0: Global Outseta cache (1 API call only)
+     ✅ Section 1: Card profile photo fallback
+     ✅ Section 2: Mobile bottom navigation
+     ✅ Section 3: NEXA employee access (FIXED v2.8)
+     ✅ Section 4: Ybug bug reporting
+     ✅ Section 5: Billing system core (state = 'ready')
+     ✅ Section 6: Feature Gating v2.0
+     ✅ Section 7-8: Loaded externally (feature-extras.js v2.0)
+
+     CHANGES IN v3.0:
+     - CRIT-1 security fix: apiRequest() now sends the raw Outseta JWT in
+       the Authorization header instead of a plain email address.
+       Added getAccessToken() helper that reads the JWT from localStorage.
+       The API worker verifies the JWT signature before trusting the identity.
+       Previously any user could impersonate another by sending their email.
+
+     CHANGES IN v2.9:
+     - FIX: Section 5 LITE plan UID corrected: NmdmZg90 → NmdnZg90
+       (typo caused LITE plan to fall through to default instead of
+       matching explicitly — functionally harmless but now correct)
+     - POLISH: Section 5 showUpgradeModal redesigned with brand blue
+       gradient header, context-aware feature bullets, and cleaner
+       button layout (replaces yellow crown icon + plain message)
+
+     CHANGES IN v2.8:
+     - FIX: Section 3 NEXA reveal now uses setProperty with !important
+       so it can override CSS rules that use display:none !important
+       (e.g., Lenders Head CSS). Previously used plain el.style.display
+       = 'block' which was losing to CSS !important rules, causing NEXA
+       filter buttons to appear then disappear after ~2 seconds.
+     - FIX: Section 3 now skips elements already revealed by page-specific
+       JS (e.g., lenders revealNexaUI sets display:flex). Prevents this
+       global code from overwriting flex with block on the filter group.
+     ============================================================ -->
+
+
+<!-- ========== SECTION 0: GLOBAL OUTSETA CACHE ========== -->
+<!-- CRITICAL: This MUST be first - all other code depends on it -->
+<script>
+(function() {
+  'use strict';
+  
+  /* ==========================================================================
+     GLOBAL OUTSETA USER CACHE
+     
+     Prevents multiple Outseta.getUser() calls across the entire site.
+     All scripts (navbar, billing, nexa, ybug) use this cache.
+     
+     Usage:
+     - const user = await window.getCachedOutsetaUser();
+     ========================================================================== */
+  
+  window.OUTSETA_USER_CACHE = null;
+  window.OUTSETA_USER_LOADING = null;
+  
+  window.getCachedOutsetaUser = async function() {
+    // Return cached user if available
+    if (window.OUTSETA_USER_CACHE !== null) {
+      return window.OUTSETA_USER_CACHE;
+    }
+    
+    // Return existing promise if already loading
+    if (window.OUTSETA_USER_LOADING !== null) {
+      return window.OUTSETA_USER_LOADING;
+    }
+    
+    // Check if Outseta is loaded
+    if (!window.Outseta || typeof window.Outseta.getUser !== 'function') {
+      return null;
+    }
+    
+    // Fetch user and cache it (THIS IS THE ONLY PLACE WE CALL Outseta.getUser())
+    window.OUTSETA_USER_LOADING = window.Outseta.getUser()
+      .then(function(user) {
+        window.OUTSETA_USER_CACHE = user;
+        window.OUTSETA_USER_LOADING = null;
+        console.log('✅ Global: Outseta user loaded and cached');
+        return user;
+      })
+      .catch(function(err) {
+        window.OUTSETA_USER_LOADING = null;
+        console.warn('⚠️ Global: Error loading Outseta user:', err.message);
+        // Don't cache errors - allow retry
+        return null;
+      });
+    
+    return window.OUTSETA_USER_LOADING;
+  };
+  
+  // Clear cache on logout
+  window.clearOutsetaUserCache = function() {
+    window.OUTSETA_USER_CACHE = null;
+    window.OUTSETA_USER_LOADING = null;
+    console.log('🔄 Global: Outseta user cache cleared');
+  };
+  
+  // Auto-clear on logout
+  window.addEventListener('hashchange', function() {
+    if (window.location.hash.includes('logout')) {
+      window.clearOutsetaUserCache();
+    }
+  });
+  
+  console.log('✅ Global Outseta cache initialized');
+  
+})();
+</script>
+
+
+<!-- ========== SECTION 1: CARD PROFILE PHOTO FALLBACK ========== -->
+<!-- Handles missing profile photos on Lender and Contact cards -->
+<!-- Shows auto-generated avatar with user initials when image fails to load -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.ae-photo, .contact-image').forEach(function(img) {
+    // If image fails to load, use ui-avatars fallback
+    img.addEventListener('error', function() {
+      const card = this.closest('.ae-card, .lender_card, .contact-card, [class*="contact"]');
+      const name = card ? (
+        card.getAttribute('data-contact-name') || 
+        card.querySelector('.ae-name, .contact-name-class, [class*="name"]')?.textContent
+      ) : 'User';
+      this.src = 'https://ui-avatars.com/api/?background=random&size=256&name=' + encodeURIComponent(name || 'User');
+    });
+    
+    // Check if src is empty or missing on page load
+    if (!img.src || img.src === window.location.href || img.src.endsWith('/')) {
+      const card = img.closest('.ae-card, .lender_card, .contact-card, [class*="contact"]');
+      const name = card ? (
+        card.getAttribute('data-contact-name') || 
+        card.querySelector('.ae-name, .contact-name-class, [class*="name"]')?.textContent
+      ) : 'User';
+      img.src = 'https://ui-avatars.com/api/?background=random&size=256&name=' + encodeURIComponent(name || 'User');
+    }
+  });
+});
+</script>
+
+
+<!-- ========== SECTION 2: MOBILE BOTTOM NAVIGATION ========== -->
+<!-- Fixed bottom nav bar for mobile devices -->
+<nav class="mobile-bottom-nav">
+  <a href="/app/dashboard" class="nav-item" data-page="dashboard">
+    <i class="fas fa-home"></i>
+    <span>Dashboard</span>
+  </a>
+  
+  <a href="/app/lenders" class="nav-item" data-page="lenders">
+    <i class="fas fa-building"></i>
+    <span>Lenders</span>
+  </a>
+  
+  <a href="/app/loan-search" class="nav-item" data-page="search">
+    <i class="fas fa-search"></i>
+    <span>Search</span>
+  </a>
+  
+  <a href="/app/products" class="nav-item" data-page="products">
+    <i class="fas fa-box"></i>
+    <span>Products</span>
+  </a>
+  
+  <a href="/app/vendors" class="nav-item" data-page="vendors">
+    <i class="fas fa-store"></i>
+    <span>Vendors</span>
+  </a>
+  
+  <a href="/app/contacts" class="nav-item" data-page="contacts">
+    <i class="fas fa-address-book"></i>
+    <span>Contacts</span>
+  </a>
+</nav>
+
+
+<!-- ========== SECTION 3: NEXA EMPLOYEE ACCESS (FIXED v2.8) ========== -->
+<!-- Controls visibility of Nexa-only content -->
+<!-- Elements with class "nexa-only" are hidden by default -->
+<!-- Script shows them if user has NexaAccess = "true" in Outseta -->
+<!--
+  FIX (v2.8): Two changes:
+  1. Uses setProperty('display', 'block', 'important') instead of plain
+     el.style.display = 'block'. This ensures the inline style beats CSS
+     rules that use display: none !important (like Lenders Head CSS).
+  2. Skips elements already revealed by page-specific JS. For example,
+     the Lenders page revealNexaUI() sets display:flex !important on the
+     nexa-filters-group. Without this skip, this global code was
+     overwriting flex with block, which broke the layout AND lost the
+     !important flag — causing the CSS !important rule to win and hide
+     the buttons ~2 seconds after they first appeared.
+-->
+<style>
+.nexa-only { display: none; }
+</style>
+
+<script>
+async function checkNexaAccess() {
+  // Wait for cache to be available
+  if (typeof window.getCachedOutsetaUser !== 'function') {
+    setTimeout(checkNexaAccess, 200);
+    return;
+  }
+  
+  try {
+    var user = await window.getCachedOutsetaUser(); // Uses cache!
+    
+    if (user && user.NexaAccess === "true") {
+      document.querySelectorAll('.nexa-only').forEach(function(el) {
+        // Skip elements already revealed by page-specific JS
+        // (e.g., lenders page sets display:flex !important on nexa-filters-group)
+        var currentDisplay = el.style.getPropertyValue('display');
+        if (currentDisplay && currentDisplay !== 'none') return;
+
+        // Use setProperty with !important so this overrides CSS rules
+        // that use display: none !important (like on the Lenders page)
+        el.style.setProperty('display', 'block', 'important');
+      });
+    }
+  } catch (err) {
+    // User not logged in or error - keep nexa-only content hidden
+  }
+}
+
+document.addEventListener('DOMContentLoaded', checkNexaAccess);
+</script>
+
+
+<!-- ========== SECTION 4: YBUG BUG REPORTING ========== -->
+<script type='text/javascript'>
+(function() {
+    // Initialize Ybug settings
+    window.ybug_settings = {"id":"rp6gm9qcm7g7qvw2vkb2"};
+    
+    // Try to get logged-in user info from Outseta
+    async function addUserToYbug() {
+      if (typeof window.getCachedOutsetaUser !== 'function') {
+        return;
+      }
+      
+      try {
+        const user = await window.getCachedOutsetaUser(); // Uses cache!
+        if (user) {
+          window.ybug_settings.user = {
+            email: user.Email || '',
+            name: user.FullName || ''
+          };
+        }
+      } catch (err) {
+        // Ignore errors
+      }
+    }
+    
+    // Run after a short delay to let Outseta load
+    setTimeout(addUserToYbug, 1000);
+    
+    // Load Ybug widget
+    var ybug = document.createElement('script');
+    ybug.type = 'text/javascript';
+    ybug.async = true;
+    ybug.src = 'https://widget.ybug.io/button/' + window.ybug_settings.id + '.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(ybug, s);
+})();
+</script>
+
+
+<!-- ========== SECTION 5: BILLING SYSTEM - CORE ========== -->
+<!-- API calls, plan detection, upgrade modals -->
+<script>
+(function() {
+  'use strict';
+
+  // API Configuration
+  const API_BASE = 'https://mtg-broker-api.rich-e00.workers.dev';
+  
+  // Plan UIDs from Outseta
+  const PLAN_UIDS = {
+    LITE: 'NmdnZg90',
+    PLUS: 'Dmw8leQ4',
+    PRO: 'yWobBP9D'
+  };
+
+  // ============================================================
+  // HELPER: Get Current User Email - NOW USES CACHE!
+  // ============================================================
+  async function getUserEmail() {
+    if (typeof window.getCachedOutsetaUser !== 'function') {
+      console.error('Global Outseta cache not loaded');
+      return null;
+    }
+    
+    try {
+      const user = await window.getCachedOutsetaUser(); // Uses cache!
+      return user?.Email || null;
+    } catch (err) {
+      console.error('Error getting user:', err);
+      return null;
+    }
+  }
+
+  // ============================================================
+  // HELPER: Get Current User Plan - NOW USES CACHE!
+  // ============================================================
+  async function getUserPlan() {
+    if (typeof window.getCachedOutsetaUser !== 'function') {
+      return 'LITE'; // Default to LITE if cache not loaded
+    }
+    
+    try {
+      const user = await window.getCachedOutsetaUser(); // Uses cache!
+      
+      // Check CurrentSubscription (not Subscriptions array)
+      if (user?.Account?.CurrentSubscription?.Plan?.Uid) {
+        const planUid = user.Account.CurrentSubscription.Plan.Uid;
+        
+        // Match plan UID to plan name
+        if (planUid === PLAN_UIDS.PRO) return 'PRO';
+        if (planUid === PLAN_UIDS.PLUS) return 'PLUS';
+        if (planUid === PLAN_UIDS.LITE) return 'LITE';
+      }
+      
+      // Default to LITE if no subscription or unrecognized plan
+      return 'LITE';
+    } catch (err) {
+      console.error('Error getting user plan:', err);
+      return 'LITE';
+    }
+  }
+
+  // ============================================================
+  // HELPER: Get Raw JWT Token (CRIT-1 Security Fix)
+  // Returns the Outseta JWT from localStorage so the server can
+  // verify the RS256 signature. We send the full token, NOT just
+  // the email — the server extracts the email from the verified payload.
+  // ============================================================
+  function getAccessToken() {
+    try {
+      return localStorage.getItem('Outseta.nocode.accessToken') || null;
+    } catch (e) { return null; }
+  }
+
+  // ============================================================
+  // API CALL: Generic API Request
+  // ============================================================
+  async function apiRequest(endpoint, method = 'GET', body = null) {
+    // CRIT-1: Send the raw JWT so the server can verify its RS256 signature.
+    // The server extracts the email from the verified payload — never from plain text.
+    const token = getAccessToken();
+
+    if (!token) {
+      throw new Error('User not logged in');
+    }
+
+    const options = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    };
+    
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    
+    const response = await fetch(`${API_BASE}${endpoint}`, options);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'API request failed');
+    }
+    
+    return data;
+  }
+
+  // ============================================================
+  // API CALL: Check Plan Limits
+  // ============================================================
+  async function checkPlanLimit(action, params = {}) {
+    try {
+      let endpoint = `/api/plan-limits?action=${encodeURIComponent(action)}`;
+      
+      // Add additional params if provided
+      Object.keys(params).forEach(key => {
+        endpoint += `&${key}=${encodeURIComponent(params[key])}`;
+      });
+      
+      const result = await apiRequest(endpoint);
+      return result;
+    } catch (err) {
+      console.error('Error checking plan limits:', err);
+      return { allowed: false, reason: 'Error checking limits' };
+    }
+  }
+
+  // ============================================================
+  // API CALL: Get Usage Stats
+  // ============================================================
+  async function getUsage() {
+    try {
+      const result = await apiRequest('/api/usage');
+      return result.usage;
+    } catch (err) {
+      console.error('Error getting usage:', err);
+      return null;
+    }
+  }
+
+  // ============================================================
+  // API CALL: Update Usage Stats
+  // ============================================================
+  async function updateUsage(updates) {
+    try {
+      const result = await apiRequest('/api/usage', 'PUT', updates);
+      return result.usage;
+    } catch (err) {
+      console.error('Error updating usage:', err);
+      return null;
+    }
+  }
+
+  // ============================================================
+  // UI: Show Upgrade Modal (v2.9 — polished with feature bullets)
+  // ============================================================
+  function showUpgradeModal(reason, recommendedPlan) {
+    recommendedPlan = recommendedPlan || 'PLUS';
+
+    // Remove any existing modal first
+    var existing = document.getElementById('upgrade-modal');
+    if (existing) existing.remove();
+
+    // ── Feature bullets: keyed by reason string ────────────────
+    // Each entry shows 3 concrete benefits relevant to what was blocked.
+    var BULLET_MAP = {
+      'Pipeline tracking is available on PLUS and PRO plans.': [
+        { icon: 'fa-chart-line',    text: 'Track up to 25 active loans \u2014 PLUS plan' },
+        { icon: 'fa-infinity',      text: 'Unlimited pipeline loans \u2014 PRO plan' },
+        { icon: 'fa-columns',       text: 'Kanban board + table view included' }
+      ],
+      'Pipeline tracking is available on PLUS and PRO plans. Track up to 25 active loans on PLUS, or unlimited on PRO.': [
+        { icon: 'fa-chart-line',    text: 'Track up to 25 active loans \u2014 PLUS plan' },
+        { icon: 'fa-infinity',      text: 'Unlimited pipeline loans \u2014 PRO plan' },
+        { icon: 'fa-columns',       text: 'Kanban board + table view included' }
+      ],
+      'Export your pipeline to CSV or Excel with a PRO plan.': [
+        { icon: 'fa-file-csv',      text: 'Export pipeline to CSV and Excel files' },
+        { icon: 'fa-plug',          text: 'Integrate with your CRM or workflow tools' },
+        { icon: 'fa-infinity',      text: 'Unlimited pipeline loan tracking included' }
+      ],
+      'Advanced calculators are available on PLUS and PRO plans.': [
+        { icon: 'fa-calculator',    text: 'Loan Scenario Comparison, Rent vs Buy, Lender Pricing & Closing Costs' },
+        { icon: 'fa-cloud',         text: '10 cloud-saved scenarios per calculator \u2014 PLUS' },
+        { icon: 'fa-print',         text: 'Print any calculator to a professional PDF' }
+      ],
+      'Upgrade to unlock Loan Scenario Comparison, Rent vs. Buy, Lender Pricing, and Closing Costs calculators.': [
+        { icon: 'fa-calculator',    text: 'Loan Scenario Comparison, Rent vs Buy, Lender Pricing & Closing Costs' },
+        { icon: 'fa-cloud',         text: '10 cloud-saved scenarios per calculator \u2014 PLUS' },
+        { icon: 'fa-print',         text: 'Print any calculator to a professional PDF' }
+      ],
+      'Print calculator results to PDF with a PLUS or PRO plan.': [
+        { icon: 'fa-print',         text: 'Print any calculator to a professional PDF' },
+        { icon: 'fa-cloud-arrow-up',text: 'Save up to 10 scenarios per calculator \u2014 PLUS' },
+        { icon: 'fa-infinity',      text: 'Unlimited saved scenarios \u2014 PRO plan' }
+      ],
+      'Save calculator scenarios with a PLUS or PRO plan. PLUS includes 10 saves per calculator, PRO is unlimited.': [
+        { icon: 'fa-cloud-arrow-up',text: 'Save and reload calculator setups anytime' },
+        { icon: 'fa-list',          text: '10 saves per calculator \u2014 PLUS plan' },
+        { icon: 'fa-infinity',      text: 'Unlimited saved scenarios \u2014 PRO plan' }
+      ],
+      'Save calculator scenarios with a PLUS or PRO plan.': [
+        { icon: 'fa-cloud-arrow-up',text: 'Save and reload calculator setups anytime' },
+        { icon: 'fa-list',          text: '10 saves per calculator \u2014 PLUS plan' },
+        { icon: 'fa-infinity',      text: 'Unlimited saved scenarios \u2014 PRO plan' }
+      ],
+      'Save and load calculator scenarios with a PLUS or PRO plan.': [
+        { icon: 'fa-cloud-arrow-up',text: 'Save and reload calculator setups anytime' },
+        { icon: 'fa-list',          text: '10 saves per calculator \u2014 PLUS plan' },
+        { icon: 'fa-rotate-left',   text: 'Load any saved scenario with one click' }
+      ],
+      'View detailed loan product information with a PLUS or PRO plan.': [
+        { icon: 'fa-file-lines',    text: 'Full loan specs, rates, and requirements' },
+        { icon: 'fa-arrow-up-right-from-square', text: 'Direct links to lender guidelines and matrices' },
+        { icon: 'fa-envelope',      text: 'Contact lenders directly from search results' }
+      ]
+    };
+
+    // Default bullets when reason string doesn't match any known key
+    var DEFAULT_BULLETS = [
+      { icon: 'fa-chart-line',    text: 'Pipeline tracking (25 loans on PLUS, unlimited on PRO)' },
+      { icon: 'fa-calculator',    text: 'All 14+ calculators including advanced tools' },
+      { icon: 'fa-cloud-arrow-up',text: 'Cloud-saved scenarios + print to PDF' }
+    ];
+
+    var bullets = BULLET_MAP[reason] || DEFAULT_BULLETS;
+    var isPro = (recommendedPlan === 'PRO');
+    var planLabel = isPro ? 'PRO' : 'PLUS';
+    var planPrice = isPro ? '$79/month' : '$49/month';
+
+    // Build bullets HTML
+    var bulletsHTML = bullets.map(function(b) {
+      return (
+        '<div style="display:flex;align-items:flex-start;gap:10px;">' +
+          '<span style="flex-shrink:0;width:30px;height:30px;background:#EFF6FF;border-radius:8px;' +
+                'display:flex;align-items:center;justify-content:center;color:#2563EB;font-size:13px;">' +
+            '<i class="fa-solid ' + b.icon + '"></i>' +
+          '</span>' +
+          '<span style="font-size:14px;color:#1E234C;line-height:1.5;padding-top:5px;">' + b.text + '</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    const modalHTML = `
+      <div id="upgrade-modal" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15,23,42,0.75);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10000; padding: 20px; box-sizing: border-box;
+        backdrop-filter: blur(4px);
+      ">
+        <div style="
+          background: white; border-radius: 16px; max-width: 520px; width: 100%;
+          overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          font-family: Host Grotesk, system-ui, sans-serif;
+        ">
+
+          <!-- Header: brand blue gradient -->
+          <div style="
+            background: linear-gradient(135deg, #1E40AF 0%, #2563EB 60%, #3B82F6 100%);
+            padding: 28px 28px 22px; text-align: center; position: relative;
+          ">
+            <button id="upgrade-modal-close" style="
+              position: absolute; top: 12px; right: 14px;
+              background: rgba(255,255,255,0.2); border: none;
+              width: 30px; height: 30px; border-radius: 50%;
+              cursor: pointer; color: white; font-size: 18px;
+              display: flex; align-items: center; justify-content: center;
+            ">&times;</button>
+            <div style="
+              width: 56px; height: 56px; margin: 0 auto 14px;
+              background: rgba(255,255,255,0.2); border-radius: 14px;
+              display: flex; align-items: center; justify-content: center;
+            ">
+              <i class="fa-solid fa-bolt" style="font-size: 26px; color: white;"></i>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 700; color: white; margin: 0 0 4px;">
+              Upgrade to ${planLabel}
+            </h2>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.8); margin: 0;">
+              ${planPrice} &mdash; 7-day free trial, cancel anytime
+            </p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 22px 24px 24px;">
+            <p style="font-size: 14px; color: #64748b; margin: 0 0 16px; line-height: 1.5;">
+              ${reason || 'Upgrade your plan to unlock this feature.'}
+            </p>
+
+            <!-- Feature bullets -->
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px;">
+              ${bulletsHTML}
+            </div>
+
+            <!-- Action buttons -->
+            <div style="display: flex; gap: 10px;">
+              <button id="upgrade-modal-cancel" style="
+                flex: 1; padding: 11px; background: #F1F5F9; border: none;
+                border-radius: 8px; font-size: 14px; font-weight: 600;
+                color: #64748b; cursor: pointer; font-family: inherit;
+              ">Maybe Later</button>
+              <button id="upgrade-modal-confirm" style="
+                flex: 2; padding: 11px;
+                background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+                border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+                color: white; cursor: pointer; font-family: inherit;
+                box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+              ">Upgrade to ${planLabel} &rarr;</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+
+    const closeModal = () => {
+      document.getElementById('upgrade-modal')?.remove();
+      document.body.style.overflow = '';
+    };
+
+    document.getElementById('upgrade-modal-close')?.addEventListener('click', closeModal);
+    document.getElementById('upgrade-modal-cancel')?.addEventListener('click', closeModal);
+
+    document.getElementById('upgrade-modal-confirm')?.addEventListener('click', () => {
+      closeModal();
+      openOutsetaPlanPicker();
+    });
+
+    document.getElementById('upgrade-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'upgrade-modal') closeModal();
+    });
+  }
+
+  // ============================================================
+  // INITIALIZATION - Wait for cache to load
+  // ============================================================
+  async function initBillingSystem() {
+    try {
+      // Wait for global cache to be available
+      let attempts = 0;
+      while (attempts < 30 && typeof window.getCachedOutsetaUser !== 'function') {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (typeof window.getCachedOutsetaUser !== 'function') {
+        console.error('❌ Billing: Global cache not available after 3 seconds');
+        window.MTG_Billing.state = 'error';
+        return;
+      }
+      
+      console.log('✅ MTG Billing Core loaded (uses global cache)');
+      
+      // CRITICAL: Set state to ready FIRST!
+      window.MTG_Billing.state = 'ready';
+      console.log('✅ Billing system ready!');
+      
+      // Sync user plan from Outseta to Airtable in background (non-blocking)
+      const userEmail = await getUserEmail();
+      if (userEmail) {
+        getUserPlan().then(async (actualPlan) => {
+          await updateUsage({ currentPlan: actualPlan });
+          console.log('✅ User plan synced:', actualPlan);
+        }).catch(err => {
+          console.warn('⚠️ Plan sync failed:', err);
+        });
+      }
+      
+    } catch (err) {
+      console.error('❌ Billing system initialization error:', err);
+      window.MTG_Billing.state = 'error';
+    }
+  }
+
+  // ============================================================
+  // HELPER: Open Outseta Plan Picker
+  // Shows immediate "Opening..." feedback, then opens the
+  // Outseta profile widget. Polls at 100ms for fast response.
+  // ============================================================
+  function openOutsetaPlanPicker() {
+    // Show a small toast so user knows something is happening
+    var toast = document.createElement('div');
+    toast.id = 'upgrade-toast';
+    toast.textContent = 'Opening plan options...';
+    toast.style.cssText = [
+      'position: fixed',
+      'bottom: 32px',
+      'left: 50%',
+      'transform: translateX(-50%)',
+      'background: #1E234C',
+      'color: white',
+      'padding: 12px 24px',
+      'border-radius: 8px',
+      'font-size: 14px',
+      'font-weight: 500',
+      'font-family: Host Grotesk, system-ui, sans-serif',
+      'z-index: 10001',
+      'box-shadow: 0 4px 12px rgba(0,0,0,0.2)',
+      'transition: opacity 0.3s ease'
+    ].join('; ');
+    document.body.appendChild(toast);
+
+    function removeToast() {
+      if (toast.parentNode) {
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.remove(); }, 300);
+      }
+    }
+
+    // Try to open — poll at 100ms intervals (max 5 seconds)
+    var attempts = 0;
+    var poller = setInterval(function() {
+      attempts++;
+      try {
+        if (typeof Outseta !== 'undefined' && typeof Outseta.showProfile === 'function') {
+          clearInterval(poller);
+          removeToast();
+          Outseta.showProfile({ tab: 'plan' });
+          return;
+        }
+      } catch (e) { /* SDK not ready yet, keep trying */ }
+
+      if (attempts >= 50) {
+        clearInterval(poller);
+        removeToast();
+        // Last resort: send to pricing page
+        window.location.href = '/pricing';
+      }
+    }, 100);
+  }
+
+  // ============================================================
+  // EXPORT: Make functions available globally
+  // ============================================================
+  window.MTG_Billing = {
+    getUserEmail,
+    getUserPlan,
+    apiRequest,
+    checkPlanLimit,
+    getUsage,
+    updateUsage,
+    showUpgradeModal,
+    openOutsetaPlanPicker,
+    PLAN_UIDS,
+    state: 'initializing'
+  };
+
+  // Initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBillingSystem);
+  } else {
+    initBillingSystem();
+  }
+
+})();
+</script>
+
+
+<!-- ========== SECTION 6: FEATURE GATING SYSTEM v2.0 ========== -->
+<!--
+  Full rewrite of feature gating — March 2026
+  
+  WHAT THIS DOES:
+  - Blocks entire pages for LITE users (Pipeline, advanced calculators)
+  - Intercepts loan search row clicks for LITE users
+  - Intercepts Pipeline "Add Loan" to enforce loan count limits (PLUS=25)
+  - Gates calculator Print, Save, and Load buttons for LITE users
+  - Provides a programmatic API for individual pages:
+      await MTG_Billing.gateAction('feature-name', callback)
+      await MTG_Billing.canAccessFeature('feature-name')
+  
+  NOTE: Lender, Vendor, and Contact directories are FREE for all plans.
+  No contact link or favorites gating on those pages.
+  
+  DEPENDS ON:
+  - Section 0: Global Outseta Cache
+  - Section 5: Billing System Core (window.MTG_Billing)
+  - Font Awesome (for lock icons)
+-->
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // SAFETY CHECK: Make sure billing core is loaded
+  // ============================================================
+  if (!window.MTG_Billing) {
+    console.error('Feature Gating v2: MTG_Billing not loaded. Add billing core first.');
+    return;
+  }
+
+  // Cached plan — set during init, used synchronously in click handlers
+  var cachedPlan = null;
+
+  // Track which elements have been gated (prevents double-processing)
+  var gatedElements = new WeakSet();
+
+
+  // ============================================================
+  // CONFIGURATION: Full-Page Gates
+  // These block the ENTIRE page with an upgrade overlay.
+  // LITE users see the overlay; PLUS/PRO users see the page normally.
+  // ============================================================
+  var PAGE_GATES = {
+    // Pipeline — PLUS or PRO required
+    '/app/pipeline': {
+      allowedPlans: ['PLUS', 'PRO'],
+      title: 'Upgrade to PLUS',
+      message: 'Pipeline tracking is available on PLUS and PRO plans. Track up to 25 active loans on PLUS, or unlimited on PRO.',
+      icon: 'fa-chart-line',
+      recommendedPlan: 'PLUS'
+    }
+  };
+
+  // Advanced calculators — PLUS or PRO required
+  // Uses partial URL matching (path.includes) so slugs like
+  // "/app/closing-costs-estimate" match "closing-costs"
+  var ADVANCED_CALC_SLUGS = [
+    'loan-scenario-compare',
+    'rent-vs-buy',
+    'lender-pricing',
+    'closing-costs'
+  ];
+
+  // CSS selectors for calculator print, save, and load buttons
+  var CALC_PRINT_SELECTOR = '.btn-print';
+  var CALC_SAVE_SELECTOR = '.btn-save';
+  var CALC_LOAD_SELECTOR = '.btn-load';
+
+  // Calculator pages where print/save should be gated for LITE
+  // (Advanced calc pages are full-page blocked, so this targets basic calcs)
+  var CALCULATOR_PAGES = [
+    '/app/calc-mortgage',
+    '/app/refi-analysis',
+    '/app/affordability',
+    '/app/blended-rate',
+    '/app/dscr',
+    '/app/va-entitlement'
+  ];
+
+
+  // ============================================================
+  // FULL-PAGE OVERLAY
+  // Shows a branded upgrade screen that covers the entire page.
+  // Used for Pipeline (LITE) and advanced calculators (LITE).
+  // ============================================================
+  function showPageBlockOverlay(config) {
+    var overlay = document.createElement('div');
+    overlay.id = 'feature-gate-overlay';
+    overlay.style.cssText = [
+      'position: fixed',
+      'top: 0',
+      'left: 0',
+      'width: 100%',
+      'height: 100%',
+      'background: rgba(255, 255, 255, 0.98)',
+      'backdrop-filter: blur(10px)',
+      'z-index: 9999',
+      'display: flex',
+      'align-items: center',
+      'justify-content: center',
+      'padding: 20px'
+    ].join('; ');
+
+    overlay.innerHTML =
+      '<div style="text-align: center; max-width: 500px;">' +
+        // Lock icon circle
+        '<div style="' +
+          'width: 80px; height: 80px; margin: 0 auto 24px;' +
+          'background: linear-gradient(135deg, #DBEAFE 0%, #2563EB 100%);' +
+          'border-radius: 50%; display: flex; align-items: center; justify-content: center;' +
+        '">' +
+          '<i class="fa-solid ' + (config.icon || 'fa-lock') + '" style="font-size: 36px; color: white;"></i>' +
+        '</div>' +
+        // Title
+        '<h2 style="' +
+          'font-size: 28px; font-weight: 700; color: #1E234C; margin: 0 0 12px;' +
+          'font-family: Host Grotesk, system-ui, sans-serif;' +
+        '">' + (config.title || 'Upgrade Required') + '</h2>' +
+        // Message
+        '<p style="' +
+          'font-size: 17px; color: #64748b; margin: 0 0 32px; line-height: 1.6;' +
+          'font-family: Host Grotesk, system-ui, sans-serif;' +
+        '">' + (config.message || 'This feature requires an upgraded plan.') + '</p>' +
+        // Upgrade button
+        '<button id="page-gate-upgrade-btn" style="' +
+          'padding: 14px 36px;' +
+          'background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);' +
+          'color: white; border: none; border-radius: 8px;' +
+          'font-size: 16px; font-weight: 600; cursor: pointer;' +
+          'box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);' +
+          'font-family: Host Grotesk, system-ui, sans-serif;' +
+          'transition: transform 0.15s ease, box-shadow 0.15s ease;' +
+        '">Upgrade Now</button>' +
+        // Back link
+        '<br>' +
+        '<a href="/app/dashboard" style="' +
+          'display: inline-block; margin-top: 16px;' +
+          'color: #64748b; text-decoration: none; font-size: 14px;' +
+          'font-family: Host Grotesk, system-ui, sans-serif;' +
+        '">&larr; Back to Dashboard</a>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Upgrade button — opens Outseta plan picker
+    var upgradeBtn = document.getElementById('page-gate-upgrade-btn');
+    if (upgradeBtn) {
+      upgradeBtn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-1px)';
+        this.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
+      });
+      upgradeBtn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.35)';
+      });
+      upgradeBtn.addEventListener('click', function() {
+        window.MTG_Billing.openOutsetaPlanPicker();
+      });
+    }
+  }
+
+
+  // ============================================================
+  // CHECK FULL-PAGE GATES
+  // Called during init. If the user is blocked, shows overlay
+  // and returns true (so we skip element-level gating).
+  // ============================================================
+  async function checkPageGates(userPlan) {
+    var path = window.location.pathname.toLowerCase();
+
+    // --- Check Pipeline ---
+    for (var gatePath in PAGE_GATES) {
+      if (path === gatePath || path === gatePath + '/') {
+        var config = PAGE_GATES[gatePath];
+        if (!config.allowedPlans.includes(userPlan)) {
+          console.log('🔒 Page gate: ' + gatePath + ' blocked for ' + userPlan);
+          showPageBlockOverlay(config);
+          return true;
+        }
+      }
+    }
+
+    // --- Check Advanced Calculators ---
+    var isAdvancedCalc = ADVANCED_CALC_SLUGS.some(function(slug) {
+      return path.includes(slug);
+    });
+
+    if (isAdvancedCalc) {
+      if (userPlan !== 'PLUS' && userPlan !== 'PRO') {
+        console.log('🔒 Page gate: Advanced calculator blocked for ' + userPlan);
+        showPageBlockOverlay({
+          allowedPlans: ['PLUS', 'PRO'],
+          title: 'Upgrade to PLUS',
+          message: 'Advanced calculators are available on PLUS and PRO plans. Upgrade to unlock Loan Scenario Comparison, Rent vs. Buy, Lender Pricing, and Closing Costs calculators.',
+          icon: 'fa-calculator',
+          recommendedPlan: 'PLUS'
+        });
+        return true;
+      }
+    }
+
+    return false; // Page is not blocked
+  }
+
+
+  // ============================================================
+  // GATE CALCULATOR PRINT/SAVE/LOAD BUTTONS
+  // For LITE users on free calculator pages, blocks print, save,
+  // and load. (Advanced calc pages are already full-page blocked.)
+  // ============================================================
+  function gateCalcButtons() {
+
+    // --- Helper: gate a single button with lock badge + modal ---
+    function gateButton(btn, message) {
+      if (gatedElements.has(btn)) return;
+      gatedElements.add(btn);
+
+      btn.style.opacity = '0.55';
+      btn.style.cursor = 'not-allowed';
+      btn.style.position = 'relative';
+
+      // Add lock badge
+      var badge = document.createElement('span');
+      badge.innerHTML = '<i class="fa-solid fa-lock" style="font-size:9px;"></i>';
+      badge.style.cssText = [
+        'position: absolute',
+        'top: -4px',
+        'right: -4px',
+        'width: 18px',
+        'height: 18px',
+        'background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)',
+        'color: white',
+        'border-radius: 50%',
+        'display: flex',
+        'align-items: center',
+        'justify-content: center',
+        'box-shadow: 0 1px 3px rgba(0,0,0,0.2)',
+        'z-index: 10',
+        'pointer-events: none'
+      ].join('; ');
+      btn.appendChild(badge);
+
+      // Remove onclick to prevent the original action
+      btn.removeAttribute('onclick');
+
+      // Intercept clicks — capture phase
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        window.MTG_Billing.showUpgradeModal(message, 'PLUS');
+      }, true);
+    }
+
+    // Gate Print buttons
+    document.querySelectorAll(CALC_PRINT_SELECTOR).forEach(function(btn) {
+      gateButton(btn, 'Print calculator results to PDF with a PLUS or PRO plan.');
+    });
+
+    // Gate Save buttons
+    document.querySelectorAll(CALC_SAVE_SELECTOR).forEach(function(btn) {
+      gateButton(btn, 'Save calculator scenarios with a PLUS or PRO plan. PLUS includes 10 saves per calculator, PRO is unlimited.');
+    });
+
+    // Gate Load buttons
+    document.querySelectorAll(CALC_LOAD_SELECTOR).forEach(function(btn) {
+      gateButton(btn, 'Save and load calculator scenarios with a PLUS or PRO plan.');
+    });
+  }
+
+
+  // ============================================================
+  // APPLY ELEMENT-LEVEL GATING (runs on init + MutationObserver)
+  // ============================================================
+  function applyElementGating() {
+    var path = window.location.pathname.toLowerCase();
+
+    // --- Calculator print/save/load on basic calculator pages ---
+    var isCalcPage = CALCULATOR_PAGES.some(function(p) {
+      return path.startsWith(p);
+    });
+    if (isCalcPage) {
+      gateCalcButtons();
+    }
+  }
+
+
+  // ============================================================
+  // MUTATION OBSERVER
+  // Watches for dynamically rendered elements (cards, modals, etc.)
+  // and applies gating to new elements as they appear.
+  // Debounced to avoid running on every tiny DOM change.
+  // ============================================================
+  var gatingTimeout = null;
+
+  function startGatingObserver() {
+    var observer = new MutationObserver(function() {
+      if (gatingTimeout) clearTimeout(gatingTimeout);
+      gatingTimeout = setTimeout(function() {
+        applyElementGating();
+      }, 150); // 150ms debounce
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    console.log('👁️ Feature gating MutationObserver active');
+  }
+
+
+  // ============================================================
+  // LOAN SEARCH ROW CLICK INTERCEPTOR
+  // For LITE users, intercepts clicks on loan search table rows
+  // and shows upgrade modal instead of opening product details.
+  // Uses a capturing listener so it fires BEFORE the row's handler.
+  // ============================================================
+  function interceptLoanSearchRows() {
+    var path = window.location.pathname.toLowerCase();
+    if (!path.includes('/app/loan-search') && !path.includes('/app/products')) return;
+
+    // Capture-phase listener on document — runs before any row handler
+    document.addEventListener('click', function(e) {
+      // Only intercept for LITE users (cachedPlan is set during init)
+      if (!cachedPlan || cachedPlan === 'PLUS' || cachedPlan === 'PRO') return;
+
+      var row = e.target.closest('.loan-table-row');
+      if (!row) return;
+
+      // Don't block clicks on links within the row (like matrix links)
+      if (e.target.closest('a[href]')) return;
+
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      window.MTG_Billing.showUpgradeModal(
+        'View detailed loan product information with a PLUS or PRO plan.',
+        'PLUS'
+      );
+    }, true); // true = capture phase
+
+    console.log('🔒 Loan search row interceptor active');
+  }
+
+
+  // ============================================================
+  // PIPELINE ADD-LOAN INTERCEPTOR
+  // Wraps openNewLoanModal() to check loan count limits.
+  // PLUS users: max 25 loans. PRO: unlimited.
+  // ============================================================
+  function interceptPipelineAddLoan() {
+    var path = window.location.pathname.toLowerCase();
+    if (path !== '/app/pipeline' && path !== '/app/pipeline/') return;
+
+    // Poll for openNewLoanModal to be defined (pipeline JS loads async)
+    var attempts = 0;
+    var checkInterval = setInterval(function() {
+      attempts++;
+
+      if (window.openNewLoanModal && !window._originalOpenNewLoanModal) {
+        clearInterval(checkInterval);
+
+        // Save the original function
+        window._originalOpenNewLoanModal = window.openNewLoanModal;
+
+        // Replace with gated version
+        window.openNewLoanModal = async function() {
+          try {
+            var limitCheck = await window.MTG_Billing.checkPlanLimit('add-pipeline-loan');
+            if (limitCheck.allowed) {
+              // User is within their limit — open the modal normally
+              window._originalOpenNewLoanModal();
+            } else {
+              // User hit their limit — show upgrade modal
+              var recPlan = (cachedPlan === 'PLUS') ? 'PRO' : 'PLUS';
+              window.MTG_Billing.showUpgradeModal(
+                limitCheck.reason || 'You\'ve reached your pipeline loan limit. Upgrade for more loans.',
+                recPlan
+              );
+            }
+          } catch (err) {
+            console.error('Add loan gate check error:', err);
+            // On error, allow the action (fail-open so users aren't locked out)
+            window._originalOpenNewLoanModal();
+          }
+        };
+
+        console.log('✅ Pipeline add-loan interceptor active');
+      }
+
+      // Stop polling after 10 seconds
+      if (attempts > 100) {
+        clearInterval(checkInterval);
+      }
+    }, 100);
+  }
+
+
+  // ============================================================
+  // PROGRAMMATIC API
+  // Individual pages can call these to check access before
+  // performing gated actions. Use in page-level code.
+  //
+  // Usage:
+  //   var allowed = await window.MTG_Billing.canAccessFeature('advanced-calc');
+  //   await window.MTG_Billing.gateAction('print-pdf', function() { printSummary(); });
+  // ============================================================
+
+  // Feature definitions — maps feature name to allowed plans
+  var FEATURE_PLANS = {
+    'pipeline':            ['PLUS', 'PRO'],
+    'pipeline-export':     ['PRO'],
+    'advanced-calc':       ['PLUS', 'PRO'],
+    'print-pdf':           ['PLUS', 'PRO'],
+    'save-scenario':       ['PLUS', 'PRO'],
+    'load-scenario':       ['PLUS', 'PRO'],
+    'loan-search-details': ['PLUS', 'PRO']
+  };
+
+  // Feature-specific upgrade messages
+  var FEATURE_MESSAGES = {
+    'pipeline':            'Pipeline tracking is available on PLUS and PRO plans.',
+    'pipeline-export':     'Export your pipeline to CSV or Excel with a PRO plan.',
+    'advanced-calc':       'Advanced calculators are available on PLUS and PRO plans.',
+    'print-pdf':           'Print calculator results to PDF with a PLUS or PRO plan.',
+    'save-scenario':       'Save calculator scenarios with a PLUS or PRO plan.',
+    'load-scenario':       'Save and load calculator scenarios with a PLUS or PRO plan.',
+    'loan-search-details': 'View detailed loan product information with a PLUS or PRO plan.'
+  };
+
+  // Recommended plan per feature
+  var FEATURE_REC_PLAN = {
+    'pipeline-export': 'PRO'
+    // Everything else defaults to 'PLUS'
+  };
+
+  /**
+   * Check if the current user can access a feature.
+   * @param {string} feature - Feature name from FEATURE_PLANS
+   * @returns {Promise<{allowed: boolean, plan: string}>}
+   */
+  window.MTG_Billing.canAccessFeature = async function(feature) {
+    var userPlan = cachedPlan || (await window.MTG_Billing.getUserPlan());
+    var allowedPlans = FEATURE_PLANS[feature];
+
+    if (!allowedPlans) {
+      // Unknown feature — allow by default
+      return { allowed: true, plan: userPlan };
+    }
+
+    return {
+      allowed: allowedPlans.includes(userPlan),
+      plan: userPlan
+    };
+  };
+
+  /**
+   * Gate an action — runs the callback if allowed, shows upgrade modal if not.
+   * @param {string} feature - Feature name from FEATURE_PLANS
+   * @param {function} callback - Function to run if allowed
+   * @returns {Promise<boolean>} - true if action was allowed
+   *
+   * Example:
+   *   await window.MTG_Billing.gateAction('print-pdf', function() {
+   *     printSummary();
+   *   });
+   */
+  window.MTG_Billing.gateAction = async function(feature, callback) {
+    var result = await window.MTG_Billing.canAccessFeature(feature);
+
+    if (result.allowed) {
+      if (typeof callback === 'function') callback();
+      return true;
+    }
+
+    // Blocked — show upgrade modal
+    var message = FEATURE_MESSAGES[feature] || 'This feature requires an upgraded plan.';
+    var recPlan = FEATURE_REC_PLAN[feature] || 'PLUS';
+    window.MTG_Billing.showUpgradeModal(message, recPlan);
+    return false;
+  };
+
+  /**
+   * Get the cached plan synchronously (or null if not yet loaded).
+   * Useful for code that needs a quick synchronous check.
+   * @returns {string|null}
+   */
+  window.MTG_Billing.getCachedPlan = function() {
+    return cachedPlan;
+  };
+
+
+  // ============================================================
+  // INITIALIZATION
+  // Waits for billing core to be ready, then applies all gating.
+  // ============================================================
+  async function initialize() {
+    // Wait for billing core to be ready (polls every 100ms, max 5 seconds)
+    var attempts = 0;
+    while (attempts < 50 && window.MTG_Billing.state !== 'ready') {
+      await new Promise(function(resolve) { setTimeout(resolve, 100); });
+      attempts++;
+    }
+
+    if (window.MTG_Billing.state !== 'ready') {
+      console.warn('Feature Gating v2: Billing not ready after 5s, skipping gating');
+      return;
+    }
+
+    // Get and cache the user's plan
+    cachedPlan = await window.MTG_Billing.getUserPlan();
+    console.log('🔐 Feature Gating v2: User plan = ' + cachedPlan);
+
+    // -----------------------------------------------------------
+    // PRO USERS: Everything unlocked, skip all gating
+    // -----------------------------------------------------------
+    if (cachedPlan === 'PRO') {
+      console.log('✅ Feature Gating v2: PRO user — all features unlocked');
+      return;
+    }
+
+    // -----------------------------------------------------------
+    // PLUS USERS: Only need pipeline loan-count checking
+    // -----------------------------------------------------------
+    if (cachedPlan === 'PLUS') {
+      console.log('✅ Feature Gating v2: PLUS user — checking pipeline limits only');
+      interceptPipelineAddLoan();
+      return;
+    }
+
+    // -----------------------------------------------------------
+    // LITE USERS: Apply full gating
+    // -----------------------------------------------------------
+
+    // 1. Check full-page gates first (Pipeline, advanced calcs)
+    var pageBlocked = await checkPageGates(cachedPlan);
+    if (pageBlocked) {
+      return; // Page is blocked with overlay, no element gating needed
+    }
+
+    // 2. Apply element-level gating to existing elements
+    applyElementGating();
+
+    // 3. Start MutationObserver for dynamically rendered elements
+    startGatingObserver();
+
+    // 4. Intercept loan search row clicks
+    interceptLoanSearchRows();
+
+    // 5. Intercept pipeline add-loan (safety net — Pipeline is full-page
+    //    blocked for LITE, but included in case of URL edge cases)
+    interceptPipelineAddLoan();
+
+    console.log('✅ Feature Gating v2.0 fully applied for LITE user');
+  }
+
+  // Run initialization
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+
+})();
+</script>
+
+
+<!-- ========== SECTIONS 7-8: LOADED EXTERNALLY ========== -->
+<!-- Upgrade CTAs (LITE) + Limit Indicators (PLUS) -->
+<!-- Served from mtg-broker-extras Cloudflare Worker -->
+<script src="https://mtg-broker-extras.rich-e00.workers.dev/static/feature-extras.js" defer></script>
