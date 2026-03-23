@@ -1320,3 +1320,43 @@ body.app-page.sidebar-collapsed .simple-calc-footer {
   }
 }
 </style>
+
+<!-- ================================================
+     FETCH INTERCEPTOR — must run in <head> BEFORE any
+     body scripts capture window.fetch. Retries API
+     calls that get 401 (expired JWT), re-reading the
+     token from localStorage each retry so Outseta's
+     background refresh is picked up.
+     ================================================ -->
+<script>
+(function() {
+  var API = 'https://mtg-broker-api.rich-e00.workers.dev';
+  var _f = window.fetch;
+  window.fetch = async function(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (url.indexOf(API) !== 0) return _f.call(this, input, init);
+    function patch(i) {
+      try {
+        var t = localStorage.getItem('Outseta.nocode.accessToken');
+        if (t && i && i.headers) {
+          i = Object.assign({}, i);
+          i.headers = Object.assign({}, i.headers);
+          i.headers['Authorization'] = 'Bearer ' + t;
+        }
+      } catch(e) {}
+      return i;
+    }
+    init = patch(init);
+    var resp = await _f.call(this, input, init);
+    if (resp.status === 401) {
+      for (var r = 0; r < 5; r++) {
+        await new Promise(function(ok) { setTimeout(ok, 1000 * (r + 1)); });
+        init = patch(init);
+        resp = await _f.call(this, input, init);
+        if (resp.status !== 401) break;
+      }
+    }
+    return resp;
+  };
+})();
+</script>
