@@ -2,7 +2,9 @@
  * MTG Broker API - Cloudflare Worker
  * Handles Pipeline, Billing, Calculator saves, Mortgage Rates, Loan Products, Credit Vendors, Goal Plans, Broker Profiles, and other user data
  * 
- * UPDATED: March 22, 2026 - v7.24
+ * UPDATED: March 22, 2026 - v7.25
+ * v7.25: Fixed /api/plan-limits pipelineLoans count — was reading stale
+ *        counter from Usage table; now counts actual LOANS table records.
  * v7.24: Added /api/products-list endpoint for Products listing page (/app/products).
  *        Fetches all Loan Product Types from Airtable with pagination, returns
  *        { name, slug, categoryTags, lendersRollup, sortName, firstLetter }.
@@ -2533,11 +2535,22 @@ async function checkPlanLimits(userEmail, apiKey, request) {
   }
   
   if (!action) {
+    // Count actual pipeline loans from LOANS table — the pipelineLoanCount
+    // field in the Usage table is a stale counter that isn't kept in sync.
+    // Fetching only the User Email field keeps the payload minimal.
+    // PLUS users are capped at 25, so pagination is never needed here.
+    const loansFormula = encodeURIComponent(`{User Email}='${userEmail}'`);
+    const loansResult = await airtableRequest(
+      `${TABLES.LOANS}?filterByFormula=${loansFormula}&fields%5B%5D=User+Email`,
+      apiKey
+    );
+    const actualLoanCount = (loansResult.records || []).length;
+
     return jsonResponse({
       plan: currentPlan,
       limits: limits,
       usage: {
-        pipelineLoans: usageData.usage.pipelineLoanCount,
+        pipelineLoans: actualLoanCount,
         calculatorSaves: usageData.usage.calculatorSavesCount
       }
     }, 200, request);
