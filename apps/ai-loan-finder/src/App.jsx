@@ -5,13 +5,38 @@ const API_URL = 'https://mtg-loan-finder.pages.dev/api/search'
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
+// Each example has a short label (shown on the chip) and the full query (filled into textarea on click)
 const EXAMPLE_SCENARIOS = [
-  "640 FICO, self-employed 2 years, buying a duplex as investment property, 25% down in Florida",
-  "720 credit score, first-time homebuyer, looking at a condo, 5% down, primary residence",
-  "Who does bank statement loans for self-employed borrowers with a 680 score?",
-  "DSCR loan for a 4-unit investment property, 700 FICO, 30% down",
-  "What lender does ITIN loans? Borrower has a 600 score.",
-  "VA loan options for a manufactured home, 660 credit score"
+  {
+    label: 'Self-employed investor',
+    icon: 'fa-briefcase',
+    query: '640 FICO, self-employed 2 years, buying a duplex as investment property, 25% down in Florida',
+  },
+  {
+    label: 'First-time homebuyer',
+    icon: 'fa-house',
+    query: '720 credit score, first-time homebuyer, looking at a condo, 5% down, primary residence',
+  },
+  {
+    label: 'Bank statement loan',
+    icon: 'fa-file-invoice',
+    query: 'Who does bank statement loans for self-employed borrowers with a 680 score?',
+  },
+  {
+    label: 'DSCR investment',
+    icon: 'fa-building',
+    query: 'DSCR loan for a 4-unit investment property, 700 FICO, 30% down',
+  },
+  {
+    label: 'ITIN borrower',
+    icon: 'fa-id-card',
+    query: 'What lender does ITIN loans? Borrower has a 600 score.',
+  },
+  {
+    label: 'VA manufactured home',
+    icon: 'fa-shield-halved',
+    query: 'VA loan options for a manufactured home, 660 credit score',
+  },
 ]
 
 const PROGRESS_MESSAGES = [
@@ -24,7 +49,6 @@ const PROGRESS_MESSAGES = [
 
 // ─── MODAL FIELD SECTIONS ─────────────────────────────────────────────────────
 // Organizes all 55 Supabase fields into logical sections for the product detail modal.
-// Mirrors the Loan Search page modal design (Loan Search v7.7).
 
 const MODAL_SECTIONS = [
   {
@@ -165,7 +189,6 @@ function formatFieldValue(value, format) {
 }
 
 // Match a Claude result card to the full Supabase product record.
-// Claude returns product_name — match against Supabase product_name field.
 function findRawProduct(match, rawProducts) {
   if (!rawProducts || !rawProducts.length) return null
 
@@ -185,7 +208,7 @@ function findRawProduct(match, rawProducts) {
     )
   }
 
-  // 3. Partial match — Supabase name contains Claude name (Claude may have truncated it)
+  // 3. Partial match
   if (!found && matchName.length > 10) {
     found = rawProducts.find(p =>
       (p.product_name || '').toLowerCase().includes(matchName) ||
@@ -226,7 +249,17 @@ function SearchInput({ value, onChange, onSubmit, isLoading }) {
         className="search-button"
         disabled={!value.trim() || isLoading}
       >
-        {isLoading ? 'Searching...' : 'Find Loan Products'}
+        {isLoading ? (
+          <>
+            <i className="fas fa-circle-notch fa-spin"></i>
+            Searching...
+          </>
+        ) : (
+          <>
+            <i className="fas fa-magnifying-glass"></i>
+            Find Loan Products
+          </>
+        )}
       </button>
     </form>
   )
@@ -235,16 +268,21 @@ function SearchInput({ value, onChange, onSubmit, isLoading }) {
 function ExampleChips({ onSelect, disabled }) {
   return (
     <div className="example-section">
-      <p className="example-label">Try an example:</p>
+      <p className="example-label">
+        <i className="fas fa-bolt example-label-icon"></i>
+        Try an example:
+      </p>
       <div className="example-chips">
         {EXAMPLE_SCENARIOS.map((scenario, index) => (
           <button
             key={index}
-            onClick={() => onSelect(scenario)}
+            onClick={() => onSelect(scenario.query)}
             className="example-chip"
             disabled={disabled}
+            title={scenario.query}
           >
-            {scenario}
+            <i className={`fas ${scenario.icon} example-chip-icon`}></i>
+            {scenario.label}
           </button>
         ))}
       </div>
@@ -265,29 +303,34 @@ function ParsedScenario({ data }) {
   if (!data) return null
 
   const fields = [
-    { label: 'FICO Score',    value: data.fico },
-    { label: 'LTV',           value: data.ltv ? `${data.ltv}%` : null },
-    { label: 'Loan Amount',   value: data.loan_amount ? `$${data.loan_amount.toLocaleString()}` : null },
-    { label: 'Property Type', value: data.property_type },
-    { label: 'Occupancy',     value: data.occupancy },
-    { label: 'Purpose',       value: data.purpose },
-    { label: 'State',         value: data.state },
+    { label: 'FICO',          icon: 'fa-star', value: data.fico },
+    { label: 'LTV',           icon: 'fa-percent', value: data.ltv ? `${data.ltv}%` : null },
+    { label: 'Loan Amount',   icon: 'fa-dollar-sign', value: data.loan_amount ? `$${data.loan_amount.toLocaleString()}` : null },
+    { label: 'Property',      icon: 'fa-house', value: data.property_type },
+    { label: 'Occupancy',     icon: 'fa-user', value: data.occupancy },
+    { label: 'Purpose',       icon: 'fa-bullseye', value: data.purpose },
+    { label: 'State',         icon: 'fa-location-dot', value: data.state },
   ].filter(f => f.value)
 
   return (
     <div className="parsed-scenario">
-      <h3>Parsed Scenario</h3>
+      <div className="parsed-scenario-label">
+        <i className="fas fa-wand-magic-sparkles"></i>
+        Parsed Scenario
+      </div>
       <div className="parsed-fields">
         {fields.map((field, index) => (
           <div key={index} className="parsed-field">
-            <span className="field-label">{field.label}:</span>
+            <i className={`fas ${field.icon} parsed-field-icon`}></i>
+            <span className="field-label">{field.label}</span>
             <span className="field-value">{field.value}</span>
           </div>
         ))}
         {data.other_factors && data.other_factors.length > 0 && (
           <div className="parsed-field other-factors">
-            <span className="field-label">Other Factors:</span>
-            <span className="field-value">{data.other_factors.join(', ')}</span>
+            <i className="fas fa-tags parsed-field-icon"></i>
+            <span className="field-label">Other</span>
+            <span className="field-value">{data.other_factors.join(' · ')}</span>
           </div>
         )}
       </div>
@@ -296,49 +339,69 @@ function ParsedScenario({ data }) {
 }
 
 // Clickable loan result card — clicking opens the full detail modal
-function LoanCard({ product, rawProduct, onViewDetails }) {
+function LoanCard({ product, rawProduct, onViewDetails, rank }) {
   return (
     <div className="loan-card" onClick={onViewDetails} title="Click to view full details">
+
+      {/* Rank badge */}
+      <div className={`loan-rank rank-${rank}`}>#{rank}</div>
+
       <div className="loan-card-header">
-        <h3 className="loan-product-name">{product.product_name}</h3>
+        <div className="loan-card-title-group">
+          <h3 className="loan-product-name">{product.product_name}</h3>
+          <p className="loan-lender">
+            <i className="fas fa-building"></i>
+            {product.lender}
+          </p>
+        </div>
         <span className="loan-product-type">{product.product_type}</span>
       </div>
-      <p className="loan-lender">{product.lender}</p>
 
+      {/* Key stats grid */}
       <div className="loan-details">
         <div className="loan-detail">
           <span className="detail-label">Min FICO</span>
-          <span className="detail-value">{product.min_fico || 'N/A'}</span>
+          <span className="detail-value">{product.min_fico || '—'}</span>
         </div>
         <div className="loan-detail">
           <span className="detail-label">Max LTV</span>
-          <span className="detail-value">{product.max_ltv || 'N/A'}</span>
+          <span className="detail-value">{product.max_ltv || '—'}</span>
         </div>
         <div className="loan-detail">
           <span className="detail-label">Loan Range</span>
-          <span className="detail-value">{product.loan_range || 'N/A'}</span>
+          <span className="detail-value">{product.loan_range || '—'}</span>
         </div>
         <div className="loan-detail">
           <span className="detail-label">Terms</span>
-          <span className="detail-value">{product.terms || 'N/A'}</span>
+          <span className="detail-value">{product.terms || '—'}</span>
         </div>
       </div>
 
+      {/* AI explanations */}
       {product.why_it_fits && (
         <div className="loan-fit">
-          <strong>Why it fits:</strong> {product.why_it_fits}
+          <div className="loan-fit-label">
+            <i className="fas fa-circle-check"></i>
+            Why it fits
+          </div>
+          <p>{product.why_it_fits}</p>
         </div>
       )}
 
       {product.watch_out && (
         <div className="loan-watchout">
-          <strong>Watch out:</strong> {product.watch_out}
+          <div className="loan-watchout-label">
+            <i className="fas fa-triangle-exclamation"></i>
+            Watch out
+          </div>
+          <p>{product.watch_out}</p>
         </div>
       )}
 
       <div className="loan-card-footer">
         <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); onViewDetails() }}>
-          <i className="fas fa-list-ul"></i> View Full Details
+          View Full Details
+          <i className="fas fa-arrow-right"></i>
         </button>
       </div>
     </div>
@@ -346,10 +409,6 @@ function LoanCard({ product, rawProduct, onViewDetails }) {
 }
 
 // ─── PRODUCT DETAIL MODAL ─────────────────────────────────────────────────────
-// Matches the Loan Search page modal design (v7.7):
-//   - Dark navy header with lender + product name
-//   - White section cards organized by category
-//   - Responsive grid of label/value pairs
 
 function FieldValue({ value, format }) {
   const formatted = formatFieldValue(value, format)
@@ -380,7 +439,6 @@ function FieldValue({ value, format }) {
 }
 
 function ProductModal({ product, onClose }) {
-  // Close on Escape key
   const handleKey = useCallback((e) => {
     if (e.key === 'Escape') onClose()
   }, [onClose])
@@ -401,11 +459,10 @@ function ProductModal({ product, onClose }) {
 
   return (
     <div className="pdm-overlay" role="dialog" aria-modal="true">
-      {/* Backdrop — click to close */}
       <div className="pdm-backdrop" onClick={onClose}></div>
 
       <div className="pdm-content">
-        {/* Header — dark navy, matches Loan Search modal */}
+        {/* Dark navy header */}
         <div className="pdm-header">
           <div className="pdm-header-text">
             {lenderName && (
@@ -419,7 +476,6 @@ function ProductModal({ product, onClose }) {
         {/* Scrollable body */}
         <div className="pdm-body">
           {MODAL_SECTIONS.map((section) => {
-            // Only render sections that have at least one non-empty field
             const visibleFields = section.fields.filter(f => {
               const v = product[f.key]
               return v !== null && v !== undefined && v !== ''
@@ -458,6 +514,7 @@ function Results({ data, onOpenModal }) {
     <div className="results">
       {data.summary && (
         <div className="results-summary">
+          <i className="fas fa-robot results-summary-icon"></i>
           <p>{data.summary}</p>
         </div>
       )}
@@ -466,7 +523,10 @@ function Results({ data, onOpenModal }) {
 
       {data.matches && data.matches.length > 0 ? (
         <div className="results-grid">
-          <h2>Matching Loan Products ({data.matches.length})</h2>
+          <div className="results-heading">
+            <h2>Matching Loan Products</h2>
+            <span className="results-count">{data.matches.length} found</span>
+          </div>
           <div className="loan-cards">
             {data.matches.map((product, index) => {
               const rawProduct = findRawProduct(product, data.raw_products)
@@ -475,6 +535,7 @@ function Results({ data, onOpenModal }) {
                   key={index}
                   product={product}
                   rawProduct={rawProduct}
+                  rank={index + 1}
                   onViewDetails={() => onOpenModal(rawProduct || product)}
                 />
               )
@@ -483,6 +544,7 @@ function Results({ data, onOpenModal }) {
         </div>
       ) : (
         <div className="no-results">
+          <i className="fas fa-magnifying-glass no-results-icon"></i>
           <p>No matching loan products found for this scenario.</p>
         </div>
       )}
@@ -510,8 +572,7 @@ function ErrorMessage({ error, onRetry }) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 // Note: Navbar, sidebar, and footer are handled by Webflow (Navbar_App,
-// Sidebar_App, Footer_App components). Auth gating is handled by Outseta
-// on the Webflow page. This app renders search UI only.
+// Sidebar_App, Footer_App components). Auth gating is handled by Outseta.
 
 function App() {
   const [scenario, setScenario] = useState('')
@@ -559,8 +620,8 @@ function App() {
     }
   }
 
-  const handleExampleSelect = (example) => {
-    setScenario(example)
+  const handleExampleSelect = (query) => {
+    setScenario(query)
     setResults(null)
     setError(null)
   }
@@ -568,13 +629,19 @@ function App() {
   return (
     <main className="main-content">
       <div className="hero">
-        <h1>AI Loan Finder <span className="beta-badge">BETA</span></h1>
+        <h1>
+          AI Loan Finder
+          <span className="beta-badge">
+            <i className="fas fa-wand-magic-sparkles"></i>
+            BETA
+          </span>
+        </h1>
         <p className="hero-subtitle">
           Describe your borrower scenario in plain English and instantly find matching wholesale loan products.
         </p>
         <p className="beta-disclaimer">
           <i className="fas fa-circle-info"></i>{' '}
-          Results are AI-generated suggestions based on available product data. Always verify current guidelines and pricing directly with the lender before presenting options to borrowers.
+          AI-generated suggestions — always verify current guidelines directly with the lender before presenting options to borrowers.
         </p>
       </div>
 
