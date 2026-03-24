@@ -1,43 +1,32 @@
 /**
- * Cloudflare Worker — mtg-broker-extras
- * Serves site-wide JS modules loaded by Webflow Site Settings footer code.
+ * mtg-broker-extras — Cloudflare Worker v2.0
+ * =========================================================
+ * Serves static JS/CSS files for the mtg.broker platform.
+ * Synced from live deployed version + avatar fix.
  *
- * DEPLOY: Worker named "mtg-broker-extras" in Cloudflare Dashboard
- * URL: mtg-broker-extras.rich-e00.workers.dev
- *
- * Endpoints:
+ * ENDPOINTS:
+ *   GET /static/site-head.css       — Global CSS
+ *   GET /static/site-head.js        — Global head JS
  *   GET /static/site-footer.js      — Core platform JS (Outseta cache, billing, gating)
  *   GET /static/feature-extras.js   — Upgrade CTAs (LITE) + limit pills (PLUS)
+ *   GET /static/global-navbar.js    — Global marketing navbar
+ *   GET /static/global-footer.js    — Global marketing footer
  *
- * v3.0 — March 23, 2026
- *   - Added /static/site-footer.js endpoint (Sections 0–6 from Site Settings footer)
- *   - Moved ALL JS out of Webflow Site Settings to stay under 50K char limit
- *   - Added URL routing to serve the correct JS module
- *   - site-footer.js includes global fetch interceptor v3.3 (JWT exp check + header patch)
- *
- * v2.1 — March 22, 2026 (feature-extras.js only, see git history)
+ * DEPLOY:
+ *   wrangler deploy workers/mtg-broker-extras.js --name mtg-broker-extras --compatibility-date 2024-01-01
  */
 
-const ALLOWED_ORIGINS = [
-  /^https:\/\/(www\.)?mtg\.broker$/i,
-  /^https:\/\/.*\.webflow\.io$/i,
-  /^https:\/\/localhost(?::\d+)?$/i
-];
-
 function getCorsHeaders(request) {
-  const origin = request.headers.get('Origin');
-  if (!origin) return { 'Access-Control-Allow-Origin': '*' };
-  const ok = ALLOWED_ORIGINS.some(r => r.test(origin));
-  if (!ok) return {};
   return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Credentials': 'true',
-    'Vary': 'Origin'
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
   };
 }
 
-function jsResponse(body, request) {
-  return new Response(body, {
+function jsResponse(content, request) {
+  return new Response(content, {
+    status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
       'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
@@ -46,8 +35,9 @@ function jsResponse(body, request) {
   });
 }
 
-function cssResponse(body, request) {
-  return new Response(body, {
+function cssResponse(content, request) {
+  return new Response(content, {
+    status: 200,
     headers: {
       'Content-Type': 'text/css; charset=utf-8',
       'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
@@ -57,16 +47,9 @@ function cssResponse(body, request) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          ...getCorsHeaders(request),
-          'Access-Control-Allow-Methods': 'GET',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        }
-      });
+      return new Response(null, { status: 204, headers: getCorsHeaders(request) });
     }
 
     const url = new URL(request.url);
@@ -88,29 +71,31 @@ export default {
       return jsResponse(FEATURE_EXTRAS_JS, request);
     }
 
+    if (path === '/static/global-navbar.js') {
+      return jsResponse(GLOBAL_NAVBAR_JS, request);
+    }
+
+    if (path === '/static/global-footer.js') {
+      return jsResponse(GLOBAL_FOOTER_JS, request);
+    }
+
     // Default: list available endpoints
     return new Response(JSON.stringify({
       endpoints: [
         'GET /static/site-head.css',
         'GET /static/site-head.js',
         'GET /static/site-footer.js',
-        'GET /static/feature-extras.js'
+        'GET /static/feature-extras.js',
+        'GET /static/global-navbar.js',
+        'GET /static/global-footer.js'
       ]
     }), {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getCorsHeaders(request)
-      }
+      status: 200,
+      headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request) }
     });
   }
 };
 
-
-
-// ============================================================
-// SITE HEAD CSS — Global platform styles
-// Previously inline in Webflow Site Settings Head Code
-// ============================================================
 const SITE_HEAD_CSS = String.raw`
 /* ================================================
    1. BASE & LAYOUT FIXES
@@ -1253,11 +1238,6 @@ body.app-page.sidebar-collapsed .simple-calc-footer {
 }
 `;
 
-
-// ============================================================
-// SITE HEAD JS — Fetch interceptor (retry-on-401)
-// Must load in <head> before body scripts capture window.fetch
-// ============================================================
 const SITE_HEAD_JS = String.raw`
 (function() {
   var API = 'https://mtg-broker-api.rich-e00.workers.dev';
@@ -1290,10 +1270,7 @@ const SITE_HEAD_JS = String.raw`
   };
 })();
 `;
-// ============================================================
-// SITE FOOTER JS — Sections 0–6
-// Global Outseta cache, fetch interceptor, billing, feature gating
-// ============================================================
+
 const SITE_FOOTER_JS = String.raw`
 // ============================================================
 // mtg.broker — Site Footer JS v3.5
@@ -1895,19 +1872,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 })();
 
+
 // ========== SECTION 7: GLOBAL AVATAR FIX ==========
 // Fix: avatar images have loading="lazy" + display:none (from CSS).
 // Lazy images with display:none never load — browser skips them.
-// This observer watches for avatar src changes and ensures they load.
 (function() {
   'use strict';
 
   function fixAvatarImages() {
     document.querySelectorAll('img[data-mb-avatar]').forEach(function(img) {
       if (!img.src || img.src === '' || img.src === window.location.href) return;
-      // Remove lazy loading — it prevents display:none images from loading
       img.removeAttribute('loading');
-      // Add has-img to parent immediately so image becomes visible (display:block)
       var btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
       if (btn && !btn.classList.contains('has-img')) {
         btn.classList.add('has-img');
@@ -1916,12 +1891,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Run after a delay to let Outseta/navbar set the src
   setTimeout(fixAvatarImages, 1500);
   setTimeout(fixAvatarImages, 3000);
   setTimeout(fixAvatarImages, 5000);
 
-  // Also observe for src changes on avatar images
   var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(m) {
       if (m.type === 'attributes' && m.attributeName === 'src') {
@@ -1944,11 +1917,6 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 `;
 
-
-// ============================================================
-// FEATURE EXTRAS JS — Sections 7–8
-// Upgrade CTAs for LITE users + limit indicators for PLUS users
-// ============================================================
 const FEATURE_EXTRAS_JS = String.raw`
 // ============================================================
 // SECTION 7: UPGRADE CTAs FOR LITE USERS
@@ -2172,3 +2140,261 @@ const FEATURE_EXTRAS_JS = String.raw`
   else { initialize(); }
 })();
 `;
+
+const GLOBAL_NAVBAR_JS = String.raw`// global-navbar v2 — served by mtg-broker-extras Cloudflare Worker
+(function(){
+  var s=document.createElement("style");s.textContent="\n.mb-navWrap{position:fixed;top:0;left:0;right:0;z-index:9999;padding:0;background:#ffffff;border-bottom:1px solid #E7EAF0;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Helvetica Neue',Arial,sans-serif;}\n.mb-header{width:90%;max-width:1280px;margin:0 auto;padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:18px;}\n.mb-navSpacer{height:0;}\n.mb-brand{display:flex;align-items:center;height:44px;text-decoration:none;min-width:220px;}\n.mb-brandLogo{height:32px;width:auto;display:block;}\n.mb-nav{display:flex;align-items:center;gap:20px;flex:1 1 auto;justify-content:center;}\n.mb-link{color:#0f172a;font-weight:600;text-decoration:none;font-size:16px;line-height:1;padding:10px 6px;border-radius:10px;}\n.mb-link:hover{background:rgba(15,23,42,0.04);}\n.mb-linkLaunch{font-weight:800;color:#ffffff;padding:11px 20px;border-radius:6px;background:#2563eb;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.05);transition:all 0.2s ease;}\n.mb-linkLaunch:hover{background:#1E40AF;box-shadow:0 4px 8px rgba(37,99,235,0.25);transform:translateY(-1px);}\n.mb-actions{display:flex;align-items:center;gap:12px;justify-content:flex-end;flex:0 0 auto;}\n.mb-authBtn{height:44px;min-width:110px;padding:0 18px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-weight:800;font-size:16px;line-height:1;border:1px solid transparent;white-space:nowrap;}\n.mb-authBtnGray{background:#EEF2F7;border-color:#E7EAF0;color:#0f172a;}\n.mb-authBtnGray:hover{filter:brightness(0.98);}\n.mb-authBtnBlue{background:#2563eb;border-color:#2563eb;color:#fff;}\n.mb-authBtnBlue:hover{filter:brightness(0.96);}\n.mb-authBtnFull{width:100%;min-width:0;margin-top:10px;}\n.mb-avatarBtn{width:44px;height:44px;border-radius:999px;border:1px solid #E7EAF0;background:#fff;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;text-decoration:none;color:#0f172a;}\n.mb-avatarImg{width:100%;height:100%;object-fit:cover;display:none;}\n.mb-avatarBtn.has-img .mb-avatarImg{display:block;}\n.mb-avatarBtn.has-img .mb-avatarFallback{display:none;}\n.mb-avatarFallback{display:inline-flex;opacity:0.75;}\n.mb-burger{display:none;width:44px;height:44px;border-radius:12px;border:1px solid #E7EAF0;background:#fff;cursor:pointer;padding:10px;}\n.mb-burger span{display:block;height:2px;background:#0f172a;border-radius:2px;margin:5px 0;}\n.mb-mobile{pointer-events:auto;width:100%;background:#fff;border-bottom:1px solid #E7EAF0;box-shadow:0 10px 20px rgba(15,23,42,0.05);padding:20px;max-height:calc(100vh - 77px);overflow-y:auto;}\n.mb-mobile-section{margin-bottom:24px;}\n.mb-mobile-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;padding:0 12px 8px 12px;}\n.mb-mobile-divider{height:1px;background:#E7EAF0;margin:20px 0;}\n.mb-mLink{display:block;padding:12px 12px;border-radius:12px;text-decoration:none;color:#0f172a;font-weight:800;}\n.mb-mLink:hover{background:rgba(15,23,42,0.04);}\n.mb-mLinkApp{display:flex;align-items:center;gap:12px;padding:10px 12px;font-weight:600;font-size:15px;}\n.mb-mLinkApp svg{color:#64748B;flex-shrink:0;}\n.mb-mLinkApp:hover svg{color:#0f172a;}\n.mb-mLinkApp.w--current{background:#EFF6FF;color:#2563EB;}\n.mb-mLinkApp.w--current svg{color:#2563EB;}\n.mb-mLinkLaunch{color:#ffffff;background:#2563eb;font-weight:800;margin-top:12px;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,0.05);}\n.mb-mLinkLaunch:hover{background:#1E40AF;}\n.mb-mProfile{display:flex;align-items:center;gap:10px;}\n.mb-mAvatar{width:28px;height:28px;border-radius:999px;border:1px solid #E7EAF0;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:#fff;flex:0 0 auto;}\n.mb-mAvatar .mb-avatarImg{width:100%;height:100%;object-fit:cover;display:none;}\n.mb-mAvatar.has-img .mb-avatarImg{display:block;}\n.mb-mAvatar.has-img .mb-avatarFallback{display:none;}\n.mb-mkt-dashBtn{display:flex;align-items:center;gap:10px;padding:15px 16px;background:#2563eb;color:#ffffff;font-weight:700;font-size:15px;border-radius:12px;text-decoration:none;margin-bottom:20px;box-shadow:0 2px 8px rgba(37,99,235,0.25);transition:all 0.2s ease;}\n.mb-mkt-dashBtn:hover{background:#1e40af;box-shadow:0 4px 12px rgba(37,99,235,0.35);}\n.mb-mkt-dashBtn span{flex:1;}\n.mb-mkt-dashArrow{opacity:0.7;flex-shrink:0;}\n.mb-mkt-sectionLabel{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;padding:0 6px 8px;}\n.mb-mkt-group{margin-bottom:8px;}\n.mb-mkt-item{display:flex;align-items:center;gap:14px;padding:12px 10px;border-radius:12px;text-decoration:none;color:#0f172a;transition:background 0.15s ease;}\n.mb-mkt-item:hover{background:#f8fafc;}\n.mb-mkt-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}\n.mb-mkt-iconBlue{background:#eff6ff;color:#2563eb;}\n.mb-mkt-iconGreen{background:#f0fdf4;color:#16a34a;}\n.mb-mkt-iconPurple{background:#faf5ff;color:#9333ea;}\n.mb-mkt-iconAmber{background:#fffbeb;color:#d97706;}\n.mb-mkt-itemText{display:flex;flex-direction:column;flex:1;min-width:0;}\n.mb-mkt-itemTitle{font-weight:600;font-size:15px;color:#0f172a;line-height:1.3;}\n.mb-mkt-itemSub{font-size:12px;color:#94a3b8;font-weight:400;margin-top:1px;line-height:1.3;}\n.mb-mkt-chevron{color:#cbd5e1;flex-shrink:0;transition:color 0.15s ease;}\n.mb-mkt-item:hover .mb-mkt-chevron{color:#94a3b8;}\n.mb-mkt-divider{height:1px;background:#f1f5f9;margin:12px 0 16px;}\n.mb-mkt-authButtons{display:flex;flex-direction:column;gap:8px;}\n.mb-mkt-authBtn{display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 16px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;transition:all 0.15s ease;border:1px solid transparent;}\n.mb-mkt-authBtnBlue{background:#2563eb;color:#ffffff;border-color:#2563eb;}\n.mb-mkt-authBtnBlue:hover{background:#1e40af;}\n.mb-mkt-authBtnGray{background:#f8fafc;color:#334155;border-color:#e2e8f0;}\n.mb-mkt-authBtnGray:hover{background:#f1f5f9;border-color:#cbd5e1;}\n.mb-mkt-profileCard{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;text-decoration:none;color:inherit;margin-bottom:10px;transition:all 0.15s ease;}\n.mb-mkt-profileCard:hover{background:#f1f5f9;border-color:#cbd5e1;}\n.mb-mkt-profileAvatar{width:42px !important;height:42px !important;border-radius:999px;border:2px solid #e2e8f0;background:#fff;flex-shrink:0;}\n.mb-mkt-profileAvatar .mb-avatarFallback{opacity:0.6;}\n.mb-mkt-profileInfo{display:flex;flex-direction:column;flex:1;min-width:0;}\n.mb-mkt-profileName{font-weight:700;font-size:14px;color:#0f172a;line-height:1.3;}\n.mb-mkt-profileEmail{font-size:12px;color:#64748b;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}\n.mb-mkt-profileEdit{font-size:12px;color:#2563eb;font-weight:600;flex-shrink:0;}\n.mb-mkt-signOut{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;color:#64748b;font-weight:600;font-size:14px;border-radius:10px;text-decoration:none;border:1px solid #e2e8f0;transition:all 0.15s ease;}\n.mb-mkt-signOut:hover{background:#fef2f2;color:#dc2626;border-color:#fecaca;}\n@media (max-width:991px){.mb-nav{display:none;}.mb-burger{display:inline-block;}}\n@media (max-width:767px){.mb-brand{min-width:auto;}.mb-authOut,.mb-authIn{display:none;}}\n";document.head.appendChild(s);
+  var root=document.getElementById("mb-global-navbar-root");
+  if(root){
+    var tmp=document.createElement("div");
+    tmp.innerHTML="<div class=\"mb-navSpacer\" aria-hidden=\"true\"></div>\n<header class=\"mb-navWrap\" role=\"banner\">\n  <div class=\"mb-header\">\n    <a class=\"mb-brand\" href=\"/\" aria-label=\"MtgBroker home\">\n      <img class=\"mb-brandLogo\" src=\"https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png\" alt=\"MtgBroker\" loading=\"eager\" />\n    </a>\n    <nav class=\"mb-nav\" aria-label=\"Primary navigation\">\n      <a class=\"mb-link\" href=\"/#features\">Features</a>\n      <a class=\"mb-link\" href=\"https://www.mtg.broker/pricing\">Pricing</a>\n      <a class=\"mb-link mb-linkLaunch\" href=\"https://www.mtg.broker/app/dashboard\">App Dashboard</a>\n    </nav>\n    <div class=\"mb-actions\" aria-label=\"User actions\">\n      <div class=\"mb-authOut\" data-mb-auth=\"out\">\n        <a class=\"mb-authBtn mb-authBtnGray\" href=\"/login\">Login</a>\n        <a class=\"mb-authBtn mb-authBtnBlue\" href=\"https://www.mtg.broker/pricing\">Signup</a>\n      </div>\n      <div class=\"mb-authIn\" data-mb-auth=\"in\" style=\"display:none;\">\n        <a class=\"mb-authBtn mb-authBtnGray\" href=\"/#o-logout-link\">Logout</a>\n      </div>\n      <a class=\"mb-avatarBtn\" data-mb-auth=\"in\" data-mb-profile-link href=\"https://mtgbroker.outseta.com/widgets/profile\" aria-label=\"Profile\" style=\"display:none;\">\n        <span class=\"mb-avatarFallback\" aria-hidden=\"true\">\n          <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>\n        </span>\n        <img class=\"mb-avatarImg\" data-mb-avatar alt=\"User profile photo\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />\n      </a>\n      <button class=\"mb-burger\" type=\"button\" aria-label=\"Open menu\" aria-expanded=\"false\">\n        <span></span><span></span><span></span>\n      </button>\n    </div>\n  </div>\n  <div class=\"mb-mobile\" hidden>\n    <div class=\"mb-mobile-marketing\">\n      <a class=\"mb-mkt-dashBtn\" href=\"https://www.mtg.broker/app/dashboard\">\n        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"></rect><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"></rect><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"></rect><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"></rect></svg>\n        <span>Go to Dashboard</span>\n        <svg class=\"mb-mkt-dashArrow\" width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line><polyline points=\"12 5 19 12 12 19\"></polyline></svg>\n      </a>\n      <div class=\"mb-mkt-sectionLabel\">Navigation</div>\n      <div class=\"mb-mkt-group\">\n        <a class=\"mb-mkt-item\" href=\"/#features\">\n          <span class=\"mb-mkt-icon mb-mkt-iconBlue\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"></polygon></svg></span>\n          <span class=\"mb-mkt-itemText\"><span class=\"mb-mkt-itemTitle\">Features</span><span class=\"mb-mkt-itemSub\">What's included</span></span>\n          <svg class=\"mb-mkt-chevron\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 18 15 12 9 6\"></polyline></svg>\n        </a>\n        <a class=\"mb-mkt-item\" href=\"https://www.mtg.broker/pricing\">\n          <span class=\"mb-mkt-icon mb-mkt-iconGreen\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"23\"></line><path d=\"M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6\"></path></svg></span>\n          <span class=\"mb-mkt-itemText\"><span class=\"mb-mkt-itemTitle\">Pricing</span><span class=\"mb-mkt-itemSub\">Plans & billing</span></span>\n          <svg class=\"mb-mkt-chevron\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 18 15 12 9 6\"></polyline></svg>\n        </a>\n      </div>\n      <div class=\"mb-mkt-divider\"></div>\n      <div class=\"mb-mobileAuthOut\" data-mb-auth=\"out\">\n        <div class=\"mb-mkt-sectionLabel\">Get Started</div>\n        <div class=\"mb-mkt-authButtons\">\n          <a class=\"mb-mkt-authBtn mb-mkt-authBtnBlue\" href=\"https://www.mtg.broker/pricing\">\n            <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"></path><circle cx=\"8.5\" cy=\"7\" r=\"4\"></circle><line x1=\"20\" y1=\"8\" x2=\"20\" y2=\"14\"></line><line x1=\"23\" y1=\"11\" x2=\"17\" y2=\"11\"></line></svg>\n            Sign Up Free\n          </a>\n          <a class=\"mb-mkt-authBtn mb-mkt-authBtnGray\" href=\"/login\">\n            <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4\"></path><polyline points=\"10 17 15 12 10 7\"></polyline><line x1=\"15\" y1=\"12\" x2=\"3\" y2=\"12\"></line></svg>\n            Login\n          </a>\n        </div>\n      </div>\n      <div class=\"mb-mobileAuthIn\" data-mb-auth=\"in\" style=\"display:none;\">\n        <div class=\"mb-mkt-sectionLabel\">Account</div>\n        <a class=\"mb-mkt-profileCard\" data-mb-profile-link href=\"https://mtgbroker.outseta.com/widgets/profile\">\n          <span class=\"mb-mAvatar mb-mkt-profileAvatar\">\n            <img class=\"mb-avatarImg\" data-mb-avatar alt=\"User profile photo\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />\n            <span class=\"mb-avatarFallback\" aria-hidden=\"true\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span>\n          </span>\n          <span class=\"mb-mkt-profileInfo\">\n            <span class=\"mb-mkt-profileName\" data-mb-user-name>My Profile</span>\n            <span class=\"mb-mkt-profileEmail\" data-mb-user-email></span>\n          </span>\n          <span class=\"mb-mkt-profileEdit\">Edit</span>\n        </a>\n        <a class=\"mb-mkt-signOut\" href=\"/#o-logout-link\">\n          <svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"></path><polyline points=\"16 17 21 12 16 7\"></polyline><line x1=\"21\" y1=\"12\" x2=\"9\" y2=\"12\"></line></svg>\n          Sign Out\n        </a>\n      </div>\n    </div>\n    <div class=\"mb-mobile-app\" style=\"display:none;\">\n      <div class=\"mb-mobile-section\">\n        <div class=\"mb-mobile-label\">Menu</div>\n        <a href=\"https://www.mtg.broker/app/dashboard\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"></rect><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"></rect><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"></rect><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"></rect></svg>Dashboard</a>\n        <a href=\"https://www.mtg.broker/app/loan-search\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"11\" cy=\"11\" r=\"8\"></circle><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"></line></svg>Loan Search</a>\n        <a href=\"https://www.mtg.broker/app/lenders\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z\"></path></svg>Lenders</a>\n        <a href=\"https://www.mtg.broker/app/products\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z\"></path><polyline points=\"3.27 6.96 12 12.01 20.73 6.96\"></polyline><line x1=\"12\" y1=\"22.08\" x2=\"12\" y2=\"12\"></line></svg>Products</a>\n        <a href=\"https://www.mtg.broker/app/property-types\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z\"></path><path d=\"M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2\"></path><path d=\"M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2\"></path><path d=\"M10 6h4\"></path><path d=\"M10 10h4\"></path><path d=\"M10 14h4\"></path><path d=\"M10 18h4\"></path></svg>Property Types</a>\n        <a href=\"https://www.mtg.broker/app/vendors\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"8\" cy=\"21\" r=\"1\"></circle><circle cx=\"19\" cy=\"21\" r=\"1\"></circle><path d=\"M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12\"></path></svg>Vendors</a>\n        <a href=\"https://www.mtg.broker/app/contacts\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path></svg>Contacts</a>\n        <a href=\"https://www.mtg.broker/app/calculators\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"4\" y=\"2\" width=\"16\" height=\"20\" rx=\"2\"></rect><line x1=\"8\" x2=\"16\" y1=\"6\" y2=\"6\"></line><line x1=\"16\" x2=\"16\" y1=\"14\" y2=\"14\"></line><line x1=\"12\" x2=\"12\" y1=\"14\" y2=\"14\"></line><line x1=\"8\" x2=\"8\" y1=\"14\" y2=\"14\"></line><line x1=\"16\" x2=\"16\" y1=\"18\" y2=\"18\"></line><line x1=\"12\" x2=\"12\" y1=\"18\" y2=\"18\"></line><line x1=\"8\" x2=\"8\" y1=\"18\" y2=\"18\"></line></svg>Calculators</a>\n        <a href=\"https://www.mtg.broker/app/tools\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"></path></svg>Tools</a>\n      </div>\n      <div class=\"mb-mobile-section\">\n        <div class=\"mb-mobile-label\">My Workspace</div>\n        <a href=\"/app/saved\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z\"></path></svg>Saved Items</a>\n        <a href=\"/app/settings\" class=\"mb-mLink mb-mLinkApp\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"></circle><path d=\"M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z\"></path></svg>Settings</a>\n      </div>\n      <div class=\"mb-mobile-divider\"></div>\n      <div class=\"mb-mobileAuthIn\" data-mb-auth=\"in\" style=\"display:none;\">\n        <a class=\"mb-mLink mb-mProfile\" data-mb-profile-link href=\"https://mtgbroker.outseta.com/widgets/profile\">\n          <span class=\"mb-mAvatar\">\n            <img class=\"mb-avatarImg\" data-mb-avatar alt=\"User profile photo\" loading=\"lazy\" referrerpolicy=\"no-referrer\" />\n            <span class=\"mb-avatarFallback\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span>\n          </span>\n          Profile\n        </a>\n        <a class=\"mb-authBtn mb-authBtnGray mb-authBtnFull\" href=\"/#o-logout-link\">Logout</a>\n      </div>\n    </div>\n  </div>\n</header>";
+    while(tmp.firstChild){root.parentNode.insertBefore(tmp.firstChild,root);}
+    root.parentNode.removeChild(root);
+  }
+})();
+
+
+(function () {
+  var navWrap = document.querySelector('.mb-navWrap');
+  var spacer = document.querySelector('.mb-navSpacer');
+  var burger = document.querySelector('.mb-burger');
+  var mobile = document.querySelector('.mb-mobile');
+  var mobileMarketing = document.querySelector('.mb-mobile-marketing');
+  var mobileApp = document.querySelector('.mb-mobile-app');
+
+  var authConfirmed = false;
+
+  async function getUser() {
+    if (typeof window.getCachedOutsetaUser === 'function') {
+      return await window.getCachedOutsetaUser();
+    }
+    if (!window.Outseta || typeof window.Outseta.getUser !== 'function') {
+      return null;
+    }
+    try {
+      var user = await window.Outseta.getUser();
+      if (!window.OUTSETA_USER_CACHE && user) {
+        window.OUTSETA_USER_CACHE = user;
+      }
+      return user;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function isAppPage() {
+    return window.location.pathname.startsWith('/app');
+  }
+
+  function updateMobileMenu() {
+    if (!mobileMarketing || !mobileApp) return;
+    if (isAppPage()) {
+      mobileMarketing.style.display = 'none';
+      mobileApp.style.display = 'block';
+      highlightCurrentAppLink();
+    } else {
+      mobileMarketing.style.display = 'block';
+      mobileApp.style.display = 'none';
+    }
+  }
+
+  function highlightCurrentAppLink() {
+    var currentPath = window.location.pathname.replace(/\/$/, '');
+    var appLinks = document.querySelectorAll('.mb-mLinkApp');
+    appLinks.forEach(function(link) {
+      try {
+        var linkUrl = new URL(link.href, window.location.origin);
+        var linkPath = linkUrl.pathname.replace(/\/$/, '');
+        if (currentPath === linkPath) {
+          link.classList.add('w--current');
+        } else {
+          link.classList.remove('w--current');
+        }
+      } catch (e) {}
+    });
+  }
+
+  function setSpacerHeight() {
+    if (!navWrap || !spacer) return;
+    spacer.style.height = navWrap.offsetHeight + 'px';
+  }
+
+  function closeMobile() {
+    if (!mobile || !burger) return;
+    mobile.hidden = true;
+    burger.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleMobile() {
+    if (!mobile || !burger) return;
+    var open = mobile.hidden;
+    mobile.hidden = !open;
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function setAuthUI(isAuthed) {
+    document.querySelectorAll('[data-mb-auth="out"]').forEach(function(el) {
+      el.style.display = isAuthed ? 'none' : '';
+    });
+    document.querySelectorAll('[data-mb-auth="in"]').forEach(function(el) {
+      if (isAuthed) {
+        el.style.removeProperty('display');
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+
+  function looksLikeUrl(v) {
+    return typeof v === 'string' && /^https?:\/\//i.test(v) && v.length < 1200;
+  }
+
+  function getDomProfileImgSrc() {
+    var img =
+      document.querySelector('#widget-outseta_profile .o--Person-profileImageS3Url img') ||
+      document.querySelector('#widget-outseta_profile img[src*="outseta-production"]') ||
+      null;
+    return img ? (img.getAttribute('src') || img.src) : null;
+  }
+
+  function getUserProfileImgFromUserObject(user) {
+    if (!user) return null;
+    var candidates = [
+      user.person && user.person.profileImageS3Url,
+      user.person && user.person.ProfileImageS3Url,
+      user.person && user.person.oAuthGoogleProfileImageUrl,
+      user.person && user.person.OAuthGoogleProfileImageUrl,
+      user.profileImageS3Url,
+      user.ProfileImageS3Url
+    ];
+    for (var i = 0; i < candidates.length; i++) {
+      if (looksLikeUrl(candidates[i])) return candidates[i];
+    }
+    return null;
+  }
+
+  function applyAvatar(url) {
+    var imgs = document.querySelectorAll('img[data-mb-avatar]');
+    imgs.forEach(function(img) {
+      var btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
+      if (!url) {
+        if (btn) btn.classList.remove('has-img');
+        img.removeAttribute('src');
+        return;
+      }
+      img.src = url;
+      img.onload = function() { if (btn) btn.classList.add('has-img'); };
+      img.onerror = function() { if (btn) btn.classList.remove('has-img'); };
+    });
+    document.querySelectorAll('.mb-mAvatar').forEach(function(w) {
+      if (url) { w.classList.add('has-img'); } else { w.classList.remove('has-img'); }
+    });
+  }
+
+  function populateProfileCard(user) {
+    if (!user) return;
+    var firstName = '';
+    var lastName = '';
+    var email = '';
+    if (user.person) {
+      firstName = user.person.firstName || user.person.FirstName || '';
+      lastName = user.person.lastName || user.person.LastName || '';
+    }
+    if (!firstName) firstName = user.firstName || user.FirstName || '';
+    if (!lastName) lastName = user.lastName || user.LastName || '';
+    email = user.Email || user.email || '';
+    var displayName = (firstName + ' ' + lastName).trim();
+    if (!displayName) displayName = 'My Profile';
+    document.querySelectorAll('[data-mb-user-name]').forEach(function(el) { el.textContent = displayName; });
+    document.querySelectorAll('[data-mb-user-email]').forEach(function(el) {
+      if (email) { el.textContent = email; el.style.display = ''; } else { el.style.display = 'none'; }
+    });
+  }
+
+  function observeOutsetaProfileImage() {
+    var root = document.getElementById('widget-outseta_profile');
+    if (!root || root.__mbObserved) return;
+    root.__mbObserved = true;
+    var obs = new MutationObserver(function() {
+      var src = getDomProfileImgSrc();
+      if (looksLikeUrl(src)) { applyAvatar(src); } else if (!src) { applyAvatar(null); }
+    });
+    obs.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+  }
+
+  async function syncAuthAndAvatar() {
+    try {
+      var user = await getUser();
+      if (user) {
+        authConfirmed = true;
+        setAuthUI(true);
+        populateProfileCard(user);
+        var domSrc = getDomProfileImgSrc();
+        if (looksLikeUrl(domSrc)) {
+          applyAvatar(domSrc);
+        } else {
+          applyAvatar(getUserProfileImgFromUserObject(user));
+        }
+        observeOutsetaProfileImage();
+      } else if (!authConfirmed) {
+        setAuthUI(false);
+        applyAvatar(null);
+      }
+    } catch (e) {
+      if (!authConfirmed) console.log('Global navbar: Auth check error');
+    }
+  }
+
+  if (burger) {
+    burger.addEventListener('click', function(e) { e.preventDefault(); toggleMobile(); });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (mobile && !mobile.hidden && e.target.closest('.mb-mLink, .mb-authBtn, .mb-mLinkApp, .mb-mkt-item, .mb-mkt-dashBtn, .mb-mkt-authBtn, .mb-mkt-profileCard, .mb-mkt-signOut')) {
+      closeMobile();
+    }
+  });
+
+  document.querySelectorAll('[data-mb-profile-link]').forEach(function(a) {
+    a.addEventListener('click', function() {
+      setTimeout(function() { observeOutsetaProfileImage(); syncAuthAndAvatar(); }, 600);
+      setTimeout(function() { syncAuthAndAvatar(); }, 2000);
+    });
+  });
+
+  window.addEventListener('resize', function() { setSpacerHeight(); });
+
+  window.addEventListener('hashchange', function() {
+    closeMobile();
+    if (window.location.hash.includes('logout')) {
+      authConfirmed = false;
+      if (typeof window.clearOutsetaUserCache === 'function') window.clearOutsetaUserCache();
+    }
+    setTimeout(syncAuthAndAvatar, 200);
+  });
+
+  setSpacerHeight();
+  closeMobile();
+  updateMobileMenu();
+  syncAuthAndAvatar();
+  setTimeout(syncAuthAndAvatar, 300);
+  setTimeout(syncAuthAndAvatar, 1000);
+  setTimeout(syncAuthAndAvatar, 2000);
+  setTimeout(observeOutsetaProfileImage, 2500);
+  console.log('global-navbar v2 initialized (Worker-served)');
+})();
+`;
+
+const GLOBAL_FOOTER_JS = String.raw`// global-footer v1.1 — served by mtg-broker-extras Cloudflare Worker
+(function(){
+  var s=document.createElement("style");s.textContent="\n.mtg-footer{background-color:#0f172a;color:#94A3B8;padding:48px 0 24px 0;font-family:'Host Grotesk',system-ui,sans-serif;border-top:1px solid rgba(255,255,255,0.05);font-size:14px;}\n.footer-container{width:90%;max-width:1280px;margin:0 auto;}\n.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.2fr;gap:32px;margin-bottom:32px;}\n.footer-brand{display:flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:12px;}\n.footer-logo{height:28px;width:auto;}\n.footer-desc{font-size:14px;line-height:1.5;margin-bottom:16px;color:#94A3B8;max-width:280px;}\n.contact-info p{font-size:13px;margin:0 0 8px 0;color:#E2E8F0;}\n.footer-heading{color:#FFFFFF;font-size:14px;font-weight:700;margin-top:0;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.05em;}\n.footer-menu{list-style:none;padding:0;margin:0;}\n.footer-menu li{margin-bottom:8px;}\n.footer-link{color:#94A3B8;text-decoration:none;font-size:14px;transition:all 0.2s ease;display:inline-block;}\n.footer-link:hover{color:#FFFFFF;transform:translateX(2px);}\n.footer-disclaimer{margin-top:16px;font-size:11px;line-height:1.5;color:#64748B;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;}\n.footer-divider{height:1px;background:rgba(255,255,255,0.1);margin-bottom:24px;}\n.footer-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}\n.copyright{font-size:13px;color:#64748B;}\n.compliance-row{display:flex;align-items:center;gap:6px;color:#64748B;}\n.eho-text{font-size:12px;}\n.social-links{display:flex;gap:16px;}\n.social-icon{color:#94A3B8;transition:color 0.2s;}\n.social-icon:hover{color:#FFFFFF;}\n@media (max-width:991px){.footer-grid{grid-template-columns:1fr 1fr;gap:32px;}}\n@media (max-width:479px){.mtg-footer{padding:40px 0 24px 0;}.footer-grid{grid-template-columns:1fr;gap:32px;}.footer-bottom{flex-direction:column;align-items:flex-start;gap:16px;}}\n";document.head.appendChild(s);
+  var root=document.getElementById("mb-global-footer-root");
+  if(root){
+    var tmp=document.createElement("div");
+    tmp.innerHTML="<footer class=\"mtg-footer global-footer\">\n  <div class=\"footer-container\">\n    <div class=\"footer-grid\">\n      <div class=\"footer-col\">\n        <a href=\"/\" class=\"footer-brand\">\n          <img src=\"https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576e67f7f11199c4541bdb_Logo_Horizontal_White.png\" alt=\"MtgBroker Logo\" class=\"footer-logo\">\n        </a>\n        <p class=\"footer-desc\">The complete toolkit for modern Loan Officers.</p>\n        <div class=\"contact-info\">\n          <p>2172 W 9 Mile Rd, Pensacola, FL 32534</p>\n          <a href=\"mailto:support@mtg.broker\" class=\"footer-link\">support@mtg.broker</a>\n        </div>\n      </div>\n      <div class=\"footer-col\">\n        <h4 class=\"footer-heading\">Product</h4>\n        <ul class=\"footer-menu\">\n          <li><a href=\"/#features\" class=\"footer-link\">Features</a></li>\n          <li><a href=\"/pricing\" class=\"footer-link\">Pricing</a></li>\n          <li><a href=\"https://mtgbroker.outseta.com/auth?widgetMode=login#o-anonymous\" class=\"footer-link\">Login</a></li>\n          <li><a href=\"https://mtgbroker.outseta.com/auth?widgetMode=register#o-anonymous\" class=\"footer-link\">Signup</a></li>\n        </ul>\n      </div>\n      <div class=\"footer-col\">\n        <h4 class=\"footer-heading\">Company</h4>\n        <ul class=\"footer-menu\">\n          <li><a href=\"https://mtgbroker.outseta.com/support/kb/categories\" target=\"_blank\" class=\"footer-link\">Help Center</a></li>\n          <li><a href=\"https://mtgbroker.outseta.com/support/kb\" target=\"_blank\" class=\"footer-link\">Submit a Ticket</a></li>\n          <li><a href=\"mailto:support@mtg.broker\" class=\"footer-link\">Contact</a></li>\n        </ul>\n      </div>\n      <div class=\"footer-col\">\n        <h4 class=\"footer-heading\">Legal</h4>\n        <ul class=\"footer-menu\">\n          <li><a href=\"/privacy-policy\" class=\"footer-link\">Privacy Policy</a></li>\n          <li><a href=\"/terms-of-service\" class=\"footer-link\">Terms of Service</a></li>\n        </ul>\n        <p class=\"footer-disclaimer\">MtgBroker, LLC provides informational tools only. Results are estimates. We are not a lender.</p>\n      </div>\n    </div>\n    <div class=\"footer-divider\"></div>\n    <div class=\"footer-bottom\">\n      <div class=\"copyright\">&copy; <span id=\"mb-footer-year\"></span> MtgBroker, LLC.</div>\n      <div class=\"compliance-row\">\n        <div class=\"eho-icon\" title=\"Equal Housing Opportunity\">\n          <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path><polyline points=\"9 22 9 12 15 12 15 22\"></polyline></svg>\n        </div>\n        <span class=\"eho-text\">Equal Housing Opportunity</span>\n      </div>\n      <div class=\"social-links\">\n        <a href=\"https://www.facebook.com/mtgbrokerllc\" target=\"_blank\" class=\"social-icon\" aria-label=\"Facebook\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z\"></path></svg></a>\n        <a href=\"https://www.linkedin.com/company/108294435/\" target=\"_blank\" class=\"social-icon\" aria-label=\"LinkedIn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z\"></path><rect x=\"2\" y=\"9\" width=\"4\" height=\"12\"></rect><circle cx=\"4\" cy=\"4\" r=\"2\"></circle></svg></a>\n        <a href=\"https://x.com/mtgbrokerllc\" target=\"_blank\" class=\"social-icon\" aria-label=\"X (Twitter)\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z\"/></svg></a>\n      </div>\n    </div>\n  </div>\n</footer>";
+    while(tmp.firstChild){root.parentNode.insertBefore(tmp.firstChild,root);}
+    root.parentNode.removeChild(root);
+  }
+  var yr=document.getElementById("mb-footer-year");
+  if(yr){yr.textContent=new Date().getFullYear();}
+})();`;
