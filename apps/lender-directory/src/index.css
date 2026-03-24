@@ -5,6 +5,56 @@
    ================================================ */
 
 /* ================================================
+   WEBFLOW OVERRIDES
+   Kill inherited Webflow styles that bleed into
+   the React app (link block borders, chevrons, etc.)
+   ================================================ */
+.lender-card {
+  border-left: none !important;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.lender-card::before,
+.lender-card::after,
+.lenders-grid > *::before,
+.lenders-grid > *::after {
+  display: none !important;
+  content: none !important;
+}
+
+.w-icon-slider-right,
+.w-icon-slider-left,
+.w-slider-arrow-right,
+.w-slider-arrow-left {
+  display: none !important;
+}
+
+.w-inline-block::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* ================================================
+   STICKY HEADER (desktop only)
+   Keeps the title + toolbar pinned while scrolling.
+   top: 60px accounts for the Webflow Navbar_App height.
+   ================================================ */
+.lenders-sticky-header {
+  position: sticky;
+  top: 60px;
+  z-index: 50;
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 90%, rgba(255,255,255,0) 100%);
+  padding-bottom: 8px;
+}
+
+@media screen and (max-width: 767px) {
+  .lenders-sticky-header {
+    position: static;
+  }
+}
+
+/* ================================================
    SEARCH & FILTER BAR
    ================================================ */
 .lenders-toolbar {
@@ -142,12 +192,8 @@
 /* ================================================
    NEXA TOGGLE BUTTONS (hidden unless NEXA)
    ================================================ */
-.nexa-only {
-  display: none !important;
-}
-
 .nexa-filters-group {
-  display: none !important;
+  display: flex;
   gap: 8px;
 }
 

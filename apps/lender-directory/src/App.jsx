@@ -609,6 +609,9 @@ export default function App() {
 
   return (
     <>
+      {/* Sticky header + toolbar (desktop only) */}
+      <div className="lenders-sticky-header">
+
       {/* Page header */}
       <h1 className="lender-card-name" style={{
         fontSize: '24px', textAlign: 'left', marginBottom: '8px', fontWeight: 700, color: '#1E293B'
@@ -636,7 +639,7 @@ export default function App() {
         {isNexaUser && (
           <>
             <div className="lenders-toolbar-divider" />
-            <div className="nexa-filters-group" style={{ display: 'flex' }}>
+            <div className="nexa-filters-group">
               <button
                 className={'nexa-toggle-btn' + (nexaFilters.wholesale ? ' active' : '')}
                 onClick={() => toggleNexaFilter('wholesale')}
@@ -680,6 +683,7 @@ export default function App() {
           <i className="fa-solid fa-xmark" /> Clear Filters
         </button>
       </div>
+      </div>{/* end .lenders-sticky-header */}
 
       {/* Status bar */}
       <div className="lenders-status">{statusText}</div>
