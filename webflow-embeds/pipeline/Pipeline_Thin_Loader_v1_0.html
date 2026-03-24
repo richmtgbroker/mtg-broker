@@ -1,0 +1,70 @@
+<!--
+  ============================================================
+  Pipeline Page — Thin Loader v1.0
+  ============================================================
+  REPLACES these 3 Webflow embeds:
+    - Pipeline Page Embed CSS (v12.4, ~49K)
+    - Pipeline Page Embed HTML (v12.0, ~49K)
+    - Pipeline Page Embed Body JS (v13.8, ~49K)
+
+  All content now served from Cloudflare Worker:
+    mtg-broker-pipeline.rich-e00.workers.dev
+
+  This loader is ~1KB. The 50K limit is never a concern again.
+  ============================================================
+-->
+
+<!-- Step 1: Load Pipeline CSS -->
+<link rel="stylesheet" href="https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline.css?v=1.0">
+
+<!-- Step 2: Container for the Pipeline HTML template -->
+<div id="pipeline-root"></div>
+
+<!-- Step 3: Fetch HTML template, inject it, then load bootstrap JS -->
+<script>
+(function() {
+  var WORKER = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
+  var V = '1.0';
+
+  // Fetch the HTML template and inject into #pipeline-root
+  fetch(WORKER + '/static/pipeline-template.html?v=' + V)
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+      var root = document.getElementById('pipeline-root');
+      if (root) root.innerHTML = html;
+
+      // Now that HTML is in the DOM, load the bootstrap JS
+      // (Google Maps, address autocomplete, showSection hooks, module loaders)
+      var container = document.createElement('div');
+      container.innerHTML = '';  // placeholder
+
+      // Fetch bootstrap HTML (contains <script> tags)
+      fetch(WORKER + '/static/pipeline-bootstrap.html?v=' + V)
+        .then(function(r) { return r.text(); })
+        .then(function(bootstrapHtml) {
+          // Parse and execute the script tags from the bootstrap HTML
+          var temp = document.createElement('div');
+          temp.innerHTML = bootstrapHtml;
+          var scripts = temp.querySelectorAll('script');
+          scripts.forEach(function(oldScript) {
+            var newScript = document.createElement('script');
+            // Copy attributes (like src)
+            for (var i = 0; i < oldScript.attributes.length; i++) {
+              newScript.setAttribute(oldScript.attributes[i].name, oldScript.attributes[i].value);
+            }
+            // Copy inline content
+            if (oldScript.textContent) {
+              newScript.textContent = oldScript.textContent;
+            }
+            document.body.appendChild(newScript);
+          });
+        })
+        .catch(function(err) { console.error('Pipeline bootstrap load failed:', err); });
+    })
+    .catch(function(err) {
+      console.error('Pipeline template load failed:', err);
+      var root = document.getElementById('pipeline-root');
+      if (root) root.innerHTML = '<div style="padding:40px;text-align:center;color:#dc2626;"><h2>Pipeline failed to load</h2><p>Please refresh the page. If the problem persists, contact support.</p></div>';
+    });
+})();
+</script>
