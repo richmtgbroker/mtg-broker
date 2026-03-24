@@ -47,7 +47,7 @@
 
 .lenders-sticky-header.is-fixed {
   position: fixed;
-  top: 80px;
+  top: 68px;
   z-index: 50;
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);

@@ -424,7 +424,7 @@ export default function App() {
 
     function handleScroll() {
       const rect = sentinel.getBoundingClientRect()
-      const navbarHeight = 80
+      const navbarHeight = 68
       const shouldFix = rect.top < navbarHeight
 
       if (shouldFix && !header.classList.contains('is-fixed')) {
@@ -662,7 +662,7 @@ export default function App() {
 
       {/* Page header */}
       <h1 className="lender-card-name" style={{
-        fontSize: '24px', textAlign: 'left', marginBottom: '8px', fontWeight: 700, color: '#1E293B'
+        fontSize: '18px', textAlign: 'left', marginBottom: '8px', fontWeight: 700, color: '#1E293B'
       }}>
         Lender Directory
       </h1>
