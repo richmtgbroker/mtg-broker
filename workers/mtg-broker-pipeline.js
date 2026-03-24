@@ -11061,7 +11061,7 @@ function zillowLookup() {
     +'.ast-acct-grand-total span:first-child{font-size:13px;font-weight:700;color:#1E3A8A}'
     +'.ast-acct-grand-val{font-size:16px;font-weight:800;color:#1D4ED8}'
     /* v13.1: Asset Summary card (Excess / Shortage) */
-    +'.ast-summary-card{grid-column:2!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start}'
+    +'.ast-summary-card{grid-column:2!important;grid-row:2!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start}'
     +'.ast-summary-grid{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;flex-wrap:wrap}'
     +'.ast-summary-item{text-align:center;min-width:140px}'
     +'.ast-summary-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
@@ -11108,8 +11108,8 @@ function zillowLookup() {
     +'.ld-col-right .ld-pe-grid{grid-template-columns:repeat(2,1fr)!important}'
     +'.ld-col-right .ps-table td:first-child{max-width:120px;overflow:hidden;text-overflow:ellipsis}'
     /* v12.9: Assets 2-column layout (left: Cash/Reserves, right: Accounts) */
-    +'.ast-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
-    +'.ast-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'.ast-col-left{grid-column:1!important;grid-row:1/span 2!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ast-col-right{grid-column:2!important;grid-row:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
     +'@media(max-width:900px){.ast-col-left,.ast-col-right,.ast-summary-card{grid-column:1/-1!important;grid-row:auto!important}}'
     /* v12.9: Loan Detail Bar */
     +'.loan-detail-bar{display:flex;align-items:center;gap:6px;padding:6px 24px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
