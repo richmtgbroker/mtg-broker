@@ -1,0 +1,783 @@
+/* MTG.BROKER Pricing Page - CSS v4.0 */
+/* Bundled by Vite into index.js — no separate CSS file needed */
+
+/* ========================================
+   BASE STYLES
+   ======================================== */
+
+.pricing-page-wrapper {
+  font-family: 'Host Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #0f172a;
+  line-height: 1.6;
+}
+
+.pricing-page-wrapper * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.pricing-container {
+  max-width: 1280px;
+  width: 90%;
+  margin: 0 auto;
+}
+
+/* ========================================
+   HERO SECTION
+   ======================================== */
+
+.pricing-hero {
+  background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+  padding: 80px 20px 20px;
+  text-align: center;
+}
+
+.pricing-hero-title {
+  font-size: 40px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.pricing-hero-subtitle {
+  font-size: 18px;
+  color: #64748B;
+  font-weight: 400;
+}
+
+/* ========================================
+   PRICING CARDS (Homepage-style design)
+   ======================================== */
+
+.pricing-cards {
+  padding: 40px 20px 80px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  align-items: stretch;
+}
+
+/* --- Base Card --- */
+.pricing-card {
+  background: #FAFAFA;
+  border-radius: 20px;
+  border: 2.5px solid #CBD5E1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18),
+              0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  margin-top: 30px;
+  overflow: hidden;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22),
+              0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* --- Featured Card (PRO - Brand Blue border) --- */
+.pricing-card.featured-card {
+  background: #FFFFFF;
+  border: 3px solid #2563EB;
+  box-shadow: 0 16px 40px -6px rgba(37, 99, 235, 0.3),
+              0 6px 16px rgba(37, 99, 235, 0.15);
+  overflow: visible;
+}
+
+.pricing-card.featured-card:hover {
+  box-shadow: 0 20px 50px -10px rgba(37, 99, 235, 0.35),
+              0 8px 20px rgba(37, 99, 235, 0.2);
+}
+
+/* --- Colored Header Bars --- */
+.plan-header-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 17px 17px 0 0;
+}
+
+.lite-bar {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
+
+.plus-bar {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+}
+
+.pro-bar {
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E3A8A 100%);
+}
+
+/* --- Popular Badge (Brand Blue) --- */
+.popular-badge {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: white;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 6px 18px;
+  border-radius: 20px;
+  white-space: nowrap;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* --- Plan Content Area --- */
+.plan-content {
+  padding: 32px 32px 44px 32px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* --- Plan Name Badge --- */
+.plan-name-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.lite-badge {
+  background: #F1F5F9;
+  color: #334155;
+}
+
+.plus-badge {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.pro-badge {
+  background: #1E40AF;
+  color: white;
+}
+
+/* --- Price --- */
+.plan-price {
+  font-size: 52px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.period {
+  font-size: 18px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0;
+}
+
+/* --- Plan Description --- */
+.plan-desc {
+  font-size: 15px;
+  color: #64748B;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   FEATURE LIST (Circle Checkmarks)
+   ======================================== */
+
+.plan-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+  flex: 1;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.plan-features li:last-child {
+  border-bottom: none;
+}
+
+/* Included features (GREEN circle check) */
+.plan-features li.included .feature-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-features li.included .feature-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: white;
+}
+
+/* Limited features (BLUE circle check) */
+.plan-features li.limited .feature-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  background: linear-gradient(135deg, #60A5FA, #3B82F6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plan-features li.limited .feature-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: white;
+}
+
+.feature-detail {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+/* Unavailable features (strikethrough) */
+.plan-features li.unavailable {
+  color: #CBD5E1;
+  text-decoration: line-through;
+  padding-left: 36px;
+}
+
+.plan-features li.unavailable .feature-name {
+  color: #CBD5E1;
+}
+
+/* Feature name */
+.feature-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+/* Coming Soon badge */
+.badge-coming-soon {
+  display: inline-block;
+  background: #DBEAFE;
+  color: #1E40AF;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-left: 6px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ========================================
+   BUTTONS (Brand Blue #2563EB)
+   ======================================== */
+
+.cta-button {
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  cursor: pointer;
+  border: none;
+}
+
+/* Outline button (LITE card) */
+.cta-outline {
+  border: 2px solid #E2E8F0;
+  color: #0f172a;
+  background: white;
+}
+
+.cta-outline:hover {
+  border-color: #2563EB;
+  background: #F8FAFC;
+  transform: translateY(-1px);
+}
+
+/* Outline on dark/blue backgrounds (final CTA) */
+.cta-outline-light {
+  border-color: white;
+  color: white;
+  background: transparent;
+}
+
+.cta-outline-light:hover {
+  background: white;
+  color: #2563EB;
+  border-color: white;
+}
+
+/* Primary filled button (Brand Blue gradient) */
+.cta-primary {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: white;
+  border: 2px solid transparent;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.cta-primary:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+  transform: translateY(-2px);
+}
+
+/* Primary button on blue background (final CTA - white with blue text) */
+.cta-on-blue {
+  background: white;
+  color: #2563EB;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.cta-on-blue:hover {
+  background: #F8FAFC;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Current Plan button (green) */
+.cta-current {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border: 2px solid transparent;
+  cursor: default;
+}
+
+.cta-current:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Large button variant (final CTA) */
+.cta-large {
+  padding: 18px 40px;
+  font-size: 18px;
+}
+
+/* ========================================
+   TRUST SECTION
+   ======================================== */
+
+.trust-section {
+  padding: 60px 20px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.trust-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 40px;
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.trust-stat {
+  padding: 20px;
+}
+
+.stat-number {
+  font-size: 48px;
+  font-weight: 700;
+  color: #2563EB;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 16px;
+  color: #718096;
+}
+
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4a5568;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.badge-icon {
+  width: 24px;
+  height: 24px;
+  color: #48bb78;
+}
+
+/* ========================================
+   COMPARISON TABLE
+   ======================================== */
+
+.comparison-section {
+  padding: 80px 20px;
+  background: #f7fafc;
+}
+
+.section-title {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+  color: #0f172a;
+}
+
+.comparison-table-wrapper {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.comparison-table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+}
+
+.comparison-table thead tr {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: white;
+}
+
+.comparison-table th {
+  padding: 20px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.comparison-table th.feature-col {
+  width: 40%;
+}
+
+.comparison-table th.plan-col {
+  text-align: center;
+  width: 20%;
+}
+
+.comparison-table th.featured {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.comparison-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.comparison-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+.comparison-table td {
+  padding: 16px 20px;
+  font-size: 15px;
+}
+
+.feature-name-cell {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.feature-value {
+  text-align: center;
+  color: #4a5568;
+}
+
+.feature-value.featured {
+  background: #f7f9fc;
+  font-weight: 600;
+}
+
+.table-check {
+  width: 24px;
+  height: 24px;
+  color: #48bb78;
+  margin: 0 auto;
+  display: block;
+}
+
+/* ========================================
+   FAQ SECTION
+   ======================================== */
+
+.faq-section {
+  padding: 80px 20px;
+  background: white;
+}
+
+.faq-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 0;
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a202c;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: color 0.2s ease;
+  font-family: inherit;
+}
+
+.faq-question:hover {
+  color: #2563EB;
+}
+
+.faq-icon {
+  width: 24px;
+  height: 24px;
+  color: #a0aec0;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.faq-item.active .faq-icon {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.faq-item.active .faq-answer {
+  max-height: 500px;
+  padding-top: 16px;
+}
+
+.faq-answer p {
+  color: #4a5568;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ========================================
+   FINAL CTA SECTION (Brand Blue gradient)
+   ======================================== */
+
+.final-cta-section {
+  padding: 80px 20px;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  text-align: center;
+  color: white;
+}
+
+.final-cta-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.final-cta-title {
+  font-size: 40px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.final-cta-subtitle {
+  font-size: 20px;
+  margin-bottom: 40px;
+  opacity: 0.95;
+}
+
+.final-cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.final-cta-buttons .cta-button {
+  width: auto;
+}
+
+.final-cta-note {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Tablet: 2 columns */
+@media (max-width: 992px) {
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pricing-card:last-child {
+    grid-column: 1 / -1;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .pricing-hero {
+    padding: 60px 20px 20px;
+  }
+
+  .pricing-hero-title {
+    font-size: 32px;
+  }
+
+  .pricing-hero-subtitle {
+    font-size: 16px;
+  }
+
+  .pricing-cards {
+    padding: 20px 20px 60px;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .pricing-card:last-child {
+    max-width: none;
+  }
+
+  .pricing-card {
+    margin-top: 24px;
+  }
+
+  .pricing-card:hover {
+    transform: none;
+  }
+
+  .pricing-card.featured-card:hover {
+    transform: none;
+  }
+
+  .plan-content {
+    padding: 28px 28px 40px 28px;
+  }
+
+  .plan-price {
+    font-size: 44px;
+  }
+
+  .popular-badge {
+    top: -15px;
+    font-size: 10px;
+    padding: 5px 14px;
+  }
+
+  .cta-button {
+    padding: 14px 20px;
+    font-size: 14px;
+  }
+
+  .trust-stats {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .comparison-table th,
+  .comparison-table td {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .faq-question {
+    font-size: 16px;
+  }
+
+  .final-cta-title {
+    font-size: 32px;
+  }
+
+  .final-cta-buttons {
+    flex-direction: column;
+  }
+
+  .final-cta-buttons .cta-button {
+    width: 100%;
+  }
+}
+
+/* Extra small mobile */
+@media (max-width: 480px) {
+  .pricing-container {
+    width: 95%;
+  }
+
+  .plan-content {
+    padding: 24px 24px 32px 24px;
+  }
+
+  .plan-price {
+    font-size: 38px;
+  }
+
+  .pricing-hero-title {
+    font-size: 28px;
+  }
+
+  .stat-number {
+    font-size: 36px;
+  }
+
+  .trust-badges {
+    flex-direction: column;
+    gap: 24px;
+  }
+}
