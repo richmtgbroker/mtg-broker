@@ -2212,8 +2212,9 @@ function openNewLoanModal() {
   collapseCoBorrower();
   showSection('main');
   document.getElementById('loan-modal').classList.remove('hidden');
-  /* Capture baseline for unsaved changes detection */
-  setTimeout(captureFormSnapshot, 100);
+  /* Capture baseline for unsaved changes detection.
+   * Use 500ms delay to ensure all async formatting (currency blur, module loads) settles. */
+  setTimeout(captureFormSnapshot, 500);
 }
 async function openLoanModal(id) {
   currentLoanId = id; lastCompFieldEdited = null;
@@ -2359,8 +2360,9 @@ async function openLoanModal(id) {
   if (hasCoBorrower) { expandCoBorrower(); } else { collapseCoBorrower(); }
   showSection('main');
   document.getElementById('loan-modal').classList.remove('hidden');
-  /* Capture baseline for unsaved changes detection */
-  setTimeout(captureFormSnapshot, 100);
+  /* Capture baseline for unsaved changes detection.
+   * Use 500ms delay to ensure all async formatting (currency blur, module loads) settles. */
+  setTimeout(captureFormSnapshot, 500);
 }
 async function loadTasks(loanId) {
   try { const d = await apiCall(\`/api/pipeline/tasks?loanId=\${loanId}\`); tasks = d.map(r => ({ id: r.id, ...r.fields })); renderTasks(); }
@@ -2622,8 +2624,12 @@ async function saveLoan() {
       if (delBtn) delBtn.classList.remove('hidden');
     }
     showSaveToast();
-    /* Reset baseline so only post-save changes trigger the unsaved warning */
+    /* Reset baseline so only post-save changes trigger the unsaved warning.
+     * Capture immediately AND after a short delay to account for any async
+     * formatting (currency blur handlers, checklist auto-save, etc.) that
+     * may change form field values after save completes. */
     captureFormSnapshot();
+    setTimeout(captureFormSnapshot, 300);
   } catch (e) { console.error('Error saving loan:', e); alert('Warning: Changes may not have been saved. Please refresh.'); await loadLoans(true); }
 }
 async function deleteLoan() {
