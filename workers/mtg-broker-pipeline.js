@@ -647,14 +647,22 @@ async function getLenderList(env, request) {
     });
   }
   try {
-    const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/lenders?select=name&order=name.asc`, {
+    const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/lenders?select=name,website_url,tpo_portal_url,correspondent_portal_url,turn_times_url&order=name.asc`, {
       headers: { 'apikey': env.SUPABASE_KEY, 'Authorization': `Bearer ${env.SUPABASE_KEY}` }
     });
     const rows = await resp.json();
-    const names = rows.map(r => r.name);
-    lenderListCache = names;
+    /* Return array of lender objects with name + URLs */
+    const lenders = rows.map(r => {
+      const obj = { name: r.name };
+      if (r.website_url) obj.website_url = r.website_url;
+      if (r.tpo_portal_url) obj.tpo_portal_url = r.tpo_portal_url;
+      if (r.correspondent_portal_url) obj.correspondent_portal_url = r.correspondent_portal_url;
+      if (r.turn_times_url) obj.turn_times_url = r.turn_times_url;
+      return obj;
+    });
+    lenderListCache = lenders;
     lenderListCacheTime = now;
-    return new Response(JSON.stringify(names), {
+    return new Response(JSON.stringify(lenders), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800', ...getCorsHeaders(request) }
     });
   } catch (err) {
@@ -10298,7 +10306,19 @@ textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-fa
 }
 .lender-clear-btn:hover { color: #ef4444; background: #fef2f2; }
 .lender-other-wrap { margin-top: 8px; }
-.lender-other-wrap.hidden { display: none; }`;
+.lender-other-wrap.hidden { display: none; }
+
+/* Lender Quick Links */
+.lender-links { display: none; margin-top: 6px; padding: 0; gap: 12px; flex-wrap: wrap; align-items: center; }
+.lender-links.visible { display: flex; }
+.lender-links a {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #1a56db; text-decoration: none; font-weight: 500;
+  padding: 3px 8px; border-radius: 4px; background: #f0f5ff; border: 1px solid #dbeafe;
+  transition: background .15s, border-color .15s;
+}
+.lender-links a:hover { background: #dbeafe; border-color: #93c5fd; }
+.lender-links a i { font-size: 11px; }`;
   return new Response(cssContent, {
     status: 200,
     headers: {
@@ -10500,7 +10520,7 @@ async function getPipelineTemplateHTML(request) {
                 <div class="ff"><label>Lead Source</label>
                   <select class="fc" id="lead-source"><option value="">Select...</option><option value="Self-Generated">Self-Generated</option><option value="Past Client">Past Client</option><option value="Referral - Realtor">Referral - Realtor</option><option value="Referral - Client">Referral - Client</option><option value="Referral - Financial Planner">Referral - Financial Planner</option><option value="Referral - Builder">Referral - Builder</option><option value="Referral - Other">Referral - Other</option><option value="Website">Website</option><option value="Social Media">Social Media</option><option value="Cold Call">Cold Call</option><option value="Direct Mail">Direct Mail</option><option value="Lead Service">Lead Service</option><option value="Walk-In">Walk-In</option><option value="Other">Other</option></select>
                 </div>
-                <div class="ff"><label>Lender</label><div class="lender-search-wrap" id="lender-search-wrap"><input type="text" class="fc" id="loan-lender-search" placeholder="Search lenders..." autocomplete="off"><input type="hidden" id="loan-lender"><div class="lender-dropdown" id="lender-dropdown"></div></div><div class="ff lender-other-wrap hidden" id="lender-other-wrap"><label>Other Lender Name</label><input type="text" class="fc" id="loan-lender-other" placeholder="Type lender name..."></div></div>
+                <div class="ff"><label>Lender</label><div class="lender-search-wrap" id="lender-search-wrap"><input type="text" class="fc" id="loan-lender-search" placeholder="Search lenders..." autocomplete="off"><input type="hidden" id="loan-lender"><div class="lender-dropdown" id="lender-dropdown"></div></div><div class="lender-links" id="lender-links"></div><div class="ff lender-other-wrap hidden" id="lender-other-wrap"><label>Other Lender Name</label><input type="text" class="fc" id="loan-lender-other" placeholder="Type lender name..."></div></div>
               </div>
               <div class="cg">
                 <div class="ff sp2"><label>Deal Notes</label><textarea class="fc" id="deal-notes" placeholder="Quick notes about the deal..." style="min-height:60px;"></textarea></div>
@@ -11796,19 +11816,25 @@ function zillowLookup() {
   'use strict';
 
   var WORKER_BASE = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
-  var allLenders = [];
+  var allLenders = [];    /* array of {name, website_url, tpo_portal_url, ...} */
+  var lenderMap = {};     /* name → lender object for quick lookup */
   var dropdownOpen = false;
   var activeIndex = -1;
 
   /* DOM references (set in init) */
-  var searchInput, hiddenInput, dropdown, otherWrap, otherInput, clearBtn;
+  var searchInput, hiddenInput, dropdown, otherWrap, otherInput, clearBtn, linksDiv;
 
-  /* Fetch lender list from API */
+  /* Fetch lender list from API (now returns objects with URLs) */
   function fetchLenders() {
     fetch(WORKER_BASE + '/api/lenders')
       .then(function(r) { return r.json(); })
-      .then(function(names) {
-        allLenders = names || [];
+      .then(function(data) {
+        allLenders = data || [];
+        /* Build lookup map: name → lender object */
+        lenderMap = {};
+        for (var i = 0; i < allLenders.length; i++) {
+          lenderMap[allLenders[i].name] = allLenders[i];
+        }
       })
       .catch(function(err) { console.warn('Failed to load lenders:', err); });
   }
@@ -11827,19 +11853,18 @@ function zillowLookup() {
   function renderDropdown(query) {
     var filtered;
     if (!query) {
-      filtered = allLenders.slice(); /* show all when empty */
+      filtered = allLenders.slice();
     } else {
       var q = query.toLowerCase();
-      filtered = allLenders.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; });
+      filtered = allLenders.filter(function(l) { return l.name.toLowerCase().indexOf(q) !== -1; });
     }
 
     var html = '';
-    /* "Other" always first */
     html += '<div class="lender-dropdown-item lender-other-item" data-value="__OTHER__">Other (not in list)</div>';
 
     for (var i = 0; i < filtered.length; i++) {
-      html += '<div class="lender-dropdown-item" data-value="' + filtered[i].replace(/"/g, '&quot;') + '">'
-        + highlightMatch(filtered[i], query) + '</div>';
+      html += '<div class="lender-dropdown-item" data-value="' + filtered[i].name.replace(/"/g, '&quot;') + '">'
+        + highlightMatch(filtered[i].name, query) + '</div>';
     }
 
     if (filtered.length === 0 && query) {
@@ -11861,6 +11886,41 @@ function zillowLookup() {
     activeIndex = -1;
   }
 
+  /* Show lender quick links for the selected lender */
+  function showLenderLinks(lenderName) {
+    if (!linksDiv) return;
+    var lender = lenderMap[lenderName];
+    if (!lender) {
+      linksDiv.classList.remove('visible');
+      linksDiv.innerHTML = '';
+      return;
+    }
+
+    var links = [];
+    if (lender.website_url) {
+      var url = lender.website_url;
+      if (url.indexOf('://') === -1) url = 'https://' + url;
+      links.push('<a href="' + url + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Website</a>');
+    }
+    if (lender.tpo_portal_url) {
+      links.push('<a href="' + lender.tpo_portal_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-key"></i> TPO Portal</a>');
+    }
+    if (lender.correspondent_portal_url) {
+      links.push('<a href="' + lender.correspondent_portal_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-building-columns"></i> Correspondent</a>');
+    }
+    if (lender.turn_times_url) {
+      links.push('<a href="' + lender.turn_times_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-clock"></i> Turn Times</a>');
+    }
+
+    if (links.length > 0) {
+      linksDiv.innerHTML = links.join('');
+      linksDiv.classList.add('visible');
+    } else {
+      linksDiv.classList.remove('visible');
+      linksDiv.innerHTML = '';
+    }
+  }
+
   /* Select a lender value */
   function selectLender(value) {
     if (value === '__OTHER__') {
@@ -11871,7 +11931,7 @@ function zillowLookup() {
       otherInput.focus();
       updateClearBtn();
       closeDropdown();
-      /* Trigger change events for deal string + chips */
+      showLenderLinks('');
       triggerUpdates();
       return;
     }
@@ -11881,6 +11941,7 @@ function zillowLookup() {
     otherInput.value = '';
     updateClearBtn();
     closeDropdown();
+    showLenderLinks(value);
     triggerUpdates();
   }
 
@@ -11892,6 +11953,7 @@ function zillowLookup() {
     otherWrap.classList.add('hidden');
     otherInput.value = '';
     updateClearBtn();
+    showLenderLinks('');
     searchInput.focus();
     triggerUpdates();
   }
@@ -11952,13 +12014,14 @@ function zillowLookup() {
       return;
     }
     /* Check if value is in the lender list */
-    var found = allLenders.indexOf(val) !== -1;
+    var found = !!lenderMap[val];
     if (found) {
       hiddenInput.value = val;
       searchInput.value = val;
       searchInput.disabled = false;
       otherWrap.classList.add('hidden');
       otherInput.value = '';
+      showLenderLinks(val);
     } else {
       /* Value not in list — treat as "Other" */
       hiddenInput.value = val;
@@ -11966,6 +12029,7 @@ function zillowLookup() {
       searchInput.disabled = true;
       otherWrap.classList.remove('hidden');
       otherInput.value = val;
+      showLenderLinks('');
     }
     updateClearBtn();
   };
@@ -11977,6 +12041,7 @@ function zillowLookup() {
     dropdown = document.getElementById('lender-dropdown');
     otherWrap = document.getElementById('lender-other-wrap');
     otherInput = document.getElementById('loan-lender-other');
+    linksDiv = document.getElementById('lender-links');
     if (!searchInput || !hiddenInput || !dropdown) return;
 
     /* Add clear button */
@@ -12002,7 +12067,7 @@ function zillowLookup() {
 
     /* Dropdown click delegation */
     dropdown.addEventListener('mousedown', function(e) {
-      e.preventDefault(); /* prevent blur */
+      e.preventDefault();
       var item = e.target.closest('.lender-dropdown-item[data-value]');
       if (item) selectLender(item.getAttribute('data-value'));
     });
@@ -12011,7 +12076,6 @@ function zillowLookup() {
     document.addEventListener('mousedown', function(e) {
       if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
         closeDropdown();
-        /* If user typed something but didn't select, reset display */
         if (!hiddenInput.value && searchInput.value && !searchInput.disabled) {
           searchInput.value = '';
         }
