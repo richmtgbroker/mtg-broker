@@ -1,8 +1,8 @@
 /**
- * mtg-broker-extras — Cloudflare Worker v2.0
+ * mtg-broker-extras — Cloudflare Worker v2.1
  * =========================================================
  * Serves static JS/CSS files for the mtg.broker platform.
- * Synced from live deployed version + avatar fix.
+ * v2.1: Added fetch interceptor to site-footer.js (moved from inline)
  *
  * ENDPOINTS:
  *   GET /static/site-head.css       — Global CSS
@@ -1273,9 +1273,11 @@ const SITE_HEAD_JS = String.raw`
 
 const SITE_FOOTER_JS = String.raw`
 // ============================================================
-// mtg.broker — Site Footer JS v3.5
+// mtg.broker — Site Footer JS v4.0
 // Served from: /static/site-footer.js via Cloudflare Worker
-// Sections 0–6 (previously inline in Webflow Site Settings)
+// Sections 0–7 (replaces ALL inline JS in Webflow Site Settings)
+// v4.0: Moved fetch interceptor from inline to here (no more
+//       inline JS needed in Site Settings footer)
 // ============================================================
 
 // ========== SECTION 0: GLOBAL OUTSETA CACHE ==========
@@ -1323,8 +1325,34 @@ const SITE_FOOTER_JS = String.raw`
 
   console.log('✅ Global Outseta cache initialized');
 
-  // NOTE: The fetch interceptor (retry-on-401) is in Site Settings HEAD CODE
-  // so it runs before any body scripts can capture window.fetch.
+  // ============================================================
+  // GLOBAL API FETCH INTERCEPTOR
+  //
+  // Catches ALL fetch calls to the API base URL and waits for
+  // getCachedOutsetaUser() to resolve first, ensuring Outseta has
+  // refreshed an expired JWT before the request fires.
+  // After the first call, getCachedOutsetaUser() returns instantly
+  // from the in-memory cache — no performance overhead.
+  // ============================================================
+  (function() {
+    var API_BASE = 'https://mtg-broker-api.rich-e00.workers.dev';
+    var _origFetch = window.fetch;
+    window.fetch = async function(input, init) {
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (url.indexOf(API_BASE) === 0) {
+        var attempts = 0;
+        while (attempts < 30) {
+          if (window.Outseta && typeof window.Outseta.getUser === 'function') {
+            await window.getCachedOutsetaUser();
+            break;
+          }
+          await new Promise(function(r) { setTimeout(r, 100); });
+          attempts++;
+        }
+      }
+      return _origFetch.call(this, input, init);
+    };
+  })();
 
 })();
 
