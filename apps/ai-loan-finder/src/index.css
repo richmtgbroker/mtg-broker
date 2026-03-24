@@ -1149,6 +1149,20 @@ html {
   color: var(--text-dark);
 }
 
+/* Inline source references — styled as small pills */
+.gs-inline-source {
+  display: inline;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--primary-blue);
+  background: #e8f0fe;
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-left: 2px;
+  white-space: nowrap;
+  line-height: 1.8;
+}
+
 .gs-answer-disclaimer {
   margin: 0 1.25rem 1rem;
   padding: 0.625rem 0.875rem;

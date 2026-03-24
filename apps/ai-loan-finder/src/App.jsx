@@ -641,12 +641,23 @@ function LoanResults({ data, onOpenModal }) {
 
 // ─── SEARCH GUIDELINES COMPONENTS ────────────────────────────────────────────
 
-// Renders **bold** inline markdown within a line of text
+// Renders **bold** and [Lender — Product] source tags inline
 function renderInline(text) {
+  // First split on bold markers, then handle bracket refs within each segment
   const parts = text.split(/(\*\*(?:[^*]|\*(?!\*))+\*\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return <strong key={i}>{part.slice(2, -2)}</strong>
+    }
+    // Split on bracketed source references like [Lender — Product]
+    if (part && part.includes('[')) {
+      const segments = part.split(/(\[[^\]]+\])/g)
+      return segments.map((seg, j) => {
+        if (seg.startsWith('[') && seg.endsWith(']')) {
+          return <span key={`${i}-${j}`} className="gs-inline-source">{seg.slice(1, -1)}</span>
+        }
+        return seg || null
+      })
     }
     return part || null
   })
