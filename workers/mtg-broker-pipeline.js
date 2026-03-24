@@ -4,7 +4,13 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 23, 2026 - v7.29 — CRIT-1 security fix: JWT signature verification.
+ * UPDATED: March 23, 2026 - v7.30 — Dev Tracker items 1.1, 1.2, 1.4:
+ *   1.1: Renamed "Report #" label to "Report / File #" in credit section (DOM enhancement in initPipeline).
+ *   1.2: Converted Credit Pull Type from text input to dropdown with Hard Pull, Soft Pull, Estimated options.
+ *   1.4: Added "Requested HOI from Borrower" checklist item above "HOI Quotes Requested" in Homeowners Insurance group.
+ *   Checklist now has 51 items (was 50). Order numbers bumped for HOI and Closing groups.
+ *
+ * PREVIOUS: March 23, 2026 - v7.29 — CRIT-1 security fix: JWT signature verification.
  *   Client now sends raw JWT instead of plain email in Authorization header.
  *   Server verifies RS256 signature via Outseta JWKS before trusting identity.
  *   Added verifyOutsetaJWT(), sanitizeEmailForFormula(), getAccessToken().
@@ -1359,6 +1365,54 @@ async function initPipeline() {
   document.head.appendChild(incomeStyle);
   /* Income section: init handled by buildIncomeSection() from openNewLoanModal / openLoanModal */
   setupLTVSync(); setupCompensationSync(); setupPICalc(); setupRateFormatting(); setupBorrowerNameBar(); setupPropertyValueSync();
+
+  /* v7.30: DOM enhancements — rename labels + convert fields */
+  /* 1.1: Rename "Report #" label to "Report / File #" */
+  (function() {
+    var reportInput = document.getElementById('credit-report-number');
+    if (reportInput) {
+      var label = reportInput.closest('.field-group, .form-group, div')?.querySelector('label');
+      if (!label) {
+        /* Try previous sibling or parent's label */
+        label = reportInput.parentElement?.querySelector('label');
+      }
+      if (label && label.textContent.trim().match(/Report\\s*#/i)) {
+        label.textContent = 'Report / File #';
+      }
+    }
+  })();
+
+  /* 1.2: Convert credit-pull-type from text input to dropdown with Estimated option */
+  (function() {
+    var textInput = document.getElementById('credit-pull-type');
+    if (textInput && textInput.tagName === 'INPUT') {
+      var select = document.createElement('select');
+      select.id = 'credit-pull-type';
+      select.className = textInput.className;
+      select.style.cssText = textInput.style.cssText;
+      var options = ['', 'Hard', 'Soft', 'Estimated'];
+      options.forEach(function(opt) {
+        var o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt || '-- Select --';
+        select.appendChild(o);
+      });
+      /* Preserve current value if it exists */
+      var currentVal = textInput.value;
+      if (currentVal) {
+        /* If current value isn't in predefined options, add it */
+        var found = options.indexOf(currentVal) >= 0;
+        if (!found) {
+          var extra = document.createElement('option');
+          extra.value = currentVal;
+          extra.textContent = currentVal;
+          select.appendChild(extra);
+        }
+        select.value = currentVal;
+      }
+      textInput.parentNode.replaceChild(select, textInput);
+    }
+  })();
 
   document.addEventListener('click', e => {
     const sel = document.querySelector('.column-selector');
@@ -3968,19 +4022,20 @@ async function getPipelineChecklistJS(request) {
     { id: 'uw-conditional',       label: 'Conditional Approval',      group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 39 },
 
     // GROUP 13: Homeowners Insurance (HOI)
-    { id: 'hoi-quotes',           label: 'HOI Quotes Requested',             group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 40 },
-    { id: 'hoi-sent-buyer',       label: 'Quotes Sent to Borrower',          group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 41 },
-    { id: 'hoi-decision',         label: 'HOI Decision Made',                group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 42 },
-    { id: 'hoi-sent-processing',  label: 'HOI Choice Sent to Processing',   group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 43 },
+    { id: 'hoi-requested',        label: 'Requested HOI from Borrower',      group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 40 },
+    { id: 'hoi-quotes',           label: 'HOI Quotes Requested',             group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 41 },
+    { id: 'hoi-sent-buyer',       label: 'Quotes Sent to Borrower',          group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 42 },
+    { id: 'hoi-decision',         label: 'HOI Decision Made',                group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 43 },
+    { id: 'hoi-sent-processing',  label: 'HOI Choice Sent to Processing',   group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 44 },
 
     // GROUP 14: Closing (Funded → Closed → Purchased)
-    { id: 'close-cd-sent',        label: 'Initial CD Sent',           group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 44 },
-    { id: 'close-cd-signed',      label: 'Initial CD Signed',         group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 45 },
-    { id: 'close-conditions',     label: 'Conditions Cleared',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 46 },
-    { id: 'close-final',          label: 'Final Approval / CTC',      group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 47 },
-    { id: 'close-funded',         label: 'Funded',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 48 },
-    { id: 'close-closed',         label: 'Closed',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 49 },
-    { id: 'close-purchased',      label: 'Purchased (NonDel)',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 50 }
+    { id: 'close-cd-sent',        label: 'Initial CD Sent',           group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 45 },
+    { id: 'close-cd-signed',      label: 'Initial CD Signed',         group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 46 },
+    { id: 'close-conditions',     label: 'Conditions Cleared',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 47 },
+    { id: 'close-final',          label: 'Final Approval / CTC',      group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 48 },
+    { id: 'close-funded',         label: 'Funded',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 49 },
+    { id: 'close-closed',         label: 'Closed',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 50 },
+    { id: 'close-purchased',      label: 'Purchased (NonDel)',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 51 }
   ];
 
   // Group metadata — icon + display color for each group header
