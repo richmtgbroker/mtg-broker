@@ -442,12 +442,12 @@
 }
 
 /* ========================================
-   COMPARISON TABLE (v4.1 — grouped & redesigned)
+   COMPARISON TABLE (v4.2 — Progressive Disclosure Grid)
    ======================================== */
 
 .comparison-section {
   padding: 80px 20px;
-  background: #f7fafc;
+  background: #ffffff;
 }
 
 .section-title {
@@ -465,72 +465,73 @@
   margin-bottom: 48px;
 }
 
-.comparison-table-wrapper {
-  overflow-x: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+/* --- Grid Container --- */
+.comparison-grid {
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.comparison-table {
-  width: 100%;
-  background: white;
-  border-collapse: collapse;
-}
-
-/* --- Table Header --- */
-.comparison-table thead tr {
-  background: white;
+/* --- Sticky Header Row --- */
+.grid-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #ffffff;
+  padding-bottom: 16px;
   border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0;
 }
 
-.comparison-table th {
-  padding: 24px 20px 20px;
-  text-align: left;
+.grid-header-label {
+  display: flex;
+  align-items: flex-end;
+  padding: 12px 0 12px 4px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 16px;
-  vertical-align: bottom;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.comparison-table th.feature-col {
-  width: 38%;
-}
-
-.comparison-table th.plan-col {
-  text-align: center;
-  width: 20.67%;
-}
-
-.comparison-table th.featured {
-  background: #f0f5ff;
-  border-left: 2px solid #2563EB;
-  border-right: 2px solid #2563EB;
-  border-top: 2px solid #2563EB;
-  border-radius: 0;
-}
-
-/* Plan column header content */
-.plan-col-header {
+.grid-header-plan {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  padding: 12px 8px;
+  border-radius: 12px;
+  gap: 2px;
 }
 
-.plan-col-name {
+.grid-header-plan.tier-lite {
+  opacity: 0.6;
+}
+
+.grid-header-plan.tier-plus {
+  opacity: 1;
+}
+
+.grid-header-plan.tier-pro {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.grid-plan-name {
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.05em;
   color: #0f172a;
 }
 
-.plan-col-price {
-  font-size: 14px;
+.grid-plan-price {
+  font-size: 13px;
   font-weight: 500;
   color: #64748b;
 }
 
-.plan-col-recommended {
+.grid-badge {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -542,65 +543,80 @@
   margin-bottom: 2px;
 }
 
-/* --- Category Header Rows --- */
-.category-row td {
-  background: #f8fafc;
-  padding: 14px 20px;
-  font-size: 13px;
+/* --- Category Divider --- */
+.grid-category {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 4px 10px;
+}
+
+.grid-category:first-of-type {
+  padding-top: 20px;
+}
+
+.grid-cat-text {
+  font-size: 12px;
   font-weight: 700;
-  color: #475569;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 1px solid #e2e8f0;
-  border-top: 1px solid #e2e8f0;
-}
-
-.cat-icon {
-  width: 16px;
-  height: 16px;
   color: #2563EB;
-  vertical-align: -3px;
-  margin-right: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
-/* --- Data Rows --- */
-.comparison-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
+.grid-category::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
 }
 
-.comparison-table tbody tr:hover:not(.category-row) {
-  background: #fafbfc;
+/* --- Feature Row --- */
+.grid-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0;
+  padding: 0;
+  border-radius: 10px;
+  transition: background 0.15s ease;
 }
 
-.comparison-table td {
-  padding: 15px 20px;
-  font-size: 15px;
+.grid-row:hover {
+  background: #f8fafc;
 }
 
-.feature-name-cell {
+.grid-feature {
+  display: flex;
+  align-items: center;
+  padding: 14px 4px 14px 12px;
+  font-size: 14px;
   font-weight: 500;
   color: #334155;
 }
 
-.feature-value {
-  text-align: center;
-  color: #475569;
+/* --- Value Cells --- */
+.grid-val {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 8px;
   font-size: 14px;
+  text-align: center;
+  border-radius: 8px;
 }
 
-/* PRO column highlight */
-.feature-value.featured {
-  background: #f8faff;
-  border-left: 2px solid #2563EB;
-  border-right: 2px solid #2563EB;
-  font-weight: 500;
+/* Progressive opacity: LITE muted, PLUS normal, PRO vibrant */
+.grid-val.tier-lite {
+  opacity: 0.55;
 }
 
-/* Last row of the table — close the PRO border */
-.comparison-table tbody tr:last-child .feature-value.featured {
-  border-bottom: 2px solid #2563EB;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+.grid-val.tier-plus {
+  opacity: 1;
+}
+
+.grid-val.tier-pro {
+  opacity: 1;
+  background: rgba(37, 99, 235, 0.04);
 }
 
 /* --- Value Styles --- */
@@ -624,17 +640,37 @@
   font-weight: 500;
 }
 
-.val-unlimited {
+.val-muted {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.val-normal {
+  color: #475569;
+  font-weight: 500;
+}
+
+/* PRO column values — bold with brand blue */
+.val-pro {
+  color: #2563EB;
+  font-weight: 600;
+}
+
+.val-pro-bold {
   color: #2563EB;
   font-weight: 700;
 }
 
 .table-check {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   color: #10b981;
-  margin: 0 auto;
   display: block;
+}
+
+/* PRO column checks get brand blue */
+.grid-val.tier-pro .table-check {
+  color: #2563EB;
 }
 
 /* ========================================
@@ -835,28 +871,45 @@
     gap: 24px;
   }
 
-  .comparison-table th,
-  .comparison-table td {
-    padding: 12px 10px;
+  /* Comparison grid: tighter on mobile */
+  .grid-header {
+    padding-bottom: 10px;
+  }
+
+  .grid-header-label {
+    font-size: 11px;
+    padding-left: 2px;
+  }
+
+  .grid-plan-name {
     font-size: 13px;
   }
 
-  .plan-col-name {
-    font-size: 13px;
+  .grid-plan-price {
+    font-size: 11px;
   }
 
-  .plan-col-price {
-    font-size: 12px;
-  }
-
-  .plan-col-recommended {
+  .grid-badge {
     font-size: 9px;
     padding: 2px 8px;
   }
 
-  .category-row td {
-    padding: 10px;
+  .grid-feature {
+    font-size: 13px;
+    padding: 12px 2px 12px 6px;
+  }
+
+  .grid-val {
     font-size: 12px;
+    padding: 12px 4px;
+  }
+
+  .grid-category {
+    padding: 22px 4px 8px;
+  }
+
+  .grid-cat-text {
+    font-size: 11px;
   }
 
   .faq-question {
