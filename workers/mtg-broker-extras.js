@@ -1894,6 +1894,54 @@ document.addEventListener('DOMContentLoaded', function() {
     initialize();
   }
 })();
+
+// ========== SECTION 7: GLOBAL AVATAR FIX ==========
+// Fix: avatar images have loading="lazy" + display:none (from CSS).
+// Lazy images with display:none never load — browser skips them.
+// This observer watches for avatar src changes and ensures they load.
+(function() {
+  'use strict';
+
+  function fixAvatarImages() {
+    document.querySelectorAll('img[data-mb-avatar]').forEach(function(img) {
+      if (!img.src || img.src === '' || img.src === window.location.href) return;
+      // Remove lazy loading — it prevents display:none images from loading
+      img.removeAttribute('loading');
+      // Add has-img to parent immediately so image becomes visible (display:block)
+      var btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
+      if (btn && !btn.classList.contains('has-img')) {
+        btn.classList.add('has-img');
+        img.onerror = function() { btn.classList.remove('has-img'); };
+      }
+    });
+  }
+
+  // Run after a delay to let Outseta/navbar set the src
+  setTimeout(fixAvatarImages, 1500);
+  setTimeout(fixAvatarImages, 3000);
+  setTimeout(fixAvatarImages, 5000);
+
+  // Also observe for src changes on avatar images
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.type === 'attributes' && m.attributeName === 'src') {
+        fixAvatarImages();
+      }
+    });
+  });
+
+  function watchAvatars() {
+    document.querySelectorAll('img[data-mb-avatar]').forEach(function(img) {
+      observer.observe(img, { attributes: true, attributeFilter: ['src'] });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', watchAvatars);
+  } else {
+    watchAvatars();
+  }
+})();
 `;
 
 
