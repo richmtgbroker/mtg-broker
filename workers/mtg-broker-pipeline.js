@@ -5959,7 +5959,15 @@ async function getPipelineAssetsJS(request) {
     var parentCard = c.closest('.section-card');
     if (parentCard) {
       parentCard.id = 'section-assets-wrapper';
-      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;';
+      /* Strip visual card styling — this is just a layout container now.
+         Force grid-column:span 2 so it uses full width of #section-pages grid.
+         Hide the Webflow-defined card-title (the "ASSETS" header) since
+         each inner card has its own title. */
+      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;grid-column:1/-1;max-width:none;';
+      parentCard.classList.remove('card');
+      parentCard.classList.remove('ast-col-left'); /* safety: old cached JS may have added this */
+      var parentTitle = parentCard.querySelector(':scope > .card-title');
+      if (parentTitle) parentTitle.style.display = 'none';
     }
 
     /* ── 3 SEPARATE CARDS in a 2-column flex layout ──
