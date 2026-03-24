@@ -424,7 +424,7 @@ export default function App() {
 
     function handleScroll() {
       const rect = sentinel.getBoundingClientRect()
-      const navbarHeight = 60
+      const navbarHeight = 80
       const shouldFix = rect.top < navbarHeight
 
       if (shouldFix && !header.classList.contains('is-fixed')) {
