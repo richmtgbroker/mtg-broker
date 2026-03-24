@@ -114,19 +114,25 @@ const NAVBAR_CSS = `
 .mb-burger span{display:block;height:2px;background:#0f172a;border-radius:2px;margin:5px 0;}
 .mb-mobile{pointer-events:auto;width:100%;background:#fff;border-bottom:1px solid #E7EAF0;box-shadow:0 10px 20px rgba(15,23,42,0.05);padding:20px;max-height:calc(100vh - 77px);overflow-y:auto;}
 .mb-mobile-divider{height:1px;background:#E7EAF0;margin:20px 0;}
-.mb-mobileNav{display:flex;flex-direction:column;gap:4px;}
-.mb-mLink{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:12px;text-decoration:none;color:#0f172a;font-weight:600;font-size:15px;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;}
+.mb-mobileNav{display:flex;flex-direction:column;gap:2px;}
+.mb-mLink{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:14px;text-decoration:none;color:#0f172a;font-weight:600;font-size:17px;line-height:1.2;min-height:52px;background:none;border:none;cursor:pointer;width:100%;text-align:left;font-family:inherit;}
 .mb-mLink:hover{background:rgba(15,23,42,0.04);}
-.mb-mLink svg{width:20px;height:20px;flex-shrink:0;stroke:currentColor;}
-.mb-mDivider{height:1px;background:#E7EAF0;margin:16px 0;}
-.mb-mNexa-section{margin-top:8px;padding-top:8px;}
-.mb-mNexa-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px 4px 12px;}
+.mb-mLink svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;}
+.mb-mDivider{height:1px;background:#E7EAF0;margin:8px 14px;}
+.mb-mSection-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;padding:14px 14px 6px;}
+.mb-mNexa-section{margin-top:0;}
+.mb-mNexa-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;padding:14px 14px 6px;}
 .mb-mLink-nexa{color:#1e40af;}
 .mb-mLink-nexa svg{color:#2563EB;}
 .mb-mLink-nexa:hover{background:#EFF6FF;color:#1e40af;}
 .mb-mNexa-tag{font-size:9px;font-weight:700;color:#fff;background:linear-gradient(135deg,#2563EB 0%,#1d4ed8 100%);padding:2px 6px;border-radius:4px;letter-spacing:0.04em;text-transform:uppercase;flex-shrink:0;line-height:1.3;margin-left:auto;}
 .mb-mNexa-section.nexa-only{display:none !important;}
 body.nexa-user .mb-mNexa-section.nexa-only{display:block !important;}
+.mb-mLink.active{background:#EFF6FF;color:#2563EB;}
+.mb-mLink.active svg{color:#2563EB;}
+.mb-mLink.mb-mLink-pro{display:none;}
+body.pro-user .mb-mLink.mb-mLink-pro{display:flex;}
+.mb-mPro-tag{font-size:9px;font-weight:700;color:#7C3AED;background:#F3E8FF;border:1px solid #DDD6FE;padding:2px 7px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;flex-shrink:0;line-height:1.3;margin-left:auto;}
 .mb-helpWrap{position:relative;}
 .mb-helpBtn{width:40px;height:40px;border-radius:999px;border:1px solid #E7EAF0;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#64748B;transition:all 0.2s ease;padding:0;}
 .mb-helpBtn:hover{background:#F8FAFC;color:#2563EB;border-color:#BFDBFE;}
@@ -142,7 +148,7 @@ body.nexa-user .mb-mNexa-section.nexa-only{display:block !important;}
 .mb-helpDropdown-label{font-size:14px;font-weight:600;color:#0f172a;line-height:1.3;}
 .mb-helpDropdown-desc{font-size:12px;color:#94A3B8;line-height:1.3;}
 .mb-helpDropdown-divider{height:1px;background:#E7EAF0;margin:6px 16px;}
-.mb-mHelp-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;padding:4px 12px 4px 12px;}
+.mb-mHelp-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;padding:14px 14px 6px;}
 .mb-mLink-help{color:#475569;}
 .mb-mLink-help svg{color:#94A3B8;}
 .mb-mLink-help:hover{background:#F8FAFC;color:#2563EB;}
@@ -262,14 +268,10 @@ const NAVBAR_HTML = `
   <div class="mb-mobile" hidden>
     <div class="mb-mobileNav">
 
+      <!-- Main Navigation (matches sidebar order) -->
       <a href="/app/dashboard" class="mb-mLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
         <span>Dashboard</span>
-      </a>
-
-      <a href="/app/pipeline" class="mb-mLink">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-        <span>Pipeline</span>
       </a>
 
       <a href="/app/loan-search" class="mb-mLink">
@@ -297,6 +299,8 @@ const NAVBAR_HTML = `
         <span>Property Types</span>
       </a>
 
+      <div class="mb-mDivider"></div>
+
       <a href="/app/vendors" class="mb-mLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
         <span>Vendors</span>
@@ -305,6 +309,13 @@ const NAVBAR_HTML = `
       <a href="/app/contacts" class="mb-mLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         <span>Contacts</span>
+      </a>
+
+      <div class="mb-mDivider"></div>
+
+      <a href="/app/pipeline" class="mb-mLink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        <span>Pipeline</span>
       </a>
 
       <a href="/app/calculators" class="mb-mLink">
@@ -318,7 +329,7 @@ const NAVBAR_HTML = `
       </a>
 
       <a href="/app/social-media" class="mb-mLink">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"></circle><path d="M17.5 10.5c1.7-1 3.5 0 3.5 0"></path><path d="M3 21c0 0 1-4 4-4 1.5 0 2.3.5 3 1l2-6"></path><path d="M12.5 12L10 21"></path><path d="M3 3l18 18"></path><rect x="2" y="2" width="20" height="20" rx="2"></rect></svg>
         <span>Social Media</span>
       </a>
 
@@ -327,7 +338,9 @@ const NAVBAR_HTML = `
         <span>Tools</span>
       </a>
 
+      <!-- NEXA Exclusive (hidden unless body.nexa-user) -->
       <div class="mb-mNexa-section nexa-only">
+        <div class="mb-mDivider"></div>
         <div class="mb-mNexa-label nexa-only">NEXA Exclusive</div>
         <a href="/app/credit-reports" class="mb-mLink mb-mLink-nexa nexa-only">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15l2 2 4-4"></path></svg>
@@ -336,11 +349,19 @@ const NAVBAR_HTML = `
         </a>
       </div>
 
+      <!-- My Workspace -->
       <div class="mb-mDivider"></div>
+      <div class="mb-mSection-label">My Workspace</div>
 
       <a href="/app/saved" class="mb-mLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
         <span>Saved Items</span>
+      </a>
+
+      <a href="/app/referral" class="mb-mLink mb-mLink-pro">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+        <span>Referrals</span>
+        <span class="mb-mPro-tag">PRO</span>
       </a>
 
       <a href="/app/settings" class="mb-mLink">
@@ -348,8 +369,9 @@ const NAVBAR_HTML = `
         <span>Settings</span>
       </a>
 
+      <!-- Help & Support -->
       <div class="mb-mDivider"></div>
-      <div class="mb-mHelp-label">Help and Support</div>
+      <div class="mb-mHelp-label">Help &amp; Support</div>
 
       <a href="https://mtgbroker.outseta.com/support/kb/categories" target="_blank" rel="noopener noreferrer" class="mb-mLink mb-mLink-help" onclick="window.open(this.href,'_blank');return false;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -820,6 +842,18 @@ const NAVBAR_JS = `
   setSpacerHeight();
   closeMobile();
 
+  // Highlight active mobile menu link based on current page
+  (function() {
+    var currentPath = window.location.pathname.replace(/\\/$/,'');
+    document.querySelectorAll('.mb-mLink').forEach(function(link) {
+      if (link.tagName !== 'A') return;
+      var linkPath = new URL(link.href, window.location.origin).pathname.replace(/\\/$/,'');
+      if (currentPath === linkPath) {
+        link.classList.add('active');
+      }
+    });
+  })();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initNavbar);
   } else {
@@ -848,7 +882,7 @@ function buildNavbarScript() {
   var jsStr = JSON.stringify(NAVBAR_JS);
 
   return [
-    '/* mtg-broker-navbar v2.8 — Cloudflare Worker — DO NOT EDIT DIRECTLY */',
+    '/* mtg-broker-navbar v3.0 — Cloudflare Worker — DO NOT EDIT DIRECTLY */',
     '/* Edit workers/mtg-broker-navbar.js in the repo, then redeploy. */',
     '(function() {',
 

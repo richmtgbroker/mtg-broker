@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamburger Menu Mockup — mtg.broker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Host Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f1f5f9;
+    display: flex;
+    gap: 40px;
+    padding: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .mockup-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  .phone-frame {
+    width: 390px;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(15,23,42,0.12);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* ===== NAVBAR HEADER ===== */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #E7EAF0;
+    background: #fff;
+  }
+  .navbar-logo {
+    height: 28px;
+  }
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    border: 1px solid #E7EAF0;
+  }
+  .burger {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid #E7EAF0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .burger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #0f172a;
+    border-radius: 2px;
+  }
+
+  /* ===== MENU DRAWER ===== */
+  .menu-drawer {
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding: 8px 0 24px 0;
+  }
+
+  /* --- CURRENT (left mockup) --- */
+  .current .menu-drawer { padding: 12px; }
+  .current .m-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .current .m-link svg { width: 20px; height: 20px; flex-shrink: 0; color: #6B7280; }
+  .current .m-divider { height: 1px; background: #E7EAF0; margin: 12px 0; }
+  .current .m-section-label {
+    font-size: 11px; font-weight: 700; color: #94A3B8;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 12px 4px;
+  }
+
+  /* --- PROPOSED (right mockup) --- */
+  .proposed .menu-drawer { padding: 6px 12px 24px; }
+
+  .proposed .m-section {
+    margin-bottom: 6px;
+  }
+
+  .proposed .m-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 14px 14px 6px;
+  }
+
+  .proposed .m-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 14px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 17px;
+    line-height: 1.2;
+    min-height: 52px;
+  }
+  .proposed .m-link:hover { background: rgba(15,23,42,0.04); }
+  .proposed .m-link.active {
+    background: #EFF6FF;
+    color: #2563EB;
+  }
+  .proposed .m-link.active svg { color: #2563EB; }
+
+  .proposed .m-link svg {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    color: #6B7280;
+  }
+
+  .proposed .m-divider {
+    height: 1px;
+    background: #E7EAF0;
+    margin: 8px 14px;
+  }
+
+  /* NEXA link styling */
+  .proposed .m-link-nexa { color: #1e40af; }
+  .proposed .m-link-nexa svg { color: #2563EB; }
+  .proposed .m-nexa-tag {
+    font-size: 9px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #2563EB, #1d4ed8);
+    padding: 2px 7px; border-radius: 5px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-left: auto; flex-shrink: 0;
+  }
+
+  /* PRO badge */
+  .proposed .m-pro-tag {
+    font-size: 9px; font-weight: 700; color: #7C3AED;
+    background: #F3E8FF; border: 1px solid #DDD6FE;
+    padding: 2px 7px; border-radius: 5px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-left: auto; flex-shrink: 0;
+  }
+
+  /* Help links - slightly muted */
+  .proposed .m-link-help { color: #475569; font-weight: 500; }
+  .proposed .m-link-help svg { color: #94A3B8; }
+
+  /* User card at bottom */
+  .proposed .m-user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin: 8px 12px 0;
+    border-radius: 14px;
+    background: #F8FAFC;
+    border: 1px solid #E7EAF0;
+    text-decoration: none;
+    color: #0f172a;
+  }
+  .proposed .m-user-avatar {
+    width: 40px; height: 40px; border-radius: 999px;
+    background: #e2e8f0; border: 1px solid #E7EAF0; flex-shrink: 0;
+  }
+  .proposed .m-user-name { font-size: 15px; font-weight: 700; }
+  .proposed .m-user-plan {
+    font-size: 10px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #2563EB, #7C3AED);
+    padding: 2px 8px; border-radius: 5px; display: inline-block; margin-top: 2px;
+  }
+
+  .proposed .m-actions {
+    display: flex; gap: 8px; padding: 0 12px; margin-top: 10px;
+  }
+  .proposed .m-action-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 12px; border-radius: 12px;
+    font-weight: 700; font-size: 14px; text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .proposed .m-action-dash { background: #2563EB; color: #fff; }
+  .proposed .m-action-logout { background: #EEF2F7; color: #374151; border-color: #E7EAF0; }
+
+  .annotation {
+    position: relative;
+    margin: 20px 0 0;
+    padding: 12px 16px;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #92400E;
+    line-height: 1.5;
+  }
+  .annotation strong { color: #78350F; }
+</style>
+</head>
+<body>
+
+<!-- ============ CURRENT DESIGN ============ -->
+<div>
+  <div class="mockup-label">Current</div>
+  <div class="phone-frame current">
+    <div class="navbar">
+      <img class="navbar-logo" src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png" alt="Logo">
+      <div class="navbar-right">
+        <div class="avatar"></div>
+        <div class="burger"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="menu-drawer">
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        Pipeline
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Loan Search
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"/></svg>
+        Lenders
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Products
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+        Property Types
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        Vendors
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Contacts
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/></svg>
+        Calculators
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Goal Setting
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg>
+        Social Media
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Tools
+      </a>
+      <div class="m-section-label">NEXA Exclusive</div>
+      <a class="m-link" href="#" style="color:#1e40af;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+        Credit Reports
+      </a>
+      <div class="m-divider"></div>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Saved Items
+      </a>
+      <a class="m-link" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>
+        Settings
+      </a>
+      <div class="m-divider"></div>
+      <div class="m-section-label">Help and Support</div>
+      <a class="m-link" href="#" style="color:#475569;font-weight:500;"><svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Knowledge Base</a>
+      <a class="m-link" href="#" style="color:#475569;font-weight:500;"><svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Submit a Ticket</a>
+      <a class="m-link" href="#" style="color:#475569;font-weight:500;"><svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> Email Support</a>
+      <a class="m-link" href="#" style="color:#475569;font-weight:500;"><svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/></svg> Report a Bug</a>
+    </div>
+  </div>
+  <div class="annotation">
+    <strong>Issues:</strong><br>
+    — Missing AI Loan Finder + Referrals<br>
+    — Wrong order (Pipeline #2, not matching sidebar)<br>
+    — No section groupings<br>
+    — Small 15px text, tight 12px padding<br>
+    — 20px icon size, hard to tap
+  </div>
+</div>
+
+<!-- ============ PROPOSED DESIGN ============ -->
+<div>
+  <div class="mockup-label">Proposed</div>
+  <div class="phone-frame proposed">
+    <div class="navbar">
+      <img class="navbar-logo" src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png" alt="Logo">
+      <div class="navbar-right">
+        <div class="avatar"></div>
+        <div class="burger"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div class="menu-drawer">
+
+      <!-- ===== MAIN NAV ===== -->
+      <div class="m-section">
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Loan Search
+        </a>
+        <a class="m-link active" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+          AI Loan Finder
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"/></svg>
+          Lenders
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Products
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+          Property Types
+        </a>
+
+        <div class="m-divider"></div>
+
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          Vendors
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Contacts
+        </a>
+
+        <div class="m-divider"></div>
+
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Pipeline
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+          Calculators
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Goal Setting
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17.5 10.5c1.7-1 3.5 0 3.5 0"/><path d="M3 21c0 0 1-4 4-4 1.5 0 2.3.5 3 1l2-6"/><path d="M12.5 12L10 21"/><path d="M3 3l18 18"/><rect x="2" y="2" width="20" height="20" rx="2"/></svg>
+          Social Media
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Tools
+        </a>
+      </div>
+
+      <!-- ===== NEXA EXCLUSIVE ===== -->
+      <div class="m-section">
+        <div class="m-divider"></div>
+        <div class="m-section-label">NEXA Exclusive</div>
+        <a class="m-link m-link-nexa" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>
+          Credit Reports
+          <span class="m-nexa-tag">NEXA</span>
+        </a>
+      </div>
+
+      <!-- ===== MY WORKSPACE ===== -->
+      <div class="m-section">
+        <div class="m-divider"></div>
+        <div class="m-section-label">My Workspace</div>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Saved Items
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          Referrals
+          <span class="m-pro-tag">PRO</span>
+        </a>
+        <a class="m-link" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+
+      <!-- ===== HELP & SUPPORT ===== -->
+      <div class="m-section">
+        <div class="m-divider"></div>
+        <div class="m-section-label">Help &amp; Support</div>
+        <a class="m-link m-link-help" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Knowledge Base
+        </a>
+        <a class="m-link m-link-help" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Submit a Ticket
+        </a>
+        <a class="m-link m-link-help" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          Email Support
+        </a>
+        <a class="m-link m-link-help" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/></svg>
+          Report a Bug
+        </a>
+      </div>
+
+      <!-- ===== USER CARD + ACTIONS ===== -->
+      <a class="m-user-card" href="#">
+        <div class="m-user-avatar"></div>
+        <div>
+          <div class="m-user-name">My Profile</div>
+          <span class="m-user-plan">PRO</span>
+        </div>
+        <svg style="margin-left:auto;flex-shrink:0;color:#94A3B8;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+      <div class="m-actions">
+        <a class="m-action-btn m-action-dash" href="#">Dashboard</a>
+        <a class="m-action-btn m-action-logout" href="#">Logout</a>
+      </div>
+
+    </div>
+  </div>
+  <div class="annotation">
+    <strong>Improvements:</strong><br>
+    — All items match sidebar order exactly<br>
+    — Added AI Loan Finder + Referrals (PRO)<br>
+    — 17px text (+2px), 22px icons (+2px)<br>
+    — 14px padding, 52px min-height touch targets<br>
+    — Section labels for grouping<br>
+    — Active page highlight (blue)
+  </div>
+</div>
+
+</body>
+</html>
