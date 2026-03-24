@@ -5940,7 +5940,7 @@ async function getPipelineAssetsJS(request) {
        an invisible container. Each section gets its own card look. ── */
     var parentCard = c.closest('.section-card');
     if (parentCard) {
-      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;';
+      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;max-width:none;width:100%;';
     }
 
     /* ── 3 SEPARATE CARDS in a 2-column grid ──
@@ -5948,10 +5948,10 @@ async function getPipelineAssetsJS(request) {
        Right col: ACCOUNTS card + ASSET SUMMARY card (stacked)
        On mobile (<768px): stacks vertically */
     c.innerHTML = ''
-      + '<div class="ast-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">'
+      + '<div class="ast-two-col" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;">'
 
       /* ══ LEFT COLUMN: ASSETS card ══ */
-      + '<div class="card ast-left-col">'
+      + '<div class="card ast-left-col" style="min-width:0;">'
       +   '<div class="card-title"><i class="fa-solid fa-piggy-bank"></i> Assets</div>'
 
         /* ── CASH TO CLOSE ── */
@@ -6016,7 +6016,7 @@ async function getPipelineAssetsJS(request) {
       + '</div>' /* end left column */
 
       /* ══ RIGHT COLUMN: Accounts card + Asset Summary card ══ */
-      + '<div class="ast-right-col" style="display:flex;flex-direction:column;gap:16px;">'
+      + '<div class="ast-right-col" style="display:flex;flex-direction:column;gap:16px;min-width:0;">'
 
         /* ── ACCOUNTS CARD ── */
         + '<div class="card" id="section-assets-accounts">'
@@ -6056,7 +6056,7 @@ async function getPipelineAssetsJS(request) {
       + '</div>' /* end ast-two-col grid */
 
       /* ── Responsive: stack columns on mobile ── */
-      + '<style>.ast-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}@media(max-width:768px){.ast-two-col{grid-template-columns:1fr !important}}</style>';
+      + '<style>.ast-two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}@media(max-width:768px){.ast-two-col{grid-template-columns:1fr !important}}</style>';
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
