@@ -1,0 +1,8 @@
+# Cloudflare Pages configuration for Lender Directory
+name = "mtg-lender-directory"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[vars]
+# Environment variables can be added here for non-sensitive values
+# Secrets should be set in the Cloudflare Pages dashboard

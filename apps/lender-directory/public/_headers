@@ -1,0 +1,6 @@
+# Cloudflare Pages cache headers
+# Applied to every deployment automatically — no filenames or Webflow embeds to update.
+# Fixed filename (index.js) + these headers = always-fresh content without hash-based URLs.
+
+/index.js
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
