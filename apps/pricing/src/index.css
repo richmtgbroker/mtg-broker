@@ -442,7 +442,7 @@
 }
 
 /* ========================================
-   COMPARISON TABLE (v4.1 — grouped & redesigned)
+   COMPARISON TABLE
    ======================================== */
 
 .comparison-section {
@@ -454,22 +454,14 @@
   font-size: 36px;
   font-weight: 700;
   text-align: center;
-  margin-bottom: 8px;
-  color: #0f172a;
-}
-
-.section-subtitle {
-  font-size: 17px;
-  color: #64748b;
-  text-align: center;
   margin-bottom: 48px;
+  color: #0f172a;
 }
 
 .comparison-table-wrapper {
   overflow-x: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
 }
 
 .comparison-table {
@@ -478,161 +470,65 @@
   border-collapse: collapse;
 }
 
-/* --- Table Header --- */
 .comparison-table thead tr {
-  background: white;
-  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: white;
 }
 
 .comparison-table th {
-  padding: 24px 20px 20px;
+  padding: 20px;
   text-align: left;
   font-weight: 600;
   font-size: 16px;
-  vertical-align: bottom;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .comparison-table th.feature-col {
-  width: 38%;
+  width: 40%;
 }
 
 .comparison-table th.plan-col {
   text-align: center;
-  width: 20.67%;
+  width: 20%;
 }
 
 .comparison-table th.featured {
-  background: #f0f5ff;
-  border-left: 2px solid #2563EB;
-  border-right: 2px solid #2563EB;
-  border-top: 2px solid #2563EB;
-  border-radius: 0;
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Plan column header content */
-.plan-col-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.plan-col-name {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: #0f172a;
-}
-
-.plan-col-price {
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.plan-col-recommended {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: white;
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  padding: 3px 10px;
-  border-radius: 10px;
-  margin-bottom: 2px;
-}
-
-/* --- Category Header Rows --- */
-.category-row td {
-  background: #f8fafc;
-  padding: 14px 20px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #475569;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 1px solid #e2e8f0;
-  border-top: 1px solid #e2e8f0;
-}
-
-.cat-icon {
-  width: 16px;
-  height: 16px;
-  color: #2563EB;
-  vertical-align: -3px;
-  margin-right: 8px;
-}
-
-/* --- Data Rows --- */
 .comparison-table tbody tr {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.comparison-table tbody tr:hover:not(.category-row) {
-  background: #fafbfc;
+.comparison-table tbody tr:hover {
+  background: #f7fafc;
 }
 
 .comparison-table td {
-  padding: 15px 20px;
+  padding: 16px 20px;
   font-size: 15px;
 }
 
 .feature-name-cell {
   font-weight: 500;
-  color: #334155;
+  color: #2d3748;
 }
 
 .feature-value {
   text-align: center;
-  color: #475569;
-  font-size: 14px;
+  color: #4a5568;
 }
 
-/* PRO column highlight */
 .feature-value.featured {
-  background: #f8faff;
-  border-left: 2px solid #2563EB;
-  border-right: 2px solid #2563EB;
-  font-weight: 500;
-}
-
-/* Last row of the table — close the PRO border */
-.comparison-table tbody tr:last-child .feature-value.featured {
-  border-bottom: 2px solid #2563EB;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-/* --- Value Styles --- */
-.val-dash {
-  color: #cbd5e1;
-  font-size: 18px;
-}
-
-.val-limited {
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.val-full {
-  color: #059669;
+  background: #f7f9fc;
   font-weight: 600;
 }
 
-.val-limit {
-  color: #475569;
-  font-weight: 500;
-}
-
-.val-unlimited {
-  color: #2563EB;
-  font-weight: 700;
-}
-
 .table-check {
-  width: 22px;
-  height: 22px;
-  color: #10b981;
+  width: 24px;
+  height: 24px;
+  color: #48bb78;
   margin: 0 auto;
   display: block;
 }
@@ -837,26 +733,8 @@
 
   .comparison-table th,
   .comparison-table td {
-    padding: 12px 10px;
-    font-size: 13px;
-  }
-
-  .plan-col-name {
-    font-size: 13px;
-  }
-
-  .plan-col-price {
-    font-size: 12px;
-  }
-
-  .plan-col-recommended {
-    font-size: 9px;
-    padding: 2px 8px;
-  }
-
-  .category-row td {
-    padding: 10px;
-    font-size: 12px;
+    padding: 12px;
+    font-size: 14px;
   }
 
   .faq-question {
