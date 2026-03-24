@@ -5929,12 +5929,15 @@ async function getPipelineAssetsJS(request) {
   (function injectAssetsCSS() {
     var style = document.createElement('style');
     style.textContent = ''
-      /* Override section-full max-width so Assets card can use full width (same as Documents) */
+      /* Override section-full max-width so Assets can use full width (same pattern as Documents) */
       + '#section-assets-wrapper.section-full{max-width:none;justify-self:stretch}'
       /* 2-column flex layout: left = Assets, right = Accounts + Summary stacked */
       + '.ast-cards-wrap{display:flex;flex-direction:row;gap:16px;align-items:flex-start}'
-      + '.ast-cards-wrap>.ast-col-left,.ast-cards-wrap>.ast-col-right{flex:1;min-width:0}'
+      + '.ast-col-left,.ast-col-right{flex:1;min-width:0}'
       + '.ast-col-right{display:flex;flex-direction:column;gap:16px}'
+      /* Card styling — mirrors .doc-card (NOT Webflow .card which has max-width constraints) */
+      + '.ast-card{border:1px solid #E2E8F0;border-radius:10px;background:#fff;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}'
+      + '.ast-card .card-title{margin:-20px -20px 16px;padding:12px 20px;background:#f8fafc;border-bottom:1px solid #E2E8F0;border-radius:10px 10px 0 0;font-size:15px;font-weight:600;color:#1e293b;display:flex;align-items:center;gap:8px}'
       + '@media(max-width:768px){.ast-cards-wrap{flex-direction:column}}';
     document.head.appendChild(style);
   })();
@@ -5968,7 +5971,7 @@ async function getPipelineAssetsJS(request) {
       + '<div class="ast-cards-wrap">'
 
       /* ══ LEFT COLUMN: ASSETS card ══ */
-      + '<div class="card ast-col-left">'
+      + '<div class="ast-card ast-col-left">'
       +   '<div class="card-title"><i class="fa-solid fa-piggy-bank"></i> Assets</div>'
 
         /* ── CASH TO CLOSE ── */
@@ -6036,7 +6039,7 @@ async function getPipelineAssetsJS(request) {
       + '<div class="ast-col-right">'
 
         /* ── ACCOUNTS CARD ── */
-        + '<div class="card" id="section-assets-accounts">'
+        + '<div class="ast-card" id="section-assets-accounts">'
         +   '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div>'
         +   '<div id="accounts-section-content">'
         +     '<div id="ast-accounts-list"></div>'
@@ -6048,7 +6051,7 @@ async function getPipelineAssetsJS(request) {
         + '</div>'
 
         /* ── ASSET SUMMARY CARD ── */
-        + '<div class="card" id="section-assets-summary">'
+        + '<div class="ast-card" id="section-assets-summary">'
         +   '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
         +   '<div class="ast-summary-grid">'
         +     '<div class="ast-summary-item">'
