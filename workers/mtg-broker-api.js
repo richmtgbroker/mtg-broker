@@ -617,7 +617,8 @@ async function getRates(request) {
     }, 200, request);
 
   } catch (error) {
-    return jsonResponse({ success: false, error: error.message }, 500, request);
+    console.error('getRates error:', error);
+    return jsonResponse({ success: false, error: 'An internal error occurred. Please try again.' }, 500, request);
   }
 }
 
@@ -1425,7 +1426,7 @@ async function getLoanProductType(apiKey, request) {
 
   } catch (error) {
     console.error('getLoanProductType error:', error);
-    return jsonResponse({ success: false, error: error.message }, 500, request);
+    return jsonResponse({ success: false, error: 'An internal error occurred. Please try again.' }, 500, request);
   }
 }
 
@@ -1521,9 +1522,9 @@ async function getLoanProducts(apiKey, request) {
 
   } catch (error) {
     console.error('Loan products error:', error);
-    return jsonResponse({ 
-      success: false, 
-      error: error.message 
+    return jsonResponse({
+      success: false,
+      error: 'An internal error occurred. Please try again.'
     }, 500, request);
   }
 }
@@ -1966,7 +1967,7 @@ async function fetchProductsList(apiKey, request) {
 
   } catch (err) {
     console.error('Products list fetch error:', err.message);
-    return jsonResponse({ error: 'Failed to fetch products list', detail: err.message }, 500, request);
+    return jsonResponse({ error: 'Failed to fetch products list' }, 500, request);
   }
 
   console.log(`Products list: fetched ${allRecords.length} records from Airtable`);
@@ -2066,7 +2067,7 @@ async function handleCreditVendors(request, env, corsHeaders) {
     const apiKey = env.AIRTABLE_API_KEY;
     if (!apiKey) {
       console.error('AIRTABLE_API_KEY is missing from env');
-      return new Response(JSON.stringify({ error: 'Server configuration error: missing API key' }), {
+      return new Response(JSON.stringify({ error: 'An internal error occurred. Please try again.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -2143,10 +2144,8 @@ async function handleCreditVendors(request, env, corsHeaders) {
       let errorBody = '';
       try { errorBody = await response.text(); } catch (_) { errorBody = '(could not read body)'; }
       console.error(`Credit vendors: Airtable API error ${response.status}: ${errorBody}`);
-      return new Response(JSON.stringify({ 
-        error: 'Airtable API error', 
-        status: response.status,
-        detail: errorBody.substring(0, 500) 
+      return new Response(JSON.stringify({
+        error: 'An internal error occurred. Please try again.'
       }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -2159,9 +2158,8 @@ async function handleCreditVendors(request, env, corsHeaders) {
   } catch (fetchError) {
     // Network error, DNS failure, timeout, etc.
     console.error('Credit vendors FETCH error:', fetchError.message, fetchError.stack);
-    return new Response(JSON.stringify({ 
-      error: 'Failed to fetch credit vendor data from Airtable',
-      detail: fetchError.message 
+    return new Response(JSON.stringify({
+      error: 'Failed to fetch credit vendor data. Please try again.'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -2172,9 +2170,8 @@ async function handleCreditVendors(request, env, corsHeaders) {
   try {
     if (!data || !data.records) {
       console.error('Credit vendors: data.records is missing from Airtable response');
-      return new Response(JSON.stringify({ 
-        error: 'Unexpected Airtable response format',
-        detail: 'data.records is missing'
+      return new Response(JSON.stringify({
+        error: 'An internal error occurred. Please try again.'
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -2258,9 +2255,8 @@ async function handleCreditVendors(request, env, corsHeaders) {
   } catch (transformError) {
     // Data transformation error (bad field access, null dereference, etc.)
     console.error('Credit vendors TRANSFORM error:', transformError.message, transformError.stack);
-    return new Response(JSON.stringify({ 
-      error: 'Failed to process credit vendor data',
-      detail: transformError.message 
+    return new Response(JSON.stringify({
+      error: 'Failed to process credit vendor data. Please try again.'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -3475,7 +3471,7 @@ async function enrollAffiliate(userEmail, apiKey, request, env) {
       if (!createResult.ok) {
         console.error('Rewardful create error:', createResult.status, JSON.stringify(createResult.data));
         return new Response(
-          JSON.stringify({ error: 'Failed to create affiliate account', details: createResult.data }),
+          JSON.stringify({ error: 'Failed to create affiliate account. Please try again.' }),
           { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -3937,7 +3933,7 @@ async function getAdminStats(userEmail, apiKey, request) {
 
   } catch (err) {
     console.error('Admin stats error:', err);
-    return jsonResponse({ error: 'Failed to load admin stats', detail: err.message }, 500, request);
+    return jsonResponse({ error: 'Failed to load admin stats' }, 500, request);
   }
 }
 
