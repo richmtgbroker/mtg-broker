@@ -1676,7 +1676,8 @@ function showSection(pageId) {
   });
   /* If only one visible card OR not on the main page, make cards full-width centered */
   /* The main page uses 2-col side-by-side (Borrower + Deal); all other pages stack */
-  if (visibleCount === 1 || pageId !== 'main') {
+  /* Assets page also uses 2-col (Assets left, Accounts+Summary right) */
+  if (visibleCount === 1 || (pageId !== 'main' && pageId !== 'section-assets')) {
     matchingCards.forEach(function(card) {
       if (!card.classList.contains('hidden')) {
         card.classList.add('section-full');
@@ -5923,43 +5924,61 @@ async function getPipelineAssetsJS(request) {
   function ensureAccountsCard() {
     var card = document.getElementById('section-assets-accounts');
     if (card) return card;
-    /* Create the card */
+
+    /* Create a right-column wrapper that holds both Accounts + Summary cards.
+       This wrapper acts as ONE grid item in #section-pages, so the layout
+       sees two items (Assets left, this wrapper right) and uses 2 columns. */
+    var wrapper = document.getElementById('section-assets-right-col');
+    if (!wrapper) {
+      wrapper = document.createElement('div');
+      wrapper.className = 'section-card section-hidden';
+      wrapper.id = 'section-assets-right-col';
+      wrapper.setAttribute('data-page', 'section-assets');
+      wrapper.style.cssText = 'display:flex;flex-direction:column;gap:16px;background:none;padding:0;box-shadow:none;border:none;';
+      var pages = document.getElementById('section-pages');
+      if (pages) pages.appendChild(wrapper);
+    }
+
+    /* Create the Accounts card inside the wrapper */
     card = document.createElement('div');
-    card.className = 'card section-card section-hidden';
+    card.className = 'card';
     card.id = 'section-assets-accounts';
-    card.setAttribute('data-page', 'section-assets');
     card.innerHTML = '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div><div id="accounts-section-content"></div>';
-    var pages = document.getElementById('section-pages');
-    if (pages) pages.appendChild(card);
+    wrapper.appendChild(card);
     return card;
   }
 
   /* ══════════════════════════════════════════════════════════════
-     ASSET SUMMARY HTML — embedded inside the Accounts card
-     (moved from a separate full-width card to sit directly
-     under the Accounts total, eliminating extra scrolling)
+     ENSURE SUMMARY CARD EXISTS — separate card positioned under
+     Accounts in the right column (wrapped together so the grid
+     sees two items: Assets left, Accounts+Summary right)
      ══════════════════════════════════════════════════════════════ */
-  function getAssetSummaryHTML() {
-    return ''
-      + '<div class="ast-summary-section" style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">'
-      +   '<div class="ast-summary-title" style="font-size:14px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
-      +   '<div class="ast-summary-grid">'
-      +     '<div class="ast-summary-item">'
-      +       '<div class="ast-summary-label">Total Account Balances</div>'
-      +       '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
-      +     '</div>'
-      +     '<div class="ast-summary-op">\\u2212</div>'
-      +     '<div class="ast-summary-item">'
-      +       '<div class="ast-summary-label">Total Assets Needed</div>'
-      +       '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
-      +     '</div>'
-      +     '<div class="ast-summary-op">=</div>'
-      +     '<div class="ast-summary-item ast-summary-result">'
-      +       '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
-      +       '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
-      +     '</div>'
+  function ensureSummaryCard(parentEl) {
+    var card = document.getElementById('section-assets-summary');
+    if (card) return card;
+    card = document.createElement('div');
+    card.className = 'card ast-summary-card';
+    card.id = 'section-assets-summary';
+    card.innerHTML = ''
+      + '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
+      + '<div class="ast-summary-grid">'
+      +   '<div class="ast-summary-item">'
+      +     '<div class="ast-summary-label">Total Account Balances</div>'
+      +     '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
+      +   '</div>'
+      +   '<div class="ast-summary-op">\\u2212</div>'
+      +   '<div class="ast-summary-item">'
+      +     '<div class="ast-summary-label">Total Assets Needed</div>'
+      +     '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
+      +   '</div>'
+      +   '<div class="ast-summary-op">=</div>'
+      +   '<div class="ast-summary-item ast-summary-result">'
+      +     '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
+      +     '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
       +   '</div>'
       + '</div>';
+    parentEl.appendChild(card);
+    return card;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -6034,7 +6053,7 @@ async function getPipelineAssetsJS(request) {
       /* ── GRAND TOTAL ── */
       + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>';
 
-    /* ── RIGHT CARD: Accounts + Asset Summary (same card) ── */
+    /* ── RIGHT COLUMN: Accounts card + Summary card (stacked in wrapper) ── */
     var acctCard = ensureAccountsCard();
     var r = document.getElementById('accounts-section-content');
     if (r) {
@@ -6043,9 +6062,12 @@ async function getPipelineAssetsJS(request) {
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
         +   '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
         + '</div>'
-        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>'
-        + getAssetSummaryHTML();
+        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>';
     }
+
+    /* ── SUMMARY CARD: Excess / Shortage (separate card, under Accounts in right column) ── */
+    var rightCol = document.getElementById('section-assets-right-col');
+    if (rightCol) ensureSummaryCard(rightCol);
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
