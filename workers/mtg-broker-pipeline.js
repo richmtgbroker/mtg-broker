@@ -4,7 +4,13 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 24, 2026 - v8.0 — Supabase migration for Pipeline Loans + Tasks:
+ * UPDATED: March 24, 2026 - v8.2 — Lender searchable dropdown:
+ *   Replaced text input with searchable combobox pulling 294 lenders from Supabase.
+ *   "Other" option with manual text input for unlisted lenders.
+ *   New public endpoint: GET /api/lenders (cached 30min).
+ *   New Supabase table: public.lenders (294 rows).
+ *
+ * PREVIOUS: March 24, 2026 - v8.0 — Supabase migration for Pipeline Loans + Tasks:
  *   Loans + Tasks CRUD now reads/writes Supabase instead of Airtable.
  *   Server-side field mapping layer converts Airtable field names ↔ Supabase snake_case columns.
  *   Client-side JS is unchanged — still sends/receives Airtable-format field names.
@@ -626,6 +632,37 @@ function jsonResponse(data, status = 200, request) {
 
 /**
  * GET /api/pipeline/loans
+ * Fetches lender names from Supabase for the searchable dropdown.
+ * Public endpoint — no auth required. Cached in-memory for 30 minutes.
+ */
+let lenderListCache = null;
+let lenderListCacheTime = 0;
+const LENDER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+async function getLenderList(env, request) {
+  const now = Date.now();
+  if (lenderListCache && (now - lenderListCacheTime) < LENDER_CACHE_TTL) {
+    return new Response(JSON.stringify(lenderListCache), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800', ...getCorsHeaders(request) }
+    });
+  }
+  try {
+    const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/lenders?select=name&order=name.asc`, {
+      headers: { 'apikey': env.SUPABASE_KEY, 'Authorization': `Bearer ${env.SUPABASE_KEY}` }
+    });
+    const rows = await resp.json();
+    const names = rows.map(r => r.name);
+    lenderListCache = names;
+    lenderListCacheTime = now;
+    return new Response(JSON.stringify(names), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800', ...getCorsHeaders(request) }
+    });
+  } catch (err) {
+    return jsonResponse({ error: 'Failed to fetch lenders', detail: err.message }, 500, request);
+  }
+}
+
+/**
  * Fetches all loans for a user from Supabase with 10-minute caching.
  * Returns Airtable-format records: [{id, fields: {...}}, ...]
  */
@@ -2154,6 +2191,8 @@ function openNewLoanModal() {
   document.getElementById('eq-max-debt').textContent = '\u2014';
   document.getElementById('eq-max-loan').textContent = '\u2014';
   document.getElementById('eq-actual-cltv').textContent = '\u2014';
+  /* Reset lender searchable dropdown */
+  if (window.setLenderValue) window.setLenderValue('');
   document.getElementById('deal-status-bar').classList.add('hidden');
   document.getElementById('lock-status').value = '-';
   document.getElementById('lock-date').value = '';
@@ -2256,7 +2295,9 @@ async function openLoanModal(id) {
   setVal('borrower-ssn4', loan['Borrower SSN Last 4']);
   setVal('co-borrower-dob', loan['Co-Borrower DOB']);
   setVal('co-borrower-ssn4', loan['Co-Borrower SSN Last 4']);
+  /* Lender searchable dropdown — set hidden value + display input */
   setVal('loan-lender', loan['Lender']);
+  if (window.setLenderValue) window.setLenderValue(loan['Lender'] || '');
   setVal('credit-pull-type', loan['Credit Pull Type']); setVal('credit-score', loan['Credit Score']);
   setVal('date-credit-pulled', loan['Date Credit Pulled']); setVal('scores-pulled', loan['Scores Pulled']);
   setVal('credit-vendor', loan['Credit Vendor']); setVal('credit-report-number', loan['Credit Report Number']);
@@ -10234,7 +10275,30 @@ textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-fa
   .equity-calc-strip {
     grid-template-columns: repeat(2, 1fr);
   }
-}`;
+}
+
+/* ========== Lender Searchable Dropdown ========== */
+.lender-search-wrap { position: relative; }
+.lender-dropdown {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100000;
+  background: #fff; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12); max-height: 240px; overflow-y: auto; margin-top: -1px;
+}
+.lender-dropdown.open { display: block; }
+.lender-dropdown-item {
+  padding: 9px 12px; cursor: pointer; font-size: 14px; color: #1f2937; border-bottom: 1px solid #f3f4f6;
+}
+.lender-dropdown-item:last-child { border-bottom: none; }
+.lender-dropdown-item:hover, .lender-dropdown-item.active { background: #eff6ff; }
+.lender-dropdown-item.lender-other-item { font-weight: 600; color: #1a56db; border-bottom: 2px solid #e5e7eb; }
+.lender-dropdown-item .lender-match { font-weight: 600; }
+.lender-clear-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none;
+  cursor: pointer; color: #9ca3af; font-size: 16px; padding: 2px 6px; line-height: 1; border-radius: 4px;
+}
+.lender-clear-btn:hover { color: #ef4444; background: #fef2f2; }
+.lender-other-wrap { margin-top: 8px; }
+.lender-other-wrap.hidden { display: none; }`;
   return new Response(cssContent, {
     status: 200,
     headers: {
@@ -10436,7 +10500,7 @@ async function getPipelineTemplateHTML(request) {
                 <div class="ff"><label>Lead Source</label>
                   <select class="fc" id="lead-source"><option value="">Select...</option><option value="Self-Generated">Self-Generated</option><option value="Past Client">Past Client</option><option value="Referral - Realtor">Referral - Realtor</option><option value="Referral - Client">Referral - Client</option><option value="Referral - Financial Planner">Referral - Financial Planner</option><option value="Referral - Builder">Referral - Builder</option><option value="Referral - Other">Referral - Other</option><option value="Website">Website</option><option value="Social Media">Social Media</option><option value="Cold Call">Cold Call</option><option value="Direct Mail">Direct Mail</option><option value="Lead Service">Lead Service</option><option value="Walk-In">Walk-In</option><option value="Other">Other</option></select>
                 </div>
-                <div class="ff"><label>Lender</label><input type="text" class="fc" id="loan-lender"></div>
+                <div class="ff"><label>Lender</label><div class="lender-search-wrap" id="lender-search-wrap"><input type="text" class="fc" id="loan-lender-search" placeholder="Search lenders..." autocomplete="off"><input type="hidden" id="loan-lender"><div class="lender-dropdown" id="lender-dropdown"></div></div><div class="ff lender-other-wrap hidden" id="lender-other-wrap"><label>Other Lender Name</label><input type="text" class="fc" id="loan-lender-other" placeholder="Type lender name..."></div></div>
               </div>
               <div class="cg">
                 <div class="ff sp2"><label>Deal Notes</label><textarea class="fc" id="deal-notes" placeholder="Quick notes about the deal..." style="min-height:60px;"></textarea></div>
@@ -11720,6 +11784,258 @@ function zillowLookup() {
     }, 100);
   }
 })();
+</script>
+
+<!-- ============================================================
+     Lender Searchable Dropdown (v1.0)
+     Fetches lender names from /api/lenders, builds a filterable
+     dropdown with "Other" option + manual entry fallback.
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  var WORKER_BASE = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
+  var allLenders = [];
+  var dropdownOpen = false;
+  var activeIndex = -1;
+
+  /* DOM references (set in init) */
+  var searchInput, hiddenInput, dropdown, otherWrap, otherInput, clearBtn;
+
+  /* Fetch lender list from API */
+  function fetchLenders() {
+    fetch(WORKER_BASE + '/api/lenders')
+      .then(function(r) { return r.json(); })
+      .then(function(names) {
+        allLenders = names || [];
+      })
+      .catch(function(err) { console.warn('Failed to load lenders:', err); });
+  }
+
+  /* Highlight matching text in lender name */
+  function highlightMatch(name, query) {
+    if (!query) return name;
+    var idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return name;
+    return name.substring(0, idx)
+      + '<span class="lender-match">' + name.substring(idx, idx + query.length) + '</span>'
+      + name.substring(idx + query.length);
+  }
+
+  /* Render dropdown items */
+  function renderDropdown(query) {
+    var filtered;
+    if (!query) {
+      filtered = allLenders.slice(); /* show all when empty */
+    } else {
+      var q = query.toLowerCase();
+      filtered = allLenders.filter(function(n) { return n.toLowerCase().indexOf(q) !== -1; });
+    }
+
+    var html = '';
+    /* "Other" always first */
+    html += '<div class="lender-dropdown-item lender-other-item" data-value="__OTHER__">Other (not in list)</div>';
+
+    for (var i = 0; i < filtered.length; i++) {
+      html += '<div class="lender-dropdown-item" data-value="' + filtered[i].replace(/"/g, '&quot;') + '">'
+        + highlightMatch(filtered[i], query) + '</div>';
+    }
+
+    if (filtered.length === 0 && query) {
+      html += '<div class="lender-dropdown-item" style="color:#9ca3af;cursor:default;">No matches found</div>';
+    }
+
+    dropdown.innerHTML = html;
+    activeIndex = -1;
+  }
+
+  /* Open / close dropdown */
+  function openDropdown() {
+    dropdown.classList.add('open');
+    dropdownOpen = true;
+  }
+  function closeDropdown() {
+    dropdown.classList.remove('open');
+    dropdownOpen = false;
+    activeIndex = -1;
+  }
+
+  /* Select a lender value */
+  function selectLender(value) {
+    if (value === '__OTHER__') {
+      hiddenInput.value = '';
+      searchInput.value = 'Other (not in list)';
+      searchInput.disabled = true;
+      otherWrap.classList.remove('hidden');
+      otherInput.focus();
+      updateClearBtn();
+      closeDropdown();
+      /* Trigger change events for deal string + chips */
+      triggerUpdates();
+      return;
+    }
+    hiddenInput.value = value;
+    searchInput.value = value;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn();
+    closeDropdown();
+    triggerUpdates();
+  }
+
+  /* Clear selection */
+  function clearSelection() {
+    hiddenInput.value = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn();
+    searchInput.focus();
+    triggerUpdates();
+  }
+
+  /* Show/hide clear button */
+  function updateClearBtn() {
+    if (!clearBtn) return;
+    clearBtn.style.display = (hiddenInput.value || searchInput.disabled) ? 'block' : 'none';
+  }
+
+  /* Trigger deal string + loan detail bar updates */
+  function triggerUpdates() {
+    if (typeof updateDealString === 'function') setTimeout(updateDealString, 50);
+    if (typeof updateLoanDetailBar === 'function') setTimeout(updateLoanDetailBar, 50);
+  }
+
+  /* Keyboard navigation */
+  function handleKeydown(e) {
+    if (!dropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        renderDropdown(searchInput.value);
+        openDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+    var items = dropdown.querySelectorAll('.lender-dropdown-item[data-value]');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      updateActiveItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActiveItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && items[activeIndex]) {
+        selectLender(items[activeIndex].getAttribute('data-value'));
+      }
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  }
+
+  function updateActiveItem(items) {
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle('active', i === activeIndex);
+    }
+    if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  /* Set lender value programmatically (called from editLoan) */
+  window.setLenderValue = function(val) {
+    if (!searchInput || !hiddenInput) return;
+    if (!val) {
+      clearSelection();
+      return;
+    }
+    /* Check if value is in the lender list */
+    var found = allLenders.indexOf(val) !== -1;
+    if (found) {
+      hiddenInput.value = val;
+      searchInput.value = val;
+      searchInput.disabled = false;
+      otherWrap.classList.add('hidden');
+      otherInput.value = '';
+    } else {
+      /* Value not in list — treat as "Other" */
+      hiddenInput.value = val;
+      searchInput.value = 'Other (not in list)';
+      searchInput.disabled = true;
+      otherWrap.classList.remove('hidden');
+      otherInput.value = val;
+    }
+    updateClearBtn();
+  };
+
+  /* Initialize */
+  function init() {
+    searchInput = document.getElementById('loan-lender-search');
+    hiddenInput = document.getElementById('loan-lender');
+    dropdown = document.getElementById('lender-dropdown');
+    otherWrap = document.getElementById('lender-other-wrap');
+    otherInput = document.getElementById('loan-lender-other');
+    if (!searchInput || !hiddenInput || !dropdown) return;
+
+    /* Add clear button */
+    clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'lender-clear-btn';
+    clearBtn.innerHTML = '&times;';
+    clearBtn.title = 'Clear lender';
+    clearBtn.style.display = 'none';
+    clearBtn.addEventListener('click', function(e) { e.stopPropagation(); clearSelection(); });
+    searchInput.parentNode.appendChild(clearBtn);
+
+    /* Search input events */
+    searchInput.addEventListener('input', function() {
+      renderDropdown(searchInput.value);
+      openDropdown();
+    });
+    searchInput.addEventListener('focus', function() {
+      renderDropdown(searchInput.value);
+      openDropdown();
+    });
+    searchInput.addEventListener('keydown', handleKeydown);
+
+    /* Dropdown click delegation */
+    dropdown.addEventListener('mousedown', function(e) {
+      e.preventDefault(); /* prevent blur */
+      var item = e.target.closest('.lender-dropdown-item[data-value]');
+      if (item) selectLender(item.getAttribute('data-value'));
+    });
+
+    /* Close dropdown on outside click */
+    document.addEventListener('mousedown', function(e) {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        closeDropdown();
+        /* If user typed something but didn't select, reset display */
+        if (!hiddenInput.value && searchInput.value && !searchInput.disabled) {
+          searchInput.value = '';
+        }
+      }
+    });
+
+    /* "Other" text input syncs to hidden lender field */
+    if (otherInput) {
+      otherInput.addEventListener('input', function() {
+        hiddenInput.value = otherInput.value;
+        triggerUpdates();
+      });
+    }
+
+    fetchLenders();
+    updateClearBtn();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 300); });
+  } else {
+    setTimeout(init, 300);
+  }
+})();
 </script>`;
   return new Response(htmlContent, {
     status: 200,
@@ -11807,12 +12123,17 @@ export default {
       return await getPipelineBootstrapHTML(request);
     }
 
+    // Lender directory names for searchable dropdown (public, no auth)
+    if (path === '/api/lenders' && method === 'GET') {
+      return await getLenderList(env, request);
+    }
+
     // Health check
     if (path === '/health' || path === '/') {
       return jsonResponse({
         status: 'ok',
         service: 'mtg-broker-pipeline',
-        version: '8.1',
+        version: '8.2',
         database: 'Supabase (loans, tasks, usage)',
         timestamp: new Date().toISOString(),
         endpoints: [
@@ -11839,6 +12160,7 @@ export default {
           'GET    /static/pipeline-documents.js   - Documents tab JS module',
           'GET    /static/pipeline-purchase-agreement.js - Purchase Agreement tab JS module',
           'POST   /api/pipeline/extract-purchase-agreement - Extract PA fields from PDF via Claude AI',
+          'GET    /api/lenders                      - Lender directory names (public)',
           'GET    /health                          - This health check'
         ]
       }, 200, request);
