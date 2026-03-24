@@ -4,7 +4,16 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 23, 2026 - v7.30 — Dev Tracker items 1.1, 1.2, 1.4:
+ * UPDATED: March 24, 2026 - v8.0 — Supabase migration for Pipeline Loans + Tasks:
+ *   Loans + Tasks CRUD now reads/writes Supabase instead of Airtable.
+ *   Server-side field mapping layer converts Airtable field names ↔ Supabase snake_case columns.
+ *   Client-side JS is unchanged — still sends/receives Airtable-format field names.
+ *   Response format preserved: {id, fields: {...}} for seamless client compatibility.
+ *   Route matching updated to accept both UUIDs and Airtable rec* IDs.
+ *   Usage tracking still uses Airtable (separate migration planned).
+ *   Environment: now requires SUPABASE_URL + SUPABASE_KEY (service_role) in addition to AIRTABLE_API_KEY.
+ *
+ * PREVIOUS: March 23, 2026 - v7.30 — Dev Tracker items 1.1, 1.2, 1.4:
  *   1.1: Renamed "Report #" label to "Report / File #" in credit section (DOM enhancement in initPipeline).
  *   1.2: Converted Credit Pull Type from text input to dropdown with Hard Pull, Soft Pull, Estimated options.
  *   1.4: Added "Requested HOI from Borrower" checklist item above "HOI Quotes Requested" in Homeowners Insurance group.
@@ -161,7 +170,10 @@
  * DEPLOY URL: mtg-broker-pipeline.rich-e00.workers.dev
  * 
  * Environment Variables Required:
- *   - AIRTABLE_API_KEY: Your Airtable personal access token
+ *   - SUPABASE_URL: Supabase project URL (e.g. https://tcmahfwhdknxhhdvqpum.supabase.co)
+ *   - SUPABASE_KEY: Supabase service_role key (NOT anon key — bypasses RLS for server ops)
+ *   - AIRTABLE_API_KEY: Airtable personal access token (still used for Usage tracking)
+ *   - ANTHROPIC_API_KEY: Claude API key (used for Purchase Agreement PDF extraction)
  * 
  * Endpoints:
  *   --- Pipeline Loans ---
@@ -172,7 +184,7 @@
  *   GET    /api/pipeline/loans/clear-cache  - Manually clear pipeline cache
  * 
  *   --- Pipeline Tasks ---
- *   GET    /api/pipeline/tasks              - Get tasks (?loanId=rec... to filter by loan)
+ *   GET    /api/pipeline/tasks              - Get tasks (?loanId=uuid to filter by loan)
  *   POST   /api/pipeline/tasks              - Create a new task
  *   PUT    /api/pipeline/tasks/:id          - Update a task
  *   DELETE /api/pipeline/tasks/:id          - Delete a task
@@ -194,6 +206,183 @@
  */
 
 const AIRTABLE_BASE_ID = 'appuJgI9X93OLaf0u';
+
+// ============================
+// Supabase Config (Pipeline Loans + Tasks)
+// ============================
+// SUPABASE_URL and SUPABASE_KEY are set as Cloudflare Worker env vars.
+// SUPABASE_KEY must be the service_role key to bypass RLS for server-side operations.
+
+// Field mapping: Airtable field name → Supabase column name
+// Used to translate between client-side Airtable format and Supabase snake_case
+const FIELD_TO_COLUMN = {
+  'Loan Name': 'loan_name', 'Loan Purpose': 'loan_purpose', 'Occupancy': 'occupancy',
+  'Credit Pull Type': 'credit_pull_type', 'User Email': 'user_email', 'Stage': 'stage',
+  'Borrower Name': 'borrower_name', 'Borrower Email': 'borrower_email',
+  'Borrower Phone': 'borrower_phone', 'Co-Borrower': 'co_borrower',
+  'Property Street': 'property_street', 'Property City': 'property_city',
+  'Property State': 'property_state', 'Property Zip': 'property_zip',
+  'Property Type': 'property_type', 'Property Value': 'property_value',
+  'Purchase Price': 'purchase_price', 'Loan Type': 'loan_type',
+  'Loan Amount': 'loan_amount', 'Interest Rate': 'interest_rate',
+  'Loan Term': 'loan_term', 'LTV': 'ltv', 'Expected Close': 'expected_close',
+  'Lead Source': 'lead_source', 'Calculator Link': 'calculator_link',
+  'Notes': 'notes', 'Comp BPS': 'comp_bps',
+  'HELOC Line Amount': 'heloc_line_amount', 'HELOC Initial Draw': 'heloc_initial_draw',
+  'Credit Score': 'credit_score', 'Date Credit Pulled': 'date_credit_pulled',
+  'Scores Pulled': 'scores_pulled', 'Credit Vendor': 'credit_vendor',
+  'Credit Report Number': 'credit_report_number',
+  'Compensation Amount': 'compensation_amount',
+  'Qualifying Interest Rate': 'qualifying_interest_rate',
+  'Other Loan Type': 'other_loan_type', 'Deal Status': 'deal_status',
+  'Lost Reason': 'lost_reason', 'Lock Date': 'lock_date',
+  'Lock Expiration Date': 'lock_expiration_date', 'Lock Status': 'lock_status',
+  'Payroll Submitted Date': 'payroll_submitted_date',
+  'Payroll Processed Date': 'payroll_processed_date',
+  'Pay Received Date': 'pay_received_date', 'Pay Status': 'pay_status',
+  'Co-Borrower Email': 'co_borrower_email', 'Co-Borrower Phone': 'co_borrower_phone',
+  'Last Contact Date': 'last_contact_date', 'Gross Annual Income': 'gross_annual_income',
+  'Monthly Debt Payments': 'monthly_debt_payments', 'Target DTI': 'target_dti',
+  'Afford Max Purchase': 'afford_max_purchase',
+  'Afford Max Loan Amt': 'afford_max_loan_amt',
+  'Afford Max PITIA': 'afford_max_pitia',
+  'Borrower First Name': 'borrower_first_name',
+  'Borrower Middle Name': 'borrower_middle_name',
+  'Borrower Last Name': 'borrower_last_name',
+  'Co-Borrower First Name': 'co_borrower_first_name',
+  'Co-Borrower Middle Name': 'co_borrower_middle_name',
+  'Co-Borrower Last Name': 'co_borrower_last_name',
+  'HOI': 'hoi', 'Property Taxes': 'property_taxes',
+  'Supplemental Insurance': 'supplemental_insurance', 'HOA': 'hoa', 'HOA Dues': 'hoa',
+  'Lender': 'lender', 'Co-Borrower Role': 'co_borrower_role',
+  'Property County': 'property_county', 'Channel': 'channel',
+  'Comp Type': 'comp_type',
+  'Link Application': 'link_application', 'Link Documents': 'link_documents',
+  'Link Lender Portal': 'link_lender_portal', 'Link Appraisal Portal': 'link_appraisal_portal',
+  'Link Other 1 Name': 'link_other_1_name', 'Link Other 1 URL': 'link_other_1_url',
+  'Link Other 2 Name': 'link_other_2_name', 'Link Other 2 URL': 'link_other_2_url',
+  'Link Other 3 Name': 'link_other_3_name', 'Link Other 3 URL': 'link_other_3_url',
+  'Borrower Income': 'borrower_income', 'Co-Borrower Income': 'co_borrower_income',
+  'Income Notes': 'income_notes',
+  'Borrower Employment Type': 'borrower_employment_type',
+  'Borrower SE Doc Type': 'borrower_se_doc_type',
+  'Borrower Bank Statement': 'borrower_bank_statement',
+  'Borrower BS Months': 'borrower_bs_months',
+  'Borrower Expense Factor': 'borrower_expense_factor',
+  'Co-Borrower Employment Type': 'co_borrower_employment_type',
+  'Co-Borrower SE Doc Type': 'co_borrower_se_doc_type',
+  'Co-Borrower Bank Statement': 'co_borrower_bank_statement',
+  'Co-Borrower BS Months': 'co_borrower_bs_months',
+  'Co-Borrower Expense Factor': 'co_borrower_expense_factor',
+  'Borrower Income Details': 'borrower_income_details',
+  'Co-Borrower Income Details': 'co_borrower_income_details',
+  'Borrower DOB': 'borrower_dob', 'Borrower SSN Last 4': 'borrower_ssn_last_4',
+  'Co-Borrower DOB': 'co_borrower_dob', 'Co-Borrower SSN Last 4': 'co_borrower_ssn_last_4',
+  'Deal Notes': 'deal_notes', 'Pricing Notes': 'pricing_notes',
+  'Points': 'points', 'YSP': 'ysp', 'Payroll Notes': 'payroll_notes',
+  'Down Payment': 'down_payment', 'Closing Costs': 'closing_costs',
+  'Months of Reserves': 'months_of_reserves',
+  'Estimated Monthly Payment': 'estimated_monthly_payment',
+  'Other Reserves Months': 'other_reserves_months',
+  'Other Reserves Monthly Amount': 'other_reserves_monthly_amount',
+  'Other Reserves Total': 'other_reserves_total',
+  'Lien Position': 'lien_position',
+  'Existing 1st Mortgage Balance': 'existing_1st_mortgage_balance',
+  'Existing 2nd Mortgage Balance': 'existing_2nd_mortgage_balance',
+  'Max CLTV': 'max_cltv',
+  'Checklist JSON': 'checklist_json',
+  'Documents JSON': 'documents_json',
+  'Asset Accounts': 'asset_accounts',
+  'Purchase Agreement JSON': 'purchase_agreement_json',
+};
+
+// Reverse mapping: Supabase column name → Airtable field name
+const COLUMN_TO_FIELD = {};
+for (const [field, col] of Object.entries(FIELD_TO_COLUMN)) {
+  // For duplicate mappings (e.g. HOA Dues -> hoa), keep the first one
+  if (!COLUMN_TO_FIELD[col]) COLUMN_TO_FIELD[col] = field;
+}
+
+// JSON blob columns that need parse/stringify when going to/from Supabase
+const JSON_COLUMNS = new Set(['checklist_json', 'documents_json', 'asset_accounts', 'purchase_agreement_json']);
+
+// Columns that store JSON strings in Airtable but are jsonb in Supabase
+// Client sends them as strings; we parse to objects for Supabase storage
+// and stringify back when returning to client
+const JSON_STRING_FIELDS = new Set(['Checklist JSON', 'Documents JSON', 'Asset Accounts', 'Purchase Agreement JSON',
+  'Borrower Income Details', 'Co-Borrower Income Details']);
+
+/**
+ * Convert Airtable-format fields object to Supabase row object
+ */
+function fieldsToRow(fields) {
+  const row = {};
+  for (const [atField, value] of Object.entries(fields)) {
+    const col = FIELD_TO_COLUMN[atField];
+    if (!col) continue; // skip unknown fields
+    if (JSON_STRING_FIELDS.has(atField) && typeof value === 'string') {
+      // Client sends JSON blobs as strings; parse for Supabase jsonb storage
+      try { row[col] = JSON.parse(value); } catch { row[col] = value; }
+    } else {
+      row[col] = value;
+    }
+  }
+  return row;
+}
+
+/**
+ * Convert Supabase row to Airtable-format {id, fields} object
+ */
+function rowToRecord(row) {
+  const fields = {};
+  for (const [col, value] of Object.entries(row)) {
+    if (col === 'id' || col === 'airtable_id' || col === 'created_at' || col === 'updated_at') continue;
+    const atField = COLUMN_TO_FIELD[col];
+    if (!atField) continue;
+    if (value === null) continue;
+    // JSON blob columns: stringify back for client compatibility
+    if (JSON_COLUMNS.has(col) && typeof value === 'object') {
+      fields[atField] = JSON.stringify(value);
+    } else {
+      fields[atField] = value;
+    }
+  }
+  return { id: row.id, fields };
+}
+
+/**
+ * Make an authenticated request to the Supabase REST API (bypasses RLS with service_role key)
+ */
+async function supabaseRequest(table, env, method = 'GET', options = {}) {
+  const { filters, body, select, single } = options;
+  let url = `${env.SUPABASE_URL}/rest/v1/${table}`;
+  const params = [];
+  if (filters) params.push(filters);
+  if (select) params.push(`select=${select}`);
+  if (params.length) url += '?' + params.join('&');
+
+  const headers = {
+    'apikey': env.SUPABASE_KEY,
+    'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+  if (method === 'POST') headers['Prefer'] = 'return=representation';
+  if (method === 'PATCH') headers['Prefer'] = 'return=representation';
+  if (method === 'DELETE') headers['Prefer'] = 'return=representation';
+  if (single) headers['Accept'] = 'application/vnd.pgrst.object+json';
+
+  const fetchOptions = { method, headers };
+  if (body) fetchOptions.body = JSON.stringify(body);
+
+  const response = await fetch(url, fetchOptions);
+  if (method === 'DELETE' && response.status === 204) return { success: true };
+  const data = await response.json();
+  if (!response.ok) {
+    console.error('Supabase error:', JSON.stringify(data));
+    throw new Error(data.message || data.error || 'Supabase request failed');
+  }
+  return data;
+}
 
 // ============================
 // CORS (supports cookies)
@@ -445,6 +634,7 @@ function jsonResponse(data, status = 200, request) {
 
 /**
  * Make an authenticated request to the Airtable API
+ * (Still used for Usage tracking — not yet migrated to Supabase)
  */
 async function airtableRequest(endpoint, apiKey, method = 'GET', body = null) {
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${endpoint}`;
@@ -462,19 +652,18 @@ async function airtableRequest(endpoint, apiKey, method = 'GET', body = null) {
 }
 
 // ============================================================
-// PIPELINE LOANS ENDPOINTS (WITH CACHING)
+// PIPELINE LOANS ENDPOINTS — SUPABASE (v8.0)
 // ============================================================
 
 /**
  * GET /api/pipeline/loans
- * Fetches all loans for a user with 10-minute caching
- * Add ?refresh=true to bypass cache
+ * Fetches all loans for a user from Supabase with 10-minute caching.
+ * Returns Airtable-format records: [{id, fields: {...}}, ...]
  */
-async function getLoans(userEmail, apiKey, request) {
+async function getLoans(userEmail, env, request) {
   const url = new URL(request.url);
   const bypassCache = url.searchParams.get('refresh') === 'true';
 
-  // Check cache first (unless bypassing)
   if (!bypassCache) {
     const cachedData = getCachedPipelineLoans(userEmail);
     if (cachedData) {
@@ -483,72 +672,84 @@ async function getLoans(userEmail, apiKey, request) {
     }
   }
 
-  console.log(`Pipeline cache MISS for user: ${userEmail} - fetching from Airtable`);
+  console.log(`Pipeline cache MISS for user: ${userEmail} - fetching from Supabase`);
 
-  // Fetch from Airtable
-  const formula = encodeURIComponent(`{User Email}='${userEmail}'`);
-  const data = await airtableRequest(`${TABLES.LOANS}?filterByFormula=${formula}`, apiKey);
-  const records = data.records || [];
+  const rows = await supabaseRequest('pipeline_loans', env, 'GET', {
+    filters: `user_email=eq.${encodeURIComponent(userEmail)}`,
+  });
 
-  // Cache the result
+  // Convert Supabase rows to Airtable-format records for client compatibility
+  const records = (rows || []).map(rowToRecord);
+
   setCachedPipelineLoans(userEmail, records);
-
   return jsonResponse(records, 200, request);
 }
 
 /**
  * POST /api/pipeline/loans
- * Creates a new loan and invalidates the user's cache
+ * Creates a new loan in Supabase
  */
-async function createLoan(userEmail, fields, apiKey, request) {
+async function createLoan(userEmail, fields, env, request) {
   fields['User Email'] = userEmail;
-  const data = await airtableRequest(TABLES.LOANS, apiKey, 'POST', { fields });
+  const row = fieldsToRow(fields);
+  row.user_email = userEmail; // ensure it's set
 
-  // Invalidate cache after successful create
+  const result = await supabaseRequest('pipeline_loans', env, 'POST', { body: row });
+  const record = rowToRecord(Array.isArray(result) ? result[0] : result);
+
   clearPipelineCacheForUser(userEmail);
-
-  return jsonResponse(data, 201, request);
+  return jsonResponse(record, 201, request);
 }
 
 /**
  * PUT /api/pipeline/loans/:id
- * Updates a loan and invalidates the user's cache
+ * Updates a loan in Supabase (verifies ownership)
  */
-async function updateLoan(userEmail, recordId, fields, apiKey, request) {
-  // Verify ownership before allowing update
-  const existing = await airtableRequest(`${TABLES.LOANS}/${recordId}`, apiKey);
-  if (existing.fields['User Email'] !== userEmail) {
+async function updateLoan(userEmail, recordId, fields, env, request) {
+  // Verify ownership: fetch the loan and check user_email
+  const existing = await supabaseRequest('pipeline_loans', env, 'GET', {
+    filters: `id=eq.${recordId}`,
+    select: 'id,user_email',
+  });
+  if (!existing || existing.length === 0 || existing[0].user_email !== userEmail) {
     return jsonResponse({ error: 'Unauthorized' }, 403, request);
   }
-  const data = await airtableRequest(`${TABLES.LOANS}/${recordId}`, apiKey, 'PATCH', { fields });
 
-  // Invalidate cache after successful update
+  const row = fieldsToRow(fields);
+  const result = await supabaseRequest('pipeline_loans', env, 'PATCH', {
+    filters: `id=eq.${recordId}`,
+    body: row,
+  });
+  const record = rowToRecord(Array.isArray(result) ? result[0] : result);
+
   clearPipelineCacheForUser(userEmail);
-
-  return jsonResponse(data, 200, request);
+  return jsonResponse(record, 200, request);
 }
 
 /**
  * DELETE /api/pipeline/loans/:id
- * Deletes a loan and invalidates the user's cache
+ * Deletes a loan from Supabase (verifies ownership)
  */
-async function deleteLoan(userEmail, recordId, apiKey, request) {
-  // Verify ownership before allowing delete
-  const existing = await airtableRequest(`${TABLES.LOANS}/${recordId}`, apiKey);
-  if (existing.fields['User Email'] !== userEmail) {
+async function deleteLoan(userEmail, recordId, env, request) {
+  // Verify ownership
+  const existing = await supabaseRequest('pipeline_loans', env, 'GET', {
+    filters: `id=eq.${recordId}`,
+    select: 'id,user_email',
+  });
+  if (!existing || existing.length === 0 || existing[0].user_email !== userEmail) {
     return jsonResponse({ error: 'Unauthorized' }, 403, request);
   }
-  await airtableRequest(`${TABLES.LOANS}/${recordId}`, apiKey, 'DELETE');
 
-  // Invalidate cache after successful delete
+  await supabaseRequest('pipeline_loans', env, 'DELETE', {
+    filters: `id=eq.${recordId}`,
+  });
+
   clearPipelineCacheForUser(userEmail);
-
   return jsonResponse({ success: true }, 200, request);
 }
 
 /**
  * GET /api/pipeline/loans/clear-cache
- * Manually clears the pipeline cache for the authenticated user
  */
 async function clearPipelineCache(userEmail, request) {
   clearPipelineCacheForUser(userEmail);
@@ -559,72 +760,126 @@ async function clearPipelineCache(userEmail, request) {
 }
 
 // ============================================================
-// PIPELINE TASKS ENDPOINTS
+// PIPELINE TASKS ENDPOINTS — SUPABASE (v8.0)
 // ============================================================
 
 /**
  * GET /api/pipeline/tasks
- * Fetches tasks. Optional ?loanId=rec... to filter by a specific loan.
- *
- * v7.25 FIX: Previously used FIND(loanId, ARRAYJOIN({Loan})) which is broken
- * because ARRAYJOIN on a linked record field returns DISPLAY NAMES (primary
- * field text), not record IDs. So searching for 'recXXX' in 'John Smith'
- * never matched. Fix: fetch all tasks for the user, then filter by loanId
- * in JavaScript where the Loan field correctly contains record ID arrays.
+ * Fetches tasks from Supabase. Optional ?loanId=... to filter by loan.
+ * Returns Airtable-format records for client compatibility.
  */
-async function getTasks(userEmail, loanId, apiKey, request) {
-  // Always fetch by user email — this formula works reliably
-  const formula = encodeURIComponent(`{Assigned To}='${userEmail}'`);
-  const data = await airtableRequest(`${TABLES.TASKS}?filterByFormula=${formula}`, apiKey);
-  let records = data.records || [];
-
-  // If a loanId was requested, filter in JS by checking the Loan linked record array
-  // (Airtable API returns linked record fields as arrays of record IDs)
+async function getTasks(userEmail, loanId, env, request) {
+  let filters = `user_email=eq.${encodeURIComponent(userEmail)}`;
   if (loanId) {
-    records = records.filter(r => {
-      const loanLinks = r.fields['Loan'];
-      return Array.isArray(loanLinks) && loanLinks.includes(loanId);
-    });
+    filters += `&loan_id=eq.${loanId}`;
   }
+
+  const rows = await supabaseRequest('pipeline_tasks', env, 'GET', { filters });
+
+  // Convert to Airtable-format: {id, fields: {Task Name, Due Date, Completed, Assigned To, Loan: [loanId]}}
+  const records = (rows || []).map(row => ({
+    id: row.id,
+    fields: {
+      'Task Name': row.task_name,
+      'Due Date': row.due_date,
+      'Completed': row.completed || false,
+      'Assigned To': row.assigned_to || row.user_email,
+      // Airtable returned Loan as an array of record IDs; Supabase stores single UUID
+      'Loan': row.loan_id ? [row.loan_id] : [],
+    }
+  }));
 
   return jsonResponse(records, 200, request);
 }
 
 /**
  * POST /api/pipeline/tasks
- * Creates a new task
+ * Creates a new task in Supabase
  */
-async function createTask(userEmail, fields, apiKey, request) {
-  if (!fields['Assigned To']) fields['Assigned To'] = userEmail;
-  const data = await airtableRequest(TABLES.TASKS, apiKey, 'POST', { fields });
-  return jsonResponse(data, 201, request);
+async function createTask(userEmail, fields, env, request) {
+  const row = {
+    task_name: fields['Task Name'],
+    due_date: fields['Due Date'] || null,
+    completed: fields['Completed'] || false,
+    assigned_to: fields['Assigned To'] || userEmail,
+    user_email: userEmail,
+    // Airtable sends Loan as array [recXXX]; Supabase stores single UUID
+    loan_id: Array.isArray(fields['Loan']) ? fields['Loan'][0] : (fields['Loan'] || null),
+  };
+
+  const result = await supabaseRequest('pipeline_tasks', env, 'POST', { body: row });
+  const created = Array.isArray(result) ? result[0] : result;
+
+  return jsonResponse({
+    id: created.id,
+    fields: {
+      'Task Name': created.task_name,
+      'Due Date': created.due_date,
+      'Completed': created.completed || false,
+      'Assigned To': created.assigned_to,
+      'Loan': created.loan_id ? [created.loan_id] : [],
+    }
+  }, 201, request);
 }
 
 /**
  * PUT /api/pipeline/tasks/:id
- * Updates a task (HIGH-3: verifies ownership before updating)
+ * Updates a task in Supabase (verifies ownership)
  */
-async function updateTask(userEmail, recordId, fields, apiKey, request) {
-  // Ownership check: make sure this task belongs to the requesting user
-  const existing = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey);
-  if (!existing.fields || existing.fields['Assigned To'] !== userEmail) {
+async function updateTask(userEmail, recordId, fields, env, request) {
+  // Ownership check
+  const existing = await supabaseRequest('pipeline_tasks', env, 'GET', {
+    filters: `id=eq.${recordId}`,
+    select: 'id,user_email',
+  });
+  if (!existing || existing.length === 0 || existing[0].user_email !== userEmail) {
     return jsonResponse({ error: 'Unauthorized' }, 403, request);
   }
-  const data = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey, 'PATCH', { fields });
-  return jsonResponse(data, 200, request);
+
+  const row = {};
+  if (fields['Task Name'] !== undefined) row.task_name = fields['Task Name'];
+  if (fields['Due Date'] !== undefined) row.due_date = fields['Due Date'] || null;
+  if (fields['Completed'] !== undefined) row.completed = fields['Completed'];
+  if (fields['Assigned To'] !== undefined) row.assigned_to = fields['Assigned To'];
+  if (fields['Loan'] !== undefined) {
+    row.loan_id = Array.isArray(fields['Loan']) ? fields['Loan'][0] : (fields['Loan'] || null);
+  }
+
+  const result = await supabaseRequest('pipeline_tasks', env, 'PATCH', {
+    filters: `id=eq.${recordId}`,
+    body: row,
+  });
+  const updated = Array.isArray(result) ? result[0] : result;
+
+  return jsonResponse({
+    id: updated.id,
+    fields: {
+      'Task Name': updated.task_name,
+      'Due Date': updated.due_date,
+      'Completed': updated.completed || false,
+      'Assigned To': updated.assigned_to,
+      'Loan': updated.loan_id ? [updated.loan_id] : [],
+    }
+  }, 200, request);
 }
 
 /**
  * DELETE /api/pipeline/tasks/:id
- * Deletes a task (HIGH-3: verifies ownership before deleting)
+ * Deletes a task from Supabase (verifies ownership)
  */
-async function deleteTask(userEmail, recordId, apiKey, request) {
-  // Ownership check: make sure this task belongs to the requesting user
-  const existing = await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey);
-  if (!existing.fields || existing.fields['Assigned To'] !== userEmail) {
+async function deleteTask(userEmail, recordId, env, request) {
+  // Ownership check
+  const existing = await supabaseRequest('pipeline_tasks', env, 'GET', {
+    filters: `id=eq.${recordId}`,
+    select: 'id,user_email',
+  });
+  if (!existing || existing.length === 0 || existing[0].user_email !== userEmail) {
     return jsonResponse({ error: 'Unauthorized' }, 403, request);
   }
-  await airtableRequest(`${TABLES.TASKS}/${recordId}`, apiKey, 'DELETE');
+
+  await supabaseRequest('pipeline_tasks', env, 'DELETE', {
+    filters: `id=eq.${recordId}`,
+  });
   return jsonResponse({ success: true }, 200, request);
 }
 
@@ -11623,7 +11878,8 @@ export default {
       return jsonResponse({
         status: 'ok',
         service: 'mtg-broker-pipeline',
-        version: '7.30',
+        version: '8.0',
+        database: 'Supabase (loans + tasks), Airtable (usage)',
         timestamp: new Date().toISOString(),
         endpoints: [
           'GET    /api/pipeline/loans              - List loans (cached)',
@@ -11670,44 +11926,45 @@ export default {
     }
 
     try {
-      // ---- PIPELINE LOANS ----
+      // ---- PIPELINE LOANS (Supabase v8.0) ----
+      // Route regex matches UUIDs (Supabase) — e.g. /api/pipeline/loans/4e0a2341-3fc1-4aca-8a15-a462a005af0e
       if (path === '/api/pipeline/loans' && method === 'GET') {
-        return await getLoans(userEmail, apiKey, request);
+        return await getLoans(userEmail, env, request);
       }
       if (path === '/api/pipeline/loans/clear-cache' && method === 'GET') {
         return await clearPipelineCache(userEmail, request);
       }
       if (path === '/api/pipeline/loans' && method === 'POST') {
         const body = await request.json();
-        return await createLoan(userEmail, body, apiKey, request);
+        return await createLoan(userEmail, body, env, request);
       }
-      if (path.match(/^\/api\/pipeline\/loans\/rec\w+$/) && method === 'PUT') {
+      if (path.match(/^\/api\/pipeline\/loans\/[0-9a-f-]+$/) && method === 'PUT') {
         const recordId = path.split('/').pop();
         const body = await request.json();
-        return await updateLoan(userEmail, recordId, body, apiKey, request);
+        return await updateLoan(userEmail, recordId, body, env, request);
       }
-      if (path.match(/^\/api\/pipeline\/loans\/rec\w+$/) && method === 'DELETE') {
+      if (path.match(/^\/api\/pipeline\/loans\/[0-9a-f-]+$/) && method === 'DELETE') {
         const recordId = path.split('/').pop();
-        return await deleteLoan(userEmail, recordId, apiKey, request);
+        return await deleteLoan(userEmail, recordId, env, request);
       }
 
-      // ---- PIPELINE TASKS ----
+      // ---- PIPELINE TASKS (Supabase v8.0) ----
       if (path === '/api/pipeline/tasks' && method === 'GET') {
         const loanId = url.searchParams.get('loanId');
-        return await getTasks(userEmail, loanId, apiKey, request);
+        return await getTasks(userEmail, loanId, env, request);
       }
       if (path === '/api/pipeline/tasks' && method === 'POST') {
         const body = await request.json();
-        return await createTask(userEmail, body, apiKey, request);
+        return await createTask(userEmail, body, env, request);
       }
-      if (path.match(/^\/api\/pipeline\/tasks\/rec\w+$/) && method === 'PUT') {
+      if (path.match(/^\/api\/pipeline\/tasks\/[0-9a-f-]+$/) && method === 'PUT') {
         const recordId = path.split('/').pop();
         const body = await request.json();
-        return await updateTask(userEmail, recordId, body, apiKey, request);
+        return await updateTask(userEmail, recordId, body, env, request);
       }
-      if (path.match(/^\/api\/pipeline\/tasks\/rec\w+$/) && method === 'DELETE') {
+      if (path.match(/^\/api\/pipeline\/tasks\/[0-9a-f-]+$/) && method === 'DELETE') {
         const recordId = path.split('/').pop();
-        return await deleteTask(userEmail, recordId, apiKey, request);
+        return await deleteTask(userEmail, recordId, env, request);
       }
 
       // ---- PLAN LIMITS ----
