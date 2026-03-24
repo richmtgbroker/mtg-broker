@@ -10309,13 +10309,13 @@ textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-fa
 .lender-other-wrap.hidden { display: none; }
 
 /* Lender Quick Links */
-.lender-links { display: none; margin-top: 6px; padding: 0; gap: 12px; flex-wrap: wrap; align-items: center; }
-.lender-links.visible { display: flex; }
+.lender-links { display: none; margin-top: 8px; padding: 0; gap: 6px; }
+.lender-links.visible { display: grid; grid-template-columns: 1fr 1fr; }
 .lender-links a {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; color: #1a56db; text-decoration: none; font-weight: 500;
-  padding: 3px 8px; border-radius: 4px; background: #f0f5ff; border: 1px solid #dbeafe;
-  transition: background .15s, border-color .15s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 11.5px; color: #1a56db; text-decoration: none; font-weight: 500;
+  padding: 6px 8px; border-radius: 5px; background: #f0f5ff; border: 1px solid #dbeafe;
+  transition: background .15s, border-color .15s; white-space: nowrap;
 }
 .lender-links a:hover { background: #dbeafe; border-color: #93c5fd; }
 .lender-links a i { font-size: 11px; }`;
