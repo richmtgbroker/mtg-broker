@@ -5926,21 +5926,50 @@ async function getPipelineAssetsJS(request) {
      The parent section-card gets section-full from showSection(),
      so we override max-width just like Documents does.
      ══════════════════════════════════════════════════════════════ */
-  (function injectAssetsCSS() {
-    var style = document.createElement('style');
-    style.textContent = ''
-      /* Override section-full max-width so Assets can use full width (same pattern as Documents) */
-      + '#section-assets-wrapper.section-full{max-width:none;justify-self:stretch}'
-      /* 2-column flex layout: left = Assets, right = Accounts + Summary stacked */
-      + '.ast-cards-wrap{display:flex;flex-direction:row;gap:16px;align-items:flex-start}'
-      + '.ast-col-left,.ast-col-right{flex:1;min-width:0}'
-      + '.ast-col-right{display:flex;flex-direction:column;gap:16px}'
-      /* Card styling — mirrors .doc-card (NOT Webflow .card which has max-width constraints) */
-      + '.ast-card{border:1px solid #E2E8F0;border-radius:10px;background:#fff;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}'
-      + '.ast-card .card-title{margin:-20px -20px 16px;padding:12px 20px;background:#f8fafc;border-bottom:1px solid #E2E8F0;border-radius:10px 10px 0 0;font-size:15px;font-weight:600;color:#1e293b;display:flex;align-items:center;gap:8px}'
-      + '@media(max-width:768px){.ast-cards-wrap{flex-direction:column}}';
-    document.head.appendChild(style);
-  })();
+  /* ── ENSURE ACCOUNTS CARD — separate section-card in #section-pages ── */
+  function ensureAccountsCard() {
+    var card = document.getElementById('section-assets-accounts');
+    if (card) return card;
+    card = document.createElement('div');
+    card.className = 'card section-card section-hidden';
+    card.id = 'section-assets-accounts';
+    card.setAttribute('data-page', 'section-assets');
+    card.innerHTML = '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div><div id="accounts-section-content"></div>';
+    var pages = document.getElementById('section-pages');
+    if (pages) pages.appendChild(card);
+    return card;
+  }
+
+  /* ── ENSURE SUMMARY CARD — separate section-card in #section-pages ── */
+  function ensureSummaryCard() {
+    var card = document.getElementById('section-assets-summary');
+    if (card) return card;
+    card = document.createElement('div');
+    card.className = 'card section-card section-hidden ast-summary-card';
+    card.id = 'section-assets-summary';
+    card.setAttribute('data-page', 'section-assets');
+    card.innerHTML = ''
+      + '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
+      + '<div class="ast-summary-grid">'
+      +   '<div class="ast-summary-item">'
+      +     '<div class="ast-summary-label">Total Account Balances</div>'
+      +     '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
+      +   '</div>'
+      +   '<div class="ast-summary-op">\\u2212</div>'
+      +   '<div class="ast-summary-item">'
+      +     '<div class="ast-summary-label">Total Assets Needed</div>'
+      +     '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
+      +   '</div>'
+      +   '<div class="ast-summary-op">=</div>'
+      +   '<div class="ast-summary-item ast-summary-result">'
+      +     '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
+      +     '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+      +   '</div>'
+      + '</div>';
+    var pages = document.getElementById('section-pages');
+    if (pages) pages.appendChild(card);
+    return card;
+  }
 
   /* ══════════════════════════════════════════════════════════════
      BUILD ASSETS SECTION — called by openLoanModal / openNewLoanModal
@@ -5953,38 +5982,13 @@ async function getPipelineAssetsJS(request) {
     assetAccounts = [];
     acctCounter = 0;
 
-    /* ── Set up the parent section-card for full-width 2-column layout.
-       Same pattern as Documents: override section-full max-width,
-       strip card styling from parent, use flex wrapper inside. ── */
-    var parentCard = c.closest('.section-card');
-    if (parentCard) {
-      parentCard.id = 'section-assets-wrapper';
-      /* Strip visual card styling — this is just a layout container now.
-         Force grid-column:span 2 so it uses full width of #section-pages grid.
-         Hide the Webflow-defined card-title (the "ASSETS" header) since
-         each inner card has its own title. */
-      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;grid-column:1/-1;max-width:none;';
-      parentCard.classList.remove('card');
-      parentCard.classList.remove('ast-col-left'); /* safety: old cached JS may have added this */
-      var parentTitle = parentCard.querySelector(':scope > .card-title');
-      if (parentTitle) parentTitle.style.display = 'none';
-    }
-
-    /* ── 3 SEPARATE CARDS in a 2-column flex layout ──
-       (Same pattern as Documents' doc-cards-wrap)
-       Left col:  ASSETS card (own border/shadow)
-       Right col: ACCOUNTS card + ASSET SUMMARY card (stacked, each with own border/shadow)
-       On mobile (<768px): stacks vertically ── */
+    /* ── LEFT CARD: Cash to Close + Reserves + Grand Total ──
+       This fills the existing #section-assets card (defined in HTML template).
+       The showSection hook assigns .ast-col-left (grid-column:1) to this card. */
     c.innerHTML = ''
-      + '<div class="ast-cards-wrap">'
-
-      /* ══ LEFT COLUMN: ASSETS card ══ */
-      + '<div class="ast-card ast-col-left">'
-      +   '<div class="card-title"><i class="fa-solid fa-piggy-bank"></i> Assets</div>'
-
-        /* ── CASH TO CLOSE ── */
-        + '<div class="ast-group">'
-        +   '<div class="ast-group-title">Cash to Close</div>'
+      /* ── CASH TO CLOSE ── */
+      + '<div class="ast-group">'
+      +   '<div class="ast-group-title">Cash to Close</div>'
         +   '<div class="cg">'
         +     '<div class="ff"><label>Down Payment ($)</label>'
         +       '<div style="display:flex;align-items:center;gap:6px;">'
@@ -6039,49 +6043,22 @@ async function getPipelineAssetsJS(request) {
         + '</div>'
 
         /* ── GRAND TOTAL ── */
-        + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>'
+        + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>';
 
-      + '</div>' /* end left column */
-
-      /* ══ RIGHT COLUMN: Accounts card + Asset Summary card ══ */
-      + '<div class="ast-col-right">'
-
-        /* ── ACCOUNTS CARD ── */
-        + '<div class="ast-card" id="section-assets-accounts">'
-        +   '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div>'
-        +   '<div id="accounts-section-content">'
-        +     '<div id="ast-accounts-list"></div>'
-        +     '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
-        +       '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
-        +     '</div>'
-        +     '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>'
-        +   '</div>'
+    /* ── RIGHT CARDS: Accounts + Summary (separate section-cards in #section-pages) ── */
+    var acctCard = ensureAccountsCard();
+    var r = document.getElementById('accounts-section-content');
+    if (r) {
+      r.innerHTML = ''
+        + '<div id="ast-accounts-list"></div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
+        +   '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
         + '</div>'
+        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>';
+    }
 
-        /* ── ASSET SUMMARY CARD ── */
-        + '<div class="ast-card" id="section-assets-summary">'
-        +   '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
-        +   '<div class="ast-summary-grid">'
-        +     '<div class="ast-summary-item">'
-        +       '<div class="ast-summary-label">Total Account Balances</div>'
-        +       '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
-        +     '</div>'
-        +     '<div class="ast-summary-op">\\u2212</div>'
-        +     '<div class="ast-summary-item">'
-        +       '<div class="ast-summary-label">Total Assets Needed</div>'
-        +       '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
-        +     '</div>'
-        +     '<div class="ast-summary-op">=</div>'
-        +     '<div class="ast-summary-item ast-summary-result">'
-        +       '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
-        +       '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div>'
-
-      + '</div>' /* end ast-col-right */
-
-      + '</div>'; /* end ast-cards-wrap */
+    /* ── SUMMARY CARD (separate section-card, positioned by showSection hook) ── */
+    ensureSummaryCard();
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
@@ -6329,7 +6306,7 @@ async function getPipelineAssetsJS(request) {
   /* Expose for external calls */
   window.recalcAssets = recalcAll;
 
-  console.log('\\u2705 Pipeline Assets module loaded (v1.4)');
+  console.log('\\u2705 Pipeline Assets module loaded (v1.5)');
 })();
 
 `;
@@ -11084,7 +11061,7 @@ function zillowLookup() {
     +'.ast-acct-grand-total span:first-child{font-size:13px;font-weight:700;color:#1E3A8A}'
     +'.ast-acct-grand-val{font-size:16px;font-weight:800;color:#1D4ED8}'
     /* v13.1: Asset Summary card (Excess / Shortage) */
-    +'.ast-summary-card{grid-column:1/-1!important;max-width:none!important;justify-self:stretch!important}'
+    +'.ast-summary-card{grid-column:2!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start}'
     +'.ast-summary-grid{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;flex-wrap:wrap}'
     +'.ast-summary-item{text-align:center;min-width:140px}'
     +'.ast-summary-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
@@ -11133,7 +11110,7 @@ function zillowLookup() {
     /* v12.9: Assets 2-column layout (left: Cash/Reserves, right: Accounts) */
     +'.ast-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
     +'.ast-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
-    +'@media(max-width:900px){.ast-col-left,.ast-col-right{grid-column:1/-1!important;grid-row:auto!important}}'
+    +'@media(max-width:900px){.ast-col-left,.ast-col-right,.ast-summary-card{grid-column:1/-1!important;grid-row:auto!important}}'
     /* v12.9: Loan Detail Bar */
     +'.loan-detail-bar{display:flex;align-items:center;gap:6px;padding:6px 24px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
     +'.loan-detail-bar::-webkit-scrollbar{display:none}'
@@ -11490,7 +11467,7 @@ function zillowLookup() {
      v12.8: Pipeline Assets JS Module Loader
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js?v=1.3';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js?v=1.5';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- v13.1: showSection 2-column layout fix -->
