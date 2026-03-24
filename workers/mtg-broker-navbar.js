@@ -1,5 +1,5 @@
 /**
- * mtg-broker-navbar — Cloudflare Worker v2.8
+ * mtg-broker-navbar — Cloudflare Worker v2.9
  * =========================================================
  * Serves the App Navbar as an injectable JavaScript file.
  *
@@ -28,7 +28,7 @@
  *   2. Run: wrangler deploy workers/mtg-broker-navbar.js --name mtg-broker-navbar
  *   3. All pages pick up the change automatically — no Webflow edits needed.
  *
- * COMPATIBILITY NOTES (v2.8):
+ * COMPATIBILITY NOTES (v2.9):
  *   - Uses .mb-navWrap, .mb-header, .mb-navSpacer — matches Site Settings CSS exactly
  *   - Does NOT redefine --navbar-height (set to 77px in Site Settings head code)
  *   - Uses window.getCachedOutsetaUser() when available (Site Settings footer Section 0)
@@ -56,7 +56,7 @@ export default {
     }
 
     return new Response(
-      'mtg-broker-navbar v2.8 worker is running.\nGET /navbar.js to get the navbar script.',
+      'mtg-broker-navbar v2.9 worker is running.\nGET /navbar.js to get the navbar script.',
       { headers: { 'Content-Type': 'text/plain' } }
     );
   },
@@ -275,6 +275,11 @@ const NAVBAR_HTML = `
       <a href="/app/loan-search" class="mb-mLink">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <span>Loan Search</span>
+      </a>
+
+      <a href="/app/ai-search/" class="mb-mLink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg>
+        <span>AI Loan Finder</span>
       </a>
 
       <a href="/app/lenders" class="mb-mLink">
