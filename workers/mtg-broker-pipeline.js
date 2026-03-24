@@ -5926,49 +5926,46 @@ async function getPipelineAssetsJS(request) {
      The parent section-card gets section-full from showSection(),
      so we override max-width just like Documents does.
      ══════════════════════════════════════════════════════════════ */
-  /* ── ENSURE ACCOUNTS CARD — separate section-card in #section-pages ── */
-  function ensureAccountsCard() {
-    var card = document.getElementById('section-assets-accounts');
-    if (card) return card;
-    card = document.createElement('div');
-    card.className = 'card section-card section-hidden';
-    card.id = 'section-assets-accounts';
-    card.setAttribute('data-page', 'section-assets');
-    card.innerHTML = '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div><div id="accounts-section-content"></div>';
-    var pages = document.getElementById('section-pages');
-    if (pages) pages.appendChild(card);
-    return card;
-  }
-
-  /* ── ENSURE SUMMARY CARD — separate section-card in #section-pages ── */
-  function ensureSummaryCard() {
-    var card = document.getElementById('section-assets-summary');
-    if (card) return card;
-    card = document.createElement('div');
-    card.className = 'card section-card section-hidden ast-summary-card';
-    card.id = 'section-assets-summary';
-    card.setAttribute('data-page', 'section-assets');
-    card.innerHTML = ''
-      + '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
-      + '<div class="ast-summary-grid">'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Account Balances</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">\\u2212</div>'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Assets Needed</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">=</div>'
-      +   '<div class="ast-summary-item ast-summary-result">'
-      +     '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
-      +     '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+  /* ── ENSURE RIGHT COLUMN WRAPPER — single section-card in #section-pages
+     that contains both Accounts and Summary as inner cards with flexbox.
+     This avoids CSS grid row-height distribution issues. ── */
+  function ensureRightColumn() {
+    var wrapper = document.getElementById('section-assets-right');
+    if (wrapper) return wrapper;
+    wrapper = document.createElement('div');
+    wrapper.className = 'section-card section-hidden';
+    wrapper.id = 'section-assets-right';
+    wrapper.setAttribute('data-page', 'section-assets');
+    wrapper.style.cssText = 'display:flex;flex-direction:column;gap:16px;background:none;padding:0;border:none;box-shadow:none;align-self:start;';
+    wrapper.innerHTML = ''
+      /* ── ACCOUNTS CARD ── */
+      + '<div class="card" id="section-assets-accounts">'
+      +   '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div>'
+      +   '<div id="accounts-section-content"></div>'
+      + '</div>'
+      /* ── ASSET SUMMARY CARD ── */
+      + '<div class="card ast-summary-card" id="section-assets-summary">'
+      +   '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
+      +   '<div class="ast-summary-grid">'
+      +     '<div class="ast-summary-item">'
+      +       '<div class="ast-summary-label">Total Account Balances</div>'
+      +       '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
+      +     '</div>'
+      +     '<div class="ast-summary-op">\\u2212</div>'
+      +     '<div class="ast-summary-item">'
+      +       '<div class="ast-summary-label">Total Assets Needed</div>'
+      +       '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
+      +     '</div>'
+      +     '<div class="ast-summary-op">=</div>'
+      +     '<div class="ast-summary-item ast-summary-result">'
+      +       '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
+      +       '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+      +     '</div>'
       +   '</div>'
       + '</div>';
     var pages = document.getElementById('section-pages');
-    if (pages) pages.appendChild(card);
-    return card;
+    if (pages) pages.appendChild(wrapper);
+    return wrapper;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -6045,8 +6042,8 @@ async function getPipelineAssetsJS(request) {
         /* ── GRAND TOTAL ── */
         + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>';
 
-    /* ── RIGHT CARDS: Accounts + Summary (separate section-cards in #section-pages) ── */
-    var acctCard = ensureAccountsCard();
+    /* ── RIGHT COLUMN: wrapper with Accounts + Summary (flexbox, 16px gap) ── */
+    ensureRightColumn();
     var r = document.getElementById('accounts-section-content');
     if (r) {
       r.innerHTML = ''
@@ -6056,9 +6053,6 @@ async function getPipelineAssetsJS(request) {
         + '</div>'
         + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>';
     }
-
-    /* ── SUMMARY CARD (separate section-card, positioned by showSection hook) ── */
-    ensureSummaryCard();
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
@@ -11061,7 +11055,7 @@ function zillowLookup() {
     +'.ast-acct-grand-total span:first-child{font-size:13px;font-weight:700;color:#1E3A8A}'
     +'.ast-acct-grand-val{font-size:16px;font-weight:800;color:#1D4ED8}'
     /* v13.1: Asset Summary card (Excess / Shortage) */
-    +'.ast-summary-card{grid-column:2!important;grid-row:2!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start}'
+    +'.ast-summary-card{max-width:none!important}'
     +'.ast-summary-grid{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;flex-wrap:wrap}'
     +'.ast-summary-item{text-align:center;min-width:140px}'
     +'.ast-summary-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
@@ -11108,8 +11102,8 @@ function zillowLookup() {
     +'.ld-col-right .ld-pe-grid{grid-template-columns:repeat(2,1fr)!important}'
     +'.ld-col-right .ps-table td:first-child{max-width:120px;overflow:hidden;text-overflow:ellipsis}'
     /* v12.9: Assets 2-column layout (left: Cash/Reserves, right: Accounts) */
-    +'.ast-col-left{grid-column:1!important;grid-row:1/span 2!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
-    +'.ast-col-right{grid-column:2!important;grid-row:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'.ast-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ast-col-right{grid-column:2!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
     +'@media(max-width:900px){.ast-col-left,.ast-col-right,.ast-summary-card{grid-column:1/-1!important;grid-row:auto!important}}'
     /* v12.9: Loan Detail Bar */
     +'.loan-detail-bar{display:flex;align-items:center;gap:6px;padding:6px 24px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
@@ -11501,8 +11495,8 @@ function zillowLookup() {
       if (pageId === 'section-assets') {
         cards.forEach(function(card) {
           card.classList.remove('section-full');
-          if (card.id === 'section-assets-accounts') { if (!card.classList.contains('ast-col-right')) card.classList.add('ast-col-right'); }
-          else if (!card.classList.contains('ast-summary-card')) { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
+          if (card.id === 'section-assets-right') { if (!card.classList.contains('ast-col-right')) card.classList.add('ast-col-right'); }
+          else { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
         });
       }
       /* ── COMP/PAY ── */
