@@ -5920,10 +5920,24 @@ async function getPipelineAssetsJS(request) {
      ENSURE ACCOUNTS CARD EXISTS — dynamically create it as a
      separate section-card in #section-pages for 2-column layout
      ══════════════════════════════════════════════════════════════ */
-  /* No separate ensureAccountsCard needed — Accounts + Summary are built
-     inside the Assets card's own 2-column layout (see buildAssetsSection). */
-
-  /* Summary card is now built inline inside buildAssetsSection (no separate function needed) */
+  /* ══════════════════════════════════════════════════════════════
+     INJECT STYLES — CSS for the Assets 2-column layout
+     Following the same pattern as Documents (doc-cards-wrap).
+     The parent section-card gets section-full from showSection(),
+     so we override max-width just like Documents does.
+     ══════════════════════════════════════════════════════════════ */
+  (function injectAssetsCSS() {
+    var style = document.createElement('style');
+    style.textContent = ''
+      /* Override section-full max-width so Assets card can use full width (same as Documents) */
+      + '#section-assets-wrapper.section-full{max-width:none;justify-self:stretch}'
+      /* 2-column flex layout: left = Assets, right = Accounts + Summary stacked */
+      + '.ast-cards-wrap{display:flex;flex-direction:row;gap:16px;align-items:flex-start}'
+      + '.ast-cards-wrap>.ast-col-left,.ast-cards-wrap>.ast-col-right{flex:1;min-width:0}'
+      + '.ast-col-right{display:flex;flex-direction:column;gap:16px}'
+      + '@media(max-width:768px){.ast-cards-wrap{flex-direction:column}}';
+    document.head.appendChild(style);
+  })();
 
   /* ══════════════════════════════════════════════════════════════
      BUILD ASSETS SECTION — called by openLoanModal / openNewLoanModal
@@ -5936,22 +5950,25 @@ async function getPipelineAssetsJS(request) {
     assetAccounts = [];
     acctCounter = 0;
 
-    /* ── Strip card styling from parent section-card so it acts as
-       an invisible container. Each section gets its own card look. ── */
+    /* ── Set up the parent section-card for full-width 2-column layout.
+       Same pattern as Documents: override section-full max-width,
+       strip card styling from parent, use flex wrapper inside. ── */
     var parentCard = c.closest('.section-card');
     if (parentCard) {
-      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;max-width:none;width:100%;';
+      parentCard.id = 'section-assets-wrapper';
+      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;';
     }
 
-    /* ── 3 SEPARATE CARDS in a 2-column grid ──
-       Left col:  ASSETS card (Cash to Close + Reserves + Grand Total)
-       Right col: ACCOUNTS card + ASSET SUMMARY card (stacked)
-       On mobile (<768px): stacks vertically */
+    /* ── 3 SEPARATE CARDS in a 2-column flex layout ──
+       (Same pattern as Documents' doc-cards-wrap)
+       Left col:  ASSETS card (own border/shadow)
+       Right col: ACCOUNTS card + ASSET SUMMARY card (stacked, each with own border/shadow)
+       On mobile (<768px): stacks vertically ── */
     c.innerHTML = ''
-      + '<div class="ast-two-col" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;">'
+      + '<div class="ast-cards-wrap">'
 
       /* ══ LEFT COLUMN: ASSETS card ══ */
-      + '<div class="card ast-left-col" style="min-width:0;">'
+      + '<div class="card ast-col-left">'
       +   '<div class="card-title"><i class="fa-solid fa-piggy-bank"></i> Assets</div>'
 
         /* ── CASH TO CLOSE ── */
@@ -6016,7 +6033,7 @@ async function getPipelineAssetsJS(request) {
       + '</div>' /* end left column */
 
       /* ══ RIGHT COLUMN: Accounts card + Asset Summary card ══ */
-      + '<div class="ast-right-col" style="display:flex;flex-direction:column;gap:16px;min-width:0;">'
+      + '<div class="ast-col-right">'
 
         /* ── ACCOUNTS CARD ── */
         + '<div class="card" id="section-assets-accounts">'
@@ -6051,12 +6068,9 @@ async function getPipelineAssetsJS(request) {
         +   '</div>'
         + '</div>'
 
-      + '</div>' /* end right column */
+      + '</div>' /* end ast-col-right */
 
-      + '</div>' /* end ast-two-col grid */
-
-      /* ── Responsive: stack columns on mobile ── */
-      + '<style>.ast-two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}@media(max-width:768px){.ast-two-col{grid-template-columns:1fr !important}}</style>';
+      + '</div>'; /* end ast-cards-wrap */
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
