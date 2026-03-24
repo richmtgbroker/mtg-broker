@@ -5999,7 +5999,7 @@ async function getPipelineAssetsJS(request) {
   window.addAssetAccount = function(data) {
     acctCounter++;
     var id = 'acct-' + acctCounter;
-    var acct = data || { type: '', balance: '', accountNum: '', description: '' };
+    var acct = data || { type: '', balance: '', accountNum: '', description: '', statementDate: '' };
 
     /* Build options HTML */
     var opts = '<option value="">Select type...</option>';
@@ -6015,6 +6015,7 @@ async function getPipelineAssetsJS(request) {
       +   '<div class="ff" style="flex:2;min-width:160px;"><label>Account Type</label><select class="fc ast-acct-type" onchange="toggleAssetDesc(\\'' + id + '\\')">' + opts + '</select></div>'
       +   '<div class="ff" style="flex:1.2;min-width:120px;"><label>Balance ($)</label><input type="text" class="fc currency-input ast-acct-bal" placeholder="0" value="' + (acct.balance ? Number(acct.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
       +   '<div class="ff" style="flex:1;min-width:100px;"><label>Account #</label><input type="text" class="fc ast-acct-num" placeholder="Last 4" maxlength="20" value="' + (acct.accountNum || '') + '"></div>'
+      +   '<div class="ff" style="flex:1;min-width:130px;"><label>Statement Date</label><input type="date" class="fc ast-acct-stmt-date" value="' + (acct.statementDate || '') + '"></div>'
       +   '<button type="button" class="ast-remove-btn" onclick="removeAssetAccount(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
       + '</div>'
       + '<div class="ast-acct-desc-row' + (acct.type === 'Other Asset' ? '' : ' hidden') + '">'
@@ -6063,12 +6064,14 @@ async function getPipelineAssetsJS(request) {
       var bal = row.querySelector('.ast-acct-bal');
       var num = row.querySelector('.ast-acct-num');
       var desc = row.querySelector('.ast-acct-desc');
+      var stmtDate = row.querySelector('.ast-acct-stmt-date');
       if (type && (type.value || (bal && pc(bal.value)))) {
         arr.push({
           type: type.value,
           balance: pc(bal ? bal.value : ''),
           accountNum: num ? num.value.trim() : '',
-          description: desc ? desc.value.trim() : ''
+          description: desc ? desc.value.trim() : '',
+          statementDate: stmtDate ? stmtDate.value : ''
         });
       }
     });
