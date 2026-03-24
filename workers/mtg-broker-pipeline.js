@@ -2482,7 +2482,150 @@ function unformatCurrency(input) {
     input.value = input.value.replace(/[^\\d.]/g, '');
   }
 }
-function parseCurrency(val) { if (!val) return null; return evaluateExpression(val); }`;
+function parseCurrency(val) { if (!val) return null; return evaluateExpression(val); }
+
+/* ══════════════════════════════════════════════════════════════
+   v7.31: PHONE FORMATTING + SSN MASKING
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- Phone: auto-format as (XXX) XXX-XXXX while typing --- */
+function formatPhoneValue(val) {
+  var digits = val.replace(/\\D/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return '(' + digits;
+  if (digits.length <= 6) return '(' + digits.slice(0,3) + ') ' + digits.slice(3);
+  return '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6,10);
+}
+function stripPhoneFormat(val) { return val.replace(/\\D/g, ''); }
+
+function wirePhoneInput(inputId) {
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  /* Format on input (as-you-type) */
+  el.addEventListener('input', function() {
+    var cursor = el.selectionStart;
+    var beforeLen = el.value.length;
+    el.value = formatPhoneValue(el.value);
+    var afterLen = el.value.length;
+    /* Adjust cursor so it doesn't jump */
+    var newCursor = cursor + (afterLen - beforeLen);
+    el.setSelectionRange(newCursor, newCursor);
+  });
+  /* Format any pre-filled value on modal open */
+  if (el.value) el.value = formatPhoneValue(el.value);
+}
+
+/* --- SSN Last 4: mask with dots + eye toggle --- */
+function wireSSNMasking(inputId) {
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  /* Only proceed if not already wired */
+  if (el.dataset.ssnWired) return;
+  el.dataset.ssnWired = 'true';
+
+  /* Create wrapper for the toggle icon */
+  var wrapper = el.parentElement;
+  if (wrapper) {
+    wrapper.style.position = 'relative';
+    var toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'ssn-toggle-btn';
+    toggleBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+    toggleBtn.title = 'Show/hide SSN';
+    toggleBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;font-size:13px;z-index:2;';
+    wrapper.appendChild(toggleBtn);
+    el.style.paddingRight = '32px';
+
+    var masked = true;
+    function updateMask() {
+      if (masked && el.value) {
+        el.type = 'password';
+        toggleBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+        toggleBtn.title = 'Show SSN';
+      } else {
+        el.type = 'text';
+        toggleBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+        toggleBtn.title = 'Hide SSN';
+      }
+    }
+    toggleBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      masked = !masked;
+      updateMask();
+    });
+    /* Default to masked */
+    updateMask();
+    /* Re-mask when modal opens (listener on value changes) */
+    el.addEventListener('focus', function() { /* keep current state */ });
+  }
+}
+
+/* Wire everything once DOM is ready */
+function initInputFormatters() {
+  wirePhoneInput('borrower-phone');
+  wirePhoneInput('co-borrower-phone');
+  wireSSNMasking('borrower-ssn4');
+  wireSSNMasking('co-borrower-ssn4');
+}
+
+/* Hook into modal open — re-format phone values loaded from Airtable */
+var _origOpenLoanModal = window.openLoanModal;
+if (typeof _origOpenLoanModal === 'function') {
+  window.openLoanModal = async function(id) {
+    await _origOpenLoanModal(id);
+    /* Format phone numbers that were loaded */
+    var bp = document.getElementById('borrower-phone');
+    if (bp && bp.value) bp.value = formatPhoneValue(bp.value);
+    var cp = document.getElementById('co-borrower-phone');
+    if (cp && cp.value) cp.value = formatPhoneValue(cp.value);
+    /* Re-mask SSN fields */
+    var bs = document.getElementById('borrower-ssn4');
+    if (bs) bs.type = 'password';
+    var cs = document.getElementById('co-borrower-ssn4');
+    if (cs) cs.type = 'password';
+  };
+}
+var _origOpenNewLoanModal = window.openNewLoanModal;
+if (typeof _origOpenNewLoanModal === 'function') {
+  window.openNewLoanModal = function() {
+    _origOpenNewLoanModal();
+    /* Wire formatters for new loan modal too */
+    wirePhoneInput('borrower-phone');
+    wirePhoneInput('co-borrower-phone');
+  };
+}
+
+/* Strip phone formatting before save — so Airtable gets clean digits */
+var _origSaveLoan = window.saveLoan;
+if (typeof _origSaveLoan === 'function') {
+  window.saveLoan = async function() {
+    /* Strip phone formatting to save raw digits */
+    var bp = document.getElementById('borrower-phone');
+    if (bp) bp.value = stripPhoneFormat(bp.value);
+    var cp = document.getElementById('co-borrower-phone');
+    if (cp) cp.value = stripPhoneFormat(cp.value);
+    /* Ensure SSN field is text type so .value reads correctly */
+    var bs = document.getElementById('borrower-ssn4');
+    if (bs) bs.type = 'text';
+    var cs = document.getElementById('co-borrower-ssn4');
+    if (cs) cs.type = 'text';
+    /* Call original save */
+    await _origSaveLoan();
+    /* Re-format phone after save */
+    if (bp && bp.value) bp.value = formatPhoneValue(bp.value);
+    if (cp && cp.value) cp.value = formatPhoneValue(cp.value);
+    /* Re-mask SSN after save */
+    if (bs) bs.type = 'password';
+    if (cs) cs.type = 'password';
+  };
+}
+
+/* Initialize on DOMContentLoaded or immediately if already loaded */
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initInputFormatters);
+} else {
+  setTimeout(initInputFormatters, 200);
+}`;
   return new Response(jsContent, {
     status: 200,
     headers: {
