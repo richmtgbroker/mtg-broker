@@ -5936,15 +5936,23 @@ async function getPipelineAssetsJS(request) {
     assetAccounts = [];
     acctCounter = 0;
 
-    /* ── 2-COLUMN LAYOUT inside the single Assets section-card ──
-       Left: Cash to Close + Reserves + Grand Total
-       Right: Accounts card + Asset Summary card (stacked)
+    /* ── Strip card styling from parent section-card so it acts as
+       an invisible container. Each section gets its own card look. ── */
+    var parentCard = c.closest('.section-card');
+    if (parentCard) {
+      parentCard.style.cssText = 'background:none;border:none;box-shadow:none;padding:0;';
+    }
+
+    /* ── 3 SEPARATE CARDS in a 2-column grid ──
+       Left col:  ASSETS card (Cash to Close + Reserves + Grand Total)
+       Right col: ACCOUNTS card + ASSET SUMMARY card (stacked)
        On mobile (<768px): stacks vertically */
     c.innerHTML = ''
       + '<div class="ast-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">'
 
-      /* ══ LEFT COLUMN ══ */
-      + '<div class="ast-left-col">'
+      /* ══ LEFT COLUMN: ASSETS card ══ */
+      + '<div class="card ast-left-col">'
+      +   '<div class="card-title"><i class="fa-solid fa-piggy-bank"></i> Assets</div>'
 
         /* ── CASH TO CLOSE ── */
         + '<div class="ast-group">'
