@@ -126,45 +126,28 @@ var pricingHTML = ''
   + '</div>'
   + '</div></section>'
 
-  /* ======== COMPARISON TABLE (v4.1 — grouped & redesigned) ======== */
+  /* ======== COMPARISON TABLE ======== */
   + '<section class="comparison-section"><div class="pricing-container">'
   + '<h2 class="section-title">Compare Plans</h2>'
-  + '<p class="section-subtitle">See exactly what you get with each plan.</p>'
   + '<div class="comparison-table-wrapper"><table class="comparison-table">'
-
-  /* --- Table Header with plan names + prices --- */
   + '<thead><tr>'
-  + '<th class="feature-col"></th>'
-  + '<th class="plan-col"><div class="plan-col-header"><span class="plan-col-name">LITE</span><span class="plan-col-price">Free</span></div></th>'
-  + '<th class="plan-col"><div class="plan-col-header"><span class="plan-col-name">PLUS</span><span class="plan-col-price">$49/mo</span></div></th>'
-  + '<th class="plan-col featured"><div class="plan-col-header"><span class="plan-col-recommended">Recommended</span><span class="plan-col-name">PRO</span><span class="plan-col-price">$79/mo</span></div></th>'
+  + '<th class="feature-col">Feature</th>'
+  + '<th class="plan-col">LITE</th>'
+  + '<th class="plan-col">PLUS</th>'
+  + '<th class="plan-col featured">PRO</th>'
   + '</tr></thead>'
-
   + '<tbody>'
-
-  /* --- Category: Search & Data --- */
-  + '<tr class="category-row"><td colspan="4"><svg class="cat-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg> Search &amp; Data</td></tr>'
-  + '<tr><td class="feature-name-cell">AI Powered Loan Search</td><td class="feature-value"><span class="val-limited">Limited</span></td><td class="feature-value"><span class="val-full">Full Access</span></td><td class="feature-value featured"><span class="val-full">Full Access</span></td></tr>'
-  + '<tr><td class="feature-name-cell">Loan Product Search</td><td class="feature-value"><span class="val-limited">Limited</span></td><td class="feature-value"><span class="val-full">Full Access</span></td><td class="feature-value featured"><span class="val-full">Full Access</span></td></tr>'
+  + '<tr><td class="feature-name-cell">AI Powered Loan Search</td><td class="feature-value">Limited</td><td class="feature-value">' + tableCheckSvg + '</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
+  + '<tr><td class="feature-name-cell">Loan Product Search</td><td class="feature-value">Limited</td><td class="feature-value">' + tableCheckSvg + '</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
   + '<tr><td class="feature-name-cell">Lender &amp; Vendor Directory</td><td class="feature-value">' + tableCheckSvg + '</td><td class="feature-value">' + tableCheckSvg + '</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
-  + '<tr><td class="feature-name-cell">Saved Favorites</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value">' + tableCheckSvg + '</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
-
-  /* --- Category: Calculators --- */
-  + '<tr class="category-row"><td colspan="4"><svg class="cat-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 0a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 1a1 1 0 10-2 0v2a1 1 0 102 0v-2z" clip-rule="evenodd"/></svg> Calculators</td></tr>'
-  + '<tr><td class="feature-name-cell">Number of Calculators</td><td class="feature-value"><span class="val-limited">Basic</span></td><td class="feature-value"><span class="val-full">All 14+</span></td><td class="feature-value featured"><span class="val-full">All 14+</span></td></tr>'
-  + '<tr><td class="feature-name-cell">Save Scenarios</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value"><span class="val-limit">10 per tool</span></td><td class="feature-value featured"><span class="val-unlimited">Unlimited</span></td></tr>'
-  + '<tr><td class="feature-name-cell">PDF Export</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
-
-  /* --- Category: Pipeline --- */
-  + '<tr class="category-row"><td colspan="4"><svg class="cat-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg> Pipeline</td></tr>'
-  + '<tr><td class="feature-name-cell">Pipeline Tracking</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value"><span class="val-limit">25 loans</span></td><td class="feature-value featured"><span class="val-unlimited">Unlimited</span></td></tr>'
-  + '<tr><td class="feature-name-cell">Pipeline Export</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value featured"><span class="val-full">CSV / Excel</span></td></tr>'
-
-  /* --- Category: Support & Extras --- */
-  + '<tr class="category-row"><td colspan="4"><svg class="cat-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-2 0c0 .993-.241 1.929-.668 2.754l-1.524-1.525a3.997 3.997 0 00.078-2.183l1.562-1.562C15.802 8.249 16 9.1 16 10zm-5.165 3.913l1.58 1.58A5.98 5.98 0 0110 16a5.976 5.976 0 01-2.516-.552l1.562-1.562a4.006 4.006 0 001.789.027zm-4.677-2.796a4.002 4.002 0 01-.078-2.183L6.5 7.5 4.668 5.668A5.98 5.98 0 004 10c0 .993.241 1.929.668 2.754l1.49-1.637zm7.4-6.025l-1.49 1.49a3.997 3.997 0 00-2.183-.078L8.349 4.94A5.976 5.976 0 0110 4c.91 0 1.78.203 2.558.568zM10 8a2 2 0 100 4 2 2 0 000-4z" clip-rule="evenodd"/></svg> Support &amp; Extras</td></tr>'
-  + '<tr><td class="feature-name-cell">Support</td><td class="feature-value">Email</td><td class="feature-value">Email</td><td class="feature-value featured"><span class="val-full">Priority</span></td></tr>'
-  + '<tr><td class="feature-name-cell">Referral Program</td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value"><span class="val-dash">\u2014</span></td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
-
+  + '<tr><td class="feature-name-cell">Number of Calculators</td><td class="feature-value">Basic</td><td class="feature-value">All 14+</td><td class="feature-value featured">All 14+</td></tr>'
+  + '<tr><td class="feature-name-cell">Saved Calculator Scenarios</td><td class="feature-value">\u2014</td><td class="feature-value">10 per tool</td><td class="feature-value featured">Unlimited</td></tr>'
+  + '<tr><td class="feature-name-cell">PDF Export</td><td class="feature-value">\u2014</td><td class="feature-value">\u2014</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
+  + '<tr><td class="feature-name-cell">Pipeline Tracking</td><td class="feature-value">\u2014</td><td class="feature-value">25 loans</td><td class="feature-value featured">Unlimited</td></tr>'
+  + '<tr><td class="feature-name-cell">Pipeline Export</td><td class="feature-value">\u2014</td><td class="feature-value">\u2014</td><td class="feature-value featured">CSV/Excel</td></tr>'
+  + '<tr><td class="feature-name-cell">Saved Favorites</td><td class="feature-value">\u2014</td><td class="feature-value">Unlimited</td><td class="feature-value featured">Unlimited</td></tr>'
+  + '<tr><td class="feature-name-cell">Support</td><td class="feature-value">Email</td><td class="feature-value">Email</td><td class="feature-value featured">Priority</td></tr>'
+  + '<tr><td class="feature-name-cell">Referral Program</td><td class="feature-value">\u2014</td><td class="feature-value">\u2014</td><td class="feature-value featured">' + tableCheckSvg + '</td></tr>'
   + '</tbody></table></div>'
   + '</div></section>'
 
