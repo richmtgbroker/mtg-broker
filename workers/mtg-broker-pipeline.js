@@ -1676,8 +1676,7 @@ function showSection(pageId) {
   });
   /* If only one visible card OR not on the main page, make cards full-width centered */
   /* The main page uses 2-col side-by-side (Borrower + Deal); all other pages stack */
-  /* Assets page also uses 2-col (Assets left, Accounts+Summary right) */
-  if (visibleCount === 1 || (pageId !== 'main' && pageId !== 'section-assets')) {
+  if (visibleCount === 1 || pageId !== 'main') {
     matchingCards.forEach(function(card) {
       if (!card.classList.contains('hidden')) {
         card.classList.add('section-full');
@@ -5921,65 +5920,10 @@ async function getPipelineAssetsJS(request) {
      ENSURE ACCOUNTS CARD EXISTS — dynamically create it as a
      separate section-card in #section-pages for 2-column layout
      ══════════════════════════════════════════════════════════════ */
-  function ensureAccountsCard() {
-    var card = document.getElementById('section-assets-accounts');
-    if (card) return card;
+  /* No separate ensureAccountsCard needed — Accounts + Summary are built
+     inside the Assets card's own 2-column layout (see buildAssetsSection). */
 
-    /* Create a right-column wrapper that holds both Accounts + Summary cards.
-       This wrapper acts as ONE grid item in #section-pages, so the layout
-       sees two items (Assets left, this wrapper right) and uses 2 columns. */
-    var wrapper = document.getElementById('section-assets-right-col');
-    if (!wrapper) {
-      wrapper = document.createElement('div');
-      wrapper.className = 'section-card section-hidden';
-      wrapper.id = 'section-assets-right-col';
-      wrapper.setAttribute('data-page', 'section-assets');
-      wrapper.style.cssText = 'display:flex;flex-direction:column;gap:16px;background:none;padding:0;box-shadow:none;border:none;';
-      var pages = document.getElementById('section-pages');
-      if (pages) pages.appendChild(wrapper);
-    }
-
-    /* Create the Accounts card inside the wrapper */
-    card = document.createElement('div');
-    card.className = 'card';
-    card.id = 'section-assets-accounts';
-    card.innerHTML = '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div><div id="accounts-section-content"></div>';
-    wrapper.appendChild(card);
-    return card;
-  }
-
-  /* ══════════════════════════════════════════════════════════════
-     ENSURE SUMMARY CARD EXISTS — separate card positioned under
-     Accounts in the right column (wrapped together so the grid
-     sees two items: Assets left, Accounts+Summary right)
-     ══════════════════════════════════════════════════════════════ */
-  function ensureSummaryCard(parentEl) {
-    var card = document.getElementById('section-assets-summary');
-    if (card) return card;
-    card = document.createElement('div');
-    card.className = 'card ast-summary-card';
-    card.id = 'section-assets-summary';
-    card.innerHTML = ''
-      + '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
-      + '<div class="ast-summary-grid">'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Account Balances</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">\\u2212</div>'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Assets Needed</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">=</div>'
-      +   '<div class="ast-summary-item ast-summary-result">'
-      +     '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
-      +     '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
-      +   '</div>'
-      + '</div>';
-    parentEl.appendChild(card);
-    return card;
-  }
+  /* Summary card is now built inline inside buildAssetsSection (no separate function needed) */
 
   /* ══════════════════════════════════════════════════════════════
      BUILD ASSETS SECTION — called by openLoanModal / openNewLoanModal
@@ -5992,82 +5936,119 @@ async function getPipelineAssetsJS(request) {
     assetAccounts = [];
     acctCounter = 0;
 
-    /* ── LEFT CARD: Cash to Close + Reserves + Grand Total ── */
+    /* ── 2-COLUMN LAYOUT inside the single Assets section-card ──
+       Left: Cash to Close + Reserves + Grand Total
+       Right: Accounts card + Asset Summary card (stacked)
+       On mobile (<768px): stacks vertically */
     c.innerHTML = ''
-      /* ── CASH TO CLOSE ── */
-      + '<div class="ast-group">'
-      +   '<div class="ast-group-title">Cash to Close</div>'
-      +   '<div class="cg">'
-      +     '<div class="ff"><label>Down Payment ($)</label>'
-      +       '<div style="display:flex;align-items:center;gap:6px;">'
-      +         '<input type="text" class="fc currency-input ast-input" id="asset-down-payment" placeholder="0" style="flex:1;">'
-      +         '<button type="button" class="ast-sync-btn" onclick="syncAssetsDownPayment()" title="Pull from Loan Details"><i class="fa-solid fa-arrow-right-to-bracket"></i> Loan</button>'
-      +       '</div>'
-      +       '<span id="assets-dp-sync-msg" class="ast-sync-msg"></span>'
-      +     '</div>'
-      +     '<div class="ff"><label>Closing Costs ($)</label>'
-      +       '<input type="text" class="fc currency-input ast-input" id="asset-closing-costs" placeholder="0">'
-      +     '</div>'
-      +   '</div>'
-      +   '<div class="ast-total-row"><span>Total Cash to Close</span><span class="ast-total-val" id="ast-cash-to-close-total">\\u2014</span></div>'
-      + '</div>'
+      + '<div class="ast-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">'
 
-      /* ── RESERVES ── */
-      + '<div class="ast-group">'
-      +   '<div class="ast-group-title">Reserves</div>'
+      /* ══ LEFT COLUMN ══ */
+      + '<div class="ast-left-col">'
 
-      /* Primary Reserves */
-      +   '<div class="ast-sub-label">Primary Reserves</div>'
-      +   '<div class="cg">'
-      +     '<div class="ff"><label>Months of Reserves</label>'
-      +       '<input type="number" class="fc ast-input" id="asset-months-reserves" placeholder="0" min="0" step="1">'
-      +     '</div>'
-      +     '<div class="ff"><label>Est. Monthly Payment ($)</label>'
-      +       '<div style="display:flex;align-items:center;gap:6px;">'
-      +         '<input type="text" class="fc currency-input ast-input" id="asset-est-monthly-pmt" placeholder="0" style="flex:1;">'
-      +         '<button type="button" class="ast-sync-btn" onclick="syncAssetsPITIA()" title="Pull Total PITIA from Payment tab"><i class="fa-solid fa-arrow-right-to-bracket"></i> PITIA</button>'
-      +       '</div>'
-      +       '<span id="assets-pitia-sync-msg" class="ast-sync-msg"></span>'
-      +     '</div>'
-      +   '</div>'
-      +   '<div class="ast-subtotal-row"><span>Primary Reserve Amount</span><span class="ast-hint" id="ast-primary-hint"></span><span class="ast-subtotal-val" id="ast-primary-reserve-amt">\\u2014</span></div>'
-
-      /* Other Reserves */
-      +   '<div class="ast-sub-label" style="margin-top:12px;">Other Reserves</div>'
-      +   '<div class="cg cg3">'
-      +     '<div class="ff"><label>Months</label>'
-      +       '<input type="number" class="fc ast-input" id="asset-other-months" placeholder="0" min="0" step="1">'
-      +     '</div>'
-      +     '<div class="ff"><label>Monthly Amount ($)</label>'
-      +       '<input type="text" class="fc currency-input ast-input" id="asset-other-monthly-amt" placeholder="0">'
-      +     '</div>'
-      +     '<div class="ff"><label>Total Override ($)</label>'
-      +       '<input type="text" class="fc currency-input ast-input ast-override" id="asset-other-total" placeholder="Auto">'
-      +     '</div>'
-      +   '</div>'
-      +   '<div class="ast-subtotal-row"><span>Other Reserve Amount</span><span class="ast-hint" id="ast-other-hint"></span><span class="ast-subtotal-val" id="ast-other-reserve-amt">\\u2014</span></div>'
-
-      +   '<div class="ast-total-row"><span>Total Reserves</span><span class="ast-total-val" id="ast-reserves-total">\\u2014</span></div>'
-      + '</div>'
-
-      /* ── GRAND TOTAL ── */
-      + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>';
-
-    /* ── RIGHT COLUMN: Accounts card + Summary card (stacked in wrapper) ── */
-    var acctCard = ensureAccountsCard();
-    var r = document.getElementById('accounts-section-content');
-    if (r) {
-      r.innerHTML = ''
-        + '<div id="ast-accounts-list"></div>'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
-        +   '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
+        /* ── CASH TO CLOSE ── */
+        + '<div class="ast-group">'
+        +   '<div class="ast-group-title">Cash to Close</div>'
+        +   '<div class="cg">'
+        +     '<div class="ff"><label>Down Payment ($)</label>'
+        +       '<div style="display:flex;align-items:center;gap:6px;">'
+        +         '<input type="text" class="fc currency-input ast-input" id="asset-down-payment" placeholder="0" style="flex:1;">'
+        +         '<button type="button" class="ast-sync-btn" onclick="syncAssetsDownPayment()" title="Pull from Loan Details"><i class="fa-solid fa-arrow-right-to-bracket"></i> Loan</button>'
+        +       '</div>'
+        +       '<span id="assets-dp-sync-msg" class="ast-sync-msg"></span>'
+        +     '</div>'
+        +     '<div class="ff"><label>Closing Costs ($)</label>'
+        +       '<input type="text" class="fc currency-input ast-input" id="asset-closing-costs" placeholder="0">'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="ast-total-row"><span>Total Cash to Close</span><span class="ast-total-val" id="ast-cash-to-close-total">\\u2014</span></div>'
         + '</div>'
-        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>';
-    }
 
-    /* ── SUMMARY CARD: Excess / Shortage (separate card, under Accounts in right column) ── */
-    var rightCol = document.getElementById('section-assets-right-col');
-    if (rightCol) ensureSummaryCard(rightCol);
+        /* ── RESERVES ── */
+        + '<div class="ast-group">'
+        +   '<div class="ast-group-title">Reserves</div>'
+
+        /* Primary Reserves */
+        +   '<div class="ast-sub-label">Primary Reserves</div>'
+        +   '<div class="cg">'
+        +     '<div class="ff"><label>Months of Reserves</label>'
+        +       '<input type="number" class="fc ast-input" id="asset-months-reserves" placeholder="0" min="0" step="1">'
+        +     '</div>'
+        +     '<div class="ff"><label>Est. Monthly Payment ($)</label>'
+        +       '<div style="display:flex;align-items:center;gap:6px;">'
+        +         '<input type="text" class="fc currency-input ast-input" id="asset-est-monthly-pmt" placeholder="0" style="flex:1;">'
+        +         '<button type="button" class="ast-sync-btn" onclick="syncAssetsPITIA()" title="Pull Total PITIA from Payment tab"><i class="fa-solid fa-arrow-right-to-bracket"></i> PITIA</button>'
+        +       '</div>'
+        +       '<span id="assets-pitia-sync-msg" class="ast-sync-msg"></span>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="ast-subtotal-row"><span>Primary Reserve Amount</span><span class="ast-hint" id="ast-primary-hint"></span><span class="ast-subtotal-val" id="ast-primary-reserve-amt">\\u2014</span></div>'
+
+        /* Other Reserves */
+        +   '<div class="ast-sub-label" style="margin-top:12px;">Other Reserves</div>'
+        +   '<div class="cg cg3">'
+        +     '<div class="ff"><label>Months</label>'
+        +       '<input type="number" class="fc ast-input" id="asset-other-months" placeholder="0" min="0" step="1">'
+        +     '</div>'
+        +     '<div class="ff"><label>Monthly Amount ($)</label>'
+        +       '<input type="text" class="fc currency-input ast-input" id="asset-other-monthly-amt" placeholder="0">'
+        +     '</div>'
+        +     '<div class="ff"><label>Total Override ($)</label>'
+        +       '<input type="text" class="fc currency-input ast-input ast-override" id="asset-other-total" placeholder="Auto">'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="ast-subtotal-row"><span>Other Reserve Amount</span><span class="ast-hint" id="ast-other-hint"></span><span class="ast-subtotal-val" id="ast-other-reserve-amt">\\u2014</span></div>'
+
+        +   '<div class="ast-total-row"><span>Total Reserves</span><span class="ast-total-val" id="ast-reserves-total">\\u2014</span></div>'
+        + '</div>'
+
+        /* ── GRAND TOTAL ── */
+        + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>'
+
+      + '</div>' /* end left column */
+
+      /* ══ RIGHT COLUMN: Accounts card + Asset Summary card ══ */
+      + '<div class="ast-right-col" style="display:flex;flex-direction:column;gap:16px;">'
+
+        /* ── ACCOUNTS CARD ── */
+        + '<div class="card" id="section-assets-accounts">'
+        +   '<div class="card-title"><i class="fa-solid fa-building-columns"></i> Accounts</div>'
+        +   '<div id="accounts-section-content">'
+        +     '<div id="ast-accounts-list"></div>'
+        +     '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
+        +       '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
+        +     '</div>'
+        +     '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>'
+        +   '</div>'
+        + '</div>'
+
+        /* ── ASSET SUMMARY CARD ── */
+        + '<div class="card" id="section-assets-summary">'
+        +   '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
+        +   '<div class="ast-summary-grid">'
+        +     '<div class="ast-summary-item">'
+        +       '<div class="ast-summary-label">Total Account Balances</div>'
+        +       '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
+        +     '</div>'
+        +     '<div class="ast-summary-op">\\u2212</div>'
+        +     '<div class="ast-summary-item">'
+        +       '<div class="ast-summary-label">Total Assets Needed</div>'
+        +       '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
+        +     '</div>'
+        +     '<div class="ast-summary-op">=</div>'
+        +     '<div class="ast-summary-item ast-summary-result">'
+        +       '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
+        +       '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+
+      + '</div>' /* end right column */
+
+      + '</div>' /* end ast-two-col grid */
+
+      /* ── Responsive: stack columns on mobile ── */
+      + '<style>.ast-two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}@media(max-width:768px){.ast-two-col{grid-template-columns:1fr !important}}</style>';
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
