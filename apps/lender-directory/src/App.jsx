@@ -379,6 +379,13 @@ export default function App() {
   const [nexaFilters, setNexaFilters] = useState({ wholesale: false, nondel: false, nexa100: false })
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
 
+  // Sticky header state + refs
+  const [isHeaderFixed, setIsHeaderFixed] = useState(false)
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const [headerWidth, setHeaderWidth] = useState('auto')
+  const headerRef = useRef(null)
+  const sentinelRef = useRef(null)
+
   // Refs for stable values in callbacks
   const userEmailRef = useRef(getUserEmail())
   const favoritesRef = useRef(favorites)
@@ -405,6 +412,40 @@ export default function App() {
 
     init(userEmail)
   }, [])
+
+  // --------------- Sticky header scroll detection (desktop only) ---------------
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    const header = headerRef.current
+    if (!sentinel || !header) return
+
+    // Skip on mobile
+    if (window.innerWidth <= 767) return
+
+    function handleScroll() {
+      const rect = sentinel.getBoundingClientRect()
+      const navbarHeight = 60
+      const shouldFix = rect.top < navbarHeight
+
+      if (shouldFix && !header.classList.contains('is-fixed')) {
+        // Measure width from parent before going fixed
+        const parentWidth = header.parentElement.offsetWidth
+        setHeaderWidth(parentWidth + 'px')
+        setHeaderHeight(header.offsetHeight)
+        header.classList.add('is-fixed')
+        sentinel.nextElementSibling?.classList.add('active') // spacer
+        setIsHeaderFixed(true)
+      } else if (!shouldFix && header.classList.contains('is-fixed')) {
+        header.classList.remove('is-fixed')
+        sentinel.nextElementSibling?.classList.remove('active')
+        setIsHeaderFixed(false)
+        setHeaderWidth('auto')
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [loading]) // re-attach when loading finishes and elements appear
 
   async function init(userEmail) {
     try {
@@ -609,8 +650,15 @@ export default function App() {
 
   return (
     <>
+      {/* Sentinel: marks where the header naturally sits */}
+      <div ref={sentinelRef} />
+
       {/* Sticky header + toolbar (desktop only) */}
-      <div className="lenders-sticky-header">
+      <div
+        className="lenders-sticky-header"
+        ref={headerRef}
+        style={isHeaderFixed ? { width: headerWidth } : undefined}
+      >
 
       {/* Page header */}
       <h1 className="lender-card-name" style={{
@@ -684,6 +732,9 @@ export default function App() {
         </button>
       </div>
       </div>{/* end .lenders-sticky-header */}
+
+      {/* Spacer: fills the gap when header goes fixed */}
+      <div className="lenders-sticky-spacer" style={{ height: headerHeight + 'px' }} />
 
       {/* Status bar */}
       <div className="lenders-status">{statusText}</div>
