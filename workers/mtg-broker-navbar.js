@@ -412,7 +412,7 @@ const NAVBAR_HTML = `
             <span class="mb-mUserCard-label">My Profile</span>
             <span class="mb-mUserCard-tags">
               <span class="mb-planTag mb-planTag-sm" id="mb-planTag-mobile" style="display:none;"></span>
-              <a class="mb-adminTag mb-adminTag-sm" id="mb-adminTag-mobile" href="/admin-hub" style="display:none;">Admin</a>
+              <span class="mb-adminTag mb-adminTag-sm" id="mb-adminTag-mobile" style="display:none;">Admin</span>
               <span class="mb-nexaTag mb-nexaTag-sm" id="mb-nexaTag-mobile" style="display:none;">NEXA</span>
             </span>
           </span>
