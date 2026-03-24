@@ -680,8 +680,14 @@ const NAVBAR_JS = `
     document.querySelectorAll('img[data-mb-avatar]').forEach(function(img) {
       var btn = img.closest('.mb-avatarBtn') || img.closest('.mb-mAvatar');
       if (!url) { if (btn) btn.classList.remove('has-img'); return; }
+      /* Remove loading="lazy" — lazy images with display:none never load
+         (browser skips them since they're not visible). Must be eager. */
+      img.removeAttribute('loading');
       img.src = url;
-      img.onload = function() { if (btn) btn.classList.add('has-img'); };
+      /* Add has-img immediately so the image becomes display:block,
+         which allows the browser to actually load it. The onload/onerror
+         handlers then confirm or revert. */
+      if (btn) btn.classList.add('has-img');
       img.onerror = function() { if (btn) btn.classList.remove('has-img'); };
     });
   }
