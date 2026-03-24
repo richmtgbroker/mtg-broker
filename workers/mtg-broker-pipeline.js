@@ -8233,6 +8233,3342 @@ console.log('Pipeline Closing Costs Calculator v1.0 loaded');
   });
 }
 
+
+
+// ============================================================
+// PIPELINE PAGE STATIC FILES (migrated from Webflow embeds)
+// CSS, HTML template, and bootstrap JS — previously in 3 Webflow
+// embeds (~49K each), now served from Cloudflare Worker.
+// ============================================================
+
+// PIPELINE CSS (migrated from Webflow embed Pipeline_Page_Embed_CSS_v12_4.css)
+// Served as: GET /static/pipeline.css
+
+async function getPipelineCSS(request) {
+  const cssContent = `/* PIPELINE CSS v12.4 — Equity Loan subordinate financing section */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #F8FAFC;
+  color: #1E293B;
+  line-height: 1.6;
+}
+.pipeline-container {
+  max-width: calc(100% - 48px);
+  margin: 0 auto;
+  padding: 24px;
+}
+@media (min-width: 1800px) {
+  .pipeline-container {
+    max-width: calc(100% - 80px);
+    padding: 24px 40px;
+  }
+}
+@media (min-width: 2200px) {
+  .pipeline-container {
+    max-width: calc(100% - 120px);
+    padding: 24px 60px;
+  }
+}
+/* Header */
+.pipeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+.pipeline-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0F172A;
+}
+.header-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.view-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748B;
+  transition: all 0.2s;
+}
+.view-btn:hover {
+  background: #F1F5F9;
+  color: #334155;
+}
+.view-btn.active {
+  background: #3B82F6;
+  color: white;
+}
+.view-btn svg {
+  width: 16px;
+  height: 16px;
+}
+/* Stats Bar */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.stat-card.highlight {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: white;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.stat-label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+/* Buttons */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary {
+  background: #3B82F6;
+  color: white;
+}
+.btn-primary:hover {
+  background: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+.btn-secondary {
+  background: #E2E8F0;
+  color: #475569;
+}
+.btn-secondary:hover {
+  background: #CBD5E1;
+}
+.btn-danger {
+  background: #EF4444;
+  color: white;
+}
+.btn-danger:hover {
+  background: #DC2626;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+/* Loading & Empty States */
+.loading, .empty-state {
+  text-align: center;
+  padding: 80px 20px;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #E2E8F0;
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.empty-state h3 {
+  font-size: 24px;
+  margin: 16px 0 8px;
+  color: #0F172A;
+}
+.empty-state p {
+  color: #64748B;
+  font-size: 16px;
+}
+.hidden {
+  display: none !important;
+}
+/* Kanban Board */
+.kanban-board {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+.kanban-column {
+  min-width: 300px;
+  background: #F1F5F9;
+  border-radius: 12px;
+  padding: 16px;
+}
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #E2E8F0;
+}
+.column-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.column-count {
+  background: white;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+.kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100px;
+}
+.loan-card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.loan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.loan-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.loan-borrower {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0F172A;
+  margin: 0;
+}
+.loan-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3B82F6;
+}
+.loan-property {
+  font-size: 14px;
+  color: #64748B;
+  margin-bottom: 12px;
+}
+.loan-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.loan-type {
+  background: #F1F5F9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.loan-close-date {
+  font-weight: 500;
+  color: #64748B;
+}
+.loan-close-date.soon {
+  color: #F59E0B;
+  font-weight: 600;
+}
+.loan-close-date.overdue {
+  color: #EF4444;
+  font-weight: 600;
+}
+/* Table View */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow: visible;
+}
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E2E8F0;
+  gap: 12px;
+  flex-wrap: nowrap;
+  position: relative;
+  z-index: 10;
+}
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.search-box input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.search-box input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+/* Search + Status toggle row */
+.search-and-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+/* Status toggle buttons */
+.status-toggle {
+  display: flex;
+  gap: 0;
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.status-btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #64748B;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.status-btn:hover {
+  color: #334155;
+  background: #E2E8F0;
+}
+.status-btn.active[data-status="All"] { background: #475569; color: white; }
+.status-btn.active[data-status="Leads"] { background: #8B5CF6; color: white; }
+.status-btn.active[data-status="Active"] { background: #3B82F6; color: white; }
+.status-btn.active[data-status="Won"] { background: #16A34A; color: white; }
+.status-btn.active[data-status="Lost"] { background: #DC2626; color: white; }
+.filter-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-direction: row;
+}
+.filter-select {
+  padding: 8px 10px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 0;
+}
+.filter-select:focus {
+  outline: none;
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+/* Column Selector */
+.column-selector { position: relative; }
+.column-selector-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; background: white; border: 1px solid #E2E8F0;
+  border-radius: 8px; font-size: 14px; font-weight: 500;
+  color: #475569; cursor: pointer; transition: all 0.2s;
+}
+.column-selector-btn:hover { background: #F8FAFC; border-color: #CBD5E1; }
+.column-selector-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  background: white; border: 1px solid #E2E8F0; border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 8px;
+  min-width: 240px; max-height: 500px; overflow-y: auto;
+  z-index: 1000; display: none;
+}
+.column-selector-dropdown.open { display: block; }
+.column-selector-header {
+  padding: 8px 12px; font-size: 12px; font-weight: 600; color: #64748B;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid #E2E8F0; margin-bottom: 4px;
+}
+.column-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  transition: background 0.15s; user-select: none;
+}
+.column-option:hover { background: #F8FAFC; }
+.col-drag-handle {
+  cursor: grab; color: #CBD5E1; font-size: 12px;
+  padding: 2px; line-height: 1; flex-shrink: 0; transition: color 0.15s;
+}
+.col-drag-handle:hover { color: #94A3B8; }
+.col-drag-handle:active { cursor: grabbing; }
+.column-option.dragging { opacity: 0.4; background: #EFF6FF; }
+.column-option.drag-over { border-top: 2px solid #3B82F6; padding-top: 6px; }
+.column-option input[type="checkbox"] { cursor: pointer; flex-shrink: 0; }
+.column-option label { cursor: pointer; flex: 1; font-size: 14px; color: #334155; }
+/* Pipeline Table */
+.pipeline-table { width: 100%; border-collapse: collapse; }
+.pipeline-table thead { background: #F8FAFC; border-bottom: 2px solid #E2E8F0; }
+.pipeline-table th {
+  padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600;
+  color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;
+}
+.pipeline-table th[data-column] { user-select: none; }
+.pipeline-table th.sort-asc::after { content: ' \\2191'; color: #3B82F6; }
+.pipeline-table th.sort-desc::after { content: ' \\2193'; color: #3B82F6; }
+.pipeline-table tbody tr {
+  border-bottom: 1px solid #E2E8F0; cursor: pointer; transition: background 0.2s;
+}
+.pipeline-table tbody tr:hover { background: #F8FAFC; }
+.pipeline-table td { padding: 14px 16px; font-size: 14px; color: #334155; }
+/* Summary Row */
+.summary-row { background: #F1F5F9 !important; border-top: 2px solid #CBD5E1; cursor: default !important; }
+.summary-row:hover { background: #F1F5F9 !important; }
+.summary-row td { font-weight: 600; color: #1E40AF; }
+/* Stage Badges */
+.stage-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 12px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.stage-badge.lead { background: #DBEAFE; color: #1E40AF; }
+.stage-badge.application { background: #E0E7FF; color: #3730A3; }
+.stage-badge.prequal { background: #DDD6FE; color: #5B21B6; }
+.stage-badge.shopping { background: #FCE7F3; color: #9F1239; }
+.stage-badge.contract { background: #FBCFE8; color: #BE185D; }
+.stage-badge.quotes { background: #FED7AA; color: #C2410C; }
+.stage-badge.disclosure { background: #FEF3C7; color: #92400E; }
+.stage-badge.processing { background: #FEF08A; color: #713F12; }
+.stage-badge.underwriting { background: #D9F99D; color: #3F6212; }
+.stage-badge.conditional { background: #BBF7D0; color: #14532D; }
+.stage-badge.resubmittal { background: #A7F3D0; color: #065F46; }
+.stage-badge.ctc { background: #99F6E4; color: #115E59; }
+.stage-badge.closing { background: #A5F3FC; color: #155E75; }
+.stage-badge.closed { background: #D1D5DB; color: #374151; }
+/* Deal Status Badges (Won/Lost) for table rows */
+.deal-status-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 10px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-left: 8px;
+}
+.deal-status-badge.won { background: #DCFCE7; color: #15803D; }
+.deal-status-badge.lost { background: #FEE2E2; color: #DC2626; }
+/* Deal Status Bar in Modal */
+.deal-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 12px 32px; background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+.deal-status-left { display: flex; align-items: center; gap: 10px; }
+.deal-status-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.deal-status-field-label { font-size: 13px; font-weight: 600; color: #64748B; white-space: nowrap; }
+.deal-status-date { padding: 6px 10px !important; font-size: 13px !important; width: 150px; }
+.deal-status-bar .status-label { font-size: 13px; font-weight: 600; color: #64748B; margin-right: 4px; }
+.deal-status-btn {
+  padding: 8px 18px; border: 2px solid transparent; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.deal-status-btn.won-btn { background: #F0FDF4; color: #15803D; border-color: #86EFAC; }
+.deal-status-btn.won-btn:hover { background: #DCFCE7; border-color: #4ADE80; }
+.deal-status-btn.won-btn.active { background: #15803D; color: white; border-color: #15803D; }
+.deal-status-btn.lost-btn { background: #FEF2F2; color: #DC2626; border-color: #FCA5A5; }
+.deal-status-btn.lost-btn:hover { background: #FEE2E2; border-color: #F87171; }
+.deal-status-btn.lost-btn.active { background: #DC2626; color: white; border-color: #DC2626; }
+.deal-status-btn.reopen-btn { background: #EFF6FF; color: #2563EB; border-color: #93C5FD; }
+.deal-status-btn.reopen-btn:hover { background: #DBEAFE; border-color: #60A5FA; }
+.deal-status-banner { padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; }
+.won-banner { background: #DCFCE7; color: #166534; }
+.lost-banner { background: #FEE2E2; color: #991B1B; }
+/* Lost Deals Section */
+.lost-deals-section { margin-top: 32px; }
+.lost-deals-header {
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; padding: 16px 20px; background: white;
+  border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.2s; user-select: none;
+}
+.lost-deals-header:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.lost-deals-header-left { display: flex; align-items: center; gap: 12px; }
+.lost-deals-header-left h2 { font-size: 20px; font-weight: 700; color: #0F172A; margin: 0; }
+.lost-deals-count { background: #FEE2E2; color: #DC2626; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.lost-deals-toggle-icon { font-size: 20px; color: #64748B; transition: transform 0.3s; }
+.lost-deals-toggle-icon.expanded { transform: rotate(180deg); }
+.lost-deals-body { margin-top: 12px; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+.lost-deals-body .pipeline-table thead { background: #FFF5F5; }
+.lost-deals-body .pipeline-table tbody tr { opacity: 0.85; }
+.lost-deals-body .pipeline-table tbody tr:hover { opacity: 1; background: #FFFBFB; }
+/* MODAL — v10.0 3-PANEL LAYOUT — Left nav | Scrollable content | Right calculator panel */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: #E8ECF2;
+  display: flex; flex-direction: column;
+  z-index: 10000; overflow: hidden;
+}
+.modal-content {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+/* ---- Header bar ---- */
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 24px; background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky; top: 0; z-index: 10;
+  min-height: 50px; gap: 10px;
+}
+.modal-nav-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.modal-nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.back-to-pipeline-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #E2E8F0; border-radius: 6px;
+  padding: 5px 10px; font-size: 13px; font-weight: 500; color: #64748B;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.back-to-pipeline-btn:hover { background: #F1F5F9; color: #1E293B; }
+.modal-header h2 { font-size: 17px; font-weight: 700; color: #0F172A; margin: 0; white-space: nowrap; }
+.header-borrower-names {
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.header-borrower-names.hidden { display: none; }
+.hbn-sep { color: #CBD5E1; font-size: 14px; }
+.hbn-primary { font-size: 14px; font-weight: 600; color: #334155; }
+.hbn-amp { font-size: 12px; color: #94A3B8; }
+.hbn-amp.hidden { display: none; }
+.hbn-secondary { font-size: 13px; font-weight: 500; color: #64748B; }
+/* ---- Deal Status Bar ---- */
+.deal-status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 24px; border-bottom: 1px solid #E2E8F0;
+  background: #FFFBEB; gap: 12px;
+}
+.deal-status-bar.hidden { display: none; }
+.deal-status-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.deal-status-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.status-label { font-size: 11px; font-weight: 700; color: #92400E; text-transform: uppercase; letter-spacing: 0.5px; }
+.deal-status-btn {
+  padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid; transition: all 0.15s;
+}
+.won-btn { background: #F0FDF4; color: #166534; border-color: #86EFAC; }
+.won-btn:hover { background: #DCFCE7; }
+.lost-btn { background: #FEF2F2; color: #991B1B; border-color: #FCA5A5; }
+.lost-btn:hover { background: #FEE2E2; }
+.reopen-btn { background: #EFF6FF; color: #1E40AF; border-color: #93C5FD; }
+.reopen-btn:hover { background: #DBEAFE; }
+.deal-status-banner { padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; }
+.won-banner { background: #DCFCE7; color: #166534; }
+.lost-banner { background: #FEE2E2; color: #991B1B; }
+.deal-status-field-label { font-size: 11px; font-weight: 600; color: #92400E; white-space: nowrap; }
+.deal-status-date { padding: 4px 8px !important; font-size: 12px !important; max-width: 140px; }
+/* 3-PANEL BODY WRAPPER — Left nav sidebar | Scrollable main | Right calc panel */
+.modal-body-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+/* ---- LEFT NAVIGATION SIDEBAR ----
+   v11.5: font bumped 12→14px, icons 12→14px, width 150→160px
+   to match app sidebar link sizing
+   ---- */
+.modal-nav-sidebar {
+  width: 160px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-right: 1px solid #E2E8F0;
+  overflow-y: auto;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Navigation items — v11.5: 14px text to match sidebar */
+.mnav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  white-space: nowrap;
+}
+.mnav-item:hover {
+  color: #334155;
+  background: #F8FAFC;
+}
+.mnav-item.active {
+  color: #2563EB;
+  background: #EFF6FF;
+  border-left-color: #2563EB;
+}
+.mnav-item i {
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+/* ---- MAIN SCROLLABLE CONTENT ---- */
+.modal-main-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+  background: #E8ECF2;
+  scroll-behavior: smooth;
+}
+/* ---- FOOTER ---- */
+.modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 24px; border-top: 1px solid #E2E8F0;
+  background: #FFFFFF; position: sticky; bottom: 0; z-index: 10;
+}
+.modal-footer-right {
+  display: flex; gap: 8px; align-items: center; margin-left: auto;
+}
+/* LINKS SECTION — URL inputs with Open buttons */
+.link-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.link-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* v12.0: Favicon shown next to link labels when URL has data */
+.link-favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.link-favicon.hidden {
+  display: none;
+}
+/* v12.0: Wrapper for custom link name + favicon */
+.link-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.link-input-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.link-url-input {
+  flex: 1;
+  min-width: 0;
+}
+.link-name-input {
+  font-weight: 600 !important;
+  color: #374151 !important;
+  border: 1px dashed #d1d5db !important;
+  background: #f9fafb !important;
+  max-width: 220px;
+}
+.link-name-input:focus {
+  border-style: solid !important;
+  background: #fff !important;
+}
+.link-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: #2563EB;
+  color: #fff !important;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+.link-open-btn:hover {
+  background: #1D4ED8;
+  text-decoration: none;
+  color: #fff;
+}
+.link-open-btn.hidden {
+  display: none;
+}
+.link-divider {
+  border-top: 1px dashed #E2E8F0;
+  margin: 8px 0 16px;
+}
+/* RIGHT CALCULATOR PANEL — v11.5: header & button font bumped to 13px, added Coming Soon styles */
+.modal-calc-panel {
+  width: 190px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-left: 1px solid #E2E8F0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.calc-panel-header {
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.calc-panel-header i {
+  color: #3B82F6;
+  font-size: 13px;
+}
+.calc-panel-list {
+  padding: 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.calc-panel-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  position: relative;
+  flex-wrap: wrap;
+}
+.calc-panel-btn i {
+  font-size: 14px;
+  color: #3B82F6;
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.calc-panel-btn:hover {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+  box-shadow: 0 2px 4px rgba(59,130,246,0.1);
+}
+/* Coming Soon badge inside calc buttons — v11.5 */
+.calc-coming-soon {
+  display: block;
+  width: 100%;
+  font-size: 9px;
+  font-weight: 700;
+  color: #F59E0B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: -2px;
+  padding-left: 28px;
+}
+/* Disabled-look for Coming Soon calculator buttons */
+.calc-panel-btn.disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+.calc-panel-btn.disabled:hover {
+  border-color: #E2E8F0;
+  background: #F8FAFC;
+  box-shadow: none;
+}
+/* SECTION PAGES — v11.8 full-page section layout — Each nav item shows its own page instead of scrolling */
+.section-pages {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+  min-height: 200px;
+}
+/* Base class for all section cards in the pages container */
+.section-card {
+  transition: opacity 0.15s ease;
+}
+/* Hidden section cards (not on the current page) */
+.section-hidden {
+  display: none !important;
+}
+/* Full-width single-section page — centered with max-width */
+.section-card.section-full {
+  grid-column: span 2;
+  max-width: 700px;
+  justify-self: center;
+  width: 100%;
+}
+/* Legacy card-columns kept for any non-modal usage */
+.card-columns {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.card-col { display: flex; flex-direction: column; gap: 16px; }
+/* Full-width row for cards that span all columns */
+.card-full-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+/* CARDS — section header bands match Lender/Vendor Detail pages */
+.card {
+  background: #FFFFFF;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 16px 18px;
+  border: 1px solid #E2E8F0;
+  scroll-margin-top: 16px;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+/* v11.8: .card.section-active removed — replaced by section-pages layout */
+.card-title {
+  font-size: 13px; font-weight: 800; color: #1E3A8A;
+  /* Negative margins pull the header band edge-to-edge over the card padding */
+  margin: -16px -18px 12px -18px;
+  padding: 11px 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  display: flex; align-items: center; gap: 9px;
+  /* Blue-tinted header band — matches .ld-section-header / .vd-section-header */
+  background: #EFF6FF;
+  border-bottom: 1px solid #BFDBFE;
+}
+.card-title i { font-size: 13px; color: #2563EB; }
+/* CARD FIELD GRID — 2 cols inside each card */
+.cg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+.cg:not(:last-child) { margin-bottom: 8px; }
+.cg .sp2 { grid-column: span 2; }
+/* FORM FIELDS */
+.ff { display: flex; flex-direction: column; min-width: 0; }
+.ff label {
+  font-size: 11px; font-weight: 600; color: #64748B;
+  margin-bottom: 3px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.fc, .form-control {
+  padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 6px;
+  font-size: 14px; background: #F8FAFC; color: #1E293B;
+  width: 100%; box-sizing: border-box; transition: all 0.15s;
+}
+.fc:focus, .form-control:focus {
+  outline: none; border-color: #3B82F6;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+.fc::placeholder, .form-control::placeholder { color: #CBD5E1; }
+select.fc, select.form-control { appearance: auto; cursor: pointer; background: #F8FAFC; }
+select.fc:focus, select.form-control:focus { background: #FFFFFF; }
+textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-family: inherit; }
+.rate-input { text-align: right; }
+/* CO-BORROWER TOGGLE */
+.cb-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed #E2E8F0;
+  cursor: pointer; user-select: none;
+}
+.cb-toggle:hover .cb-toggle-icon { background: #E2E8F0; }
+.cb-toggle-label {
+  font-size: 12px; font-weight: 700; color: #94A3B8;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.cb-toggle-icon {
+  font-size: 14px; color: #94A3B8; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: all 0.15s;
+}
+.cb-body { transition: max-height 0.3s ease, opacity 0.2s ease; overflow: hidden; }
+.cb-body.collapsed { max-height: 0 !important; opacity: 0; }
+.cb-body.expanded { max-height: 500px; opacity: 1; padding-top: 8px; }
+/* PAYMENT TABLE */
+.pt { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.pt th {
+  font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase;
+  letter-spacing: 0.4px; padding: 6px 0; text-align: left;
+  border-bottom: 1px solid #E2E8F0;
+}
+.pt th:last-child { text-align: right; }
+.pt td { padding: 8px 0; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+.pt-lbl { font-size: 13px; font-weight: 500; color: #334155; white-space: nowrap; }
+.pt-hint { font-size: 10px; color: #94A3B8; font-weight: 400; }
+.pt-inp { text-align: center; }
+.pt-inp .fc { max-width: 130px; padding: 5px 8px; font-size: 13px; display: inline-block; text-align: right; }
+.pt-auto { font-size: 11px; color: #94A3B8; font-style: italic; }
+.pt-mo { text-align: right; }
+.pt-val { font-size: 14px; font-weight: 700; color: #1E293B; font-variant-numeric: tabular-nums; }
+.pt-cmp { font-weight: 600; color: #475569; font-size: 13px; }
+.pt-foot td {
+  padding: 10px 0; border-top: 2px solid #86EFAC;
+  border-bottom: none; background: transparent;
+}
+.pt-tot-lbl { font-size: 14px; font-weight: 700; color: #166534; }
+.pt-tot-val { font-size: 18px; font-weight: 800; color: #166534; text-align: right; }
+/* MISC */
+.comp-sync-indicator { font-size: 10px; color: #94A3B8; margin-top: 1px; }
+.task-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px; }
+.task-item.completed .task-name { text-decoration: line-through; color: #94A3B8; }
+.task-name { flex: 1; }
+.task-due { font-size: 11px; color: #94A3B8; }
+.add-task-row { display: flex; gap: 8px; margin-top: 6px; }
+.add-task-row .fc { font-size: 13px; padding: 5px 8px; }
+/* ---- Buttons (modal-scoped overrides) ---- */
+.btn { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+.btn-primary { background: #2563EB; color: white; }
+.btn-primary:hover { background: #1D4ED8; }
+.btn-secondary { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+.btn-secondary:hover { background: #E2E8F0; }
+.btn-danger { background: #DC2626; color: white; }
+.btn-danger:hover { background: #B91C1C; }
+.btn-sm { padding: 4px 8px; font-size: 12px; }
+/* ---- Lost reason ---- */
+.lost-reason-content {
+  background: white; border-radius: 12px; padding: 24px; max-width: 440px;
+  width: 90%; margin: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.lost-reason-content h3 { margin: 0 0 12px; font-size: 17px; color: #0F172A; }
+.lost-reason-content textarea { margin-bottom: 14px; }
+.lost-reason-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* RESPONSIVE */
+/* Medium screens: hide left nav text, show icons only */
+@media (max-width: 1200px) {
+  .modal-nav-sidebar { width: 52px; }
+  .mnav-item span { display: none; }
+  .mnav-item { padding: 10px 0; justify-content: center; }
+  .mnav-item i { font-size: 14px; }
+  .modal-calc-panel { width: 160px; }
+}
+/* Small screens: hide both panels, single column cards */
+@media (max-width: 900px) {
+  .modal-nav-sidebar { display: none; }
+  .modal-calc-panel { display: none; }
+  .card-columns { grid-template-columns: 1fr; }
+  .section-pages { grid-template-columns: 1fr; }
+  .section-card.section-full { grid-column: span 1; max-width: none; }
+  .modal-main-scroll { padding: 12px; }
+  .modal-header, .modal-footer, .deal-status-bar { padding-left: 12px; padding-right: 12px; }
+  .deal-status-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .header-borrower-names { display: none !important; }
+  .cg { grid-template-columns: 1fr; }
+  .cg .sp2 { grid-column: span 1; }
+  .card { padding: 14px 14px; }
+  .card-title { margin: -14px -14px 12px -14px; padding: 11px 14px; }
+}
+/* CHECKLIST NAV ITEM — divider + badge */
+.mnav-divider {
+  height: 1px;
+  background: #E2E8F0;
+  margin: 8px 16px;
+}
+.mnav-checklist-btn {
+  position: relative;
+}
+.checklist-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: #DBEAFE;
+  color: #2563EB;
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+/* AFFORDABILITY CALCULATOR — OVERLAY MODE */
+.calc-sidebar {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+.calc-sidebar.hidden { display: none; }
+.calc-sidebar.open { opacity: 1; visibility: visible; }
+.calc-sidebar-card {
+  background: #FFFFFF;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  width: 960px;
+  max-width: 94vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.calc-sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #1E40AF, #2563EB);
+  flex-shrink: 0;
+}
+.calc-sidebar-header h3 {
+  font-size: 16px; font-weight: 700; color: #FFFFFF; margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.calc-sidebar-header h3 i { font-size: 15px; }
+.close-calc-sidebar {
+  font-size: 28px; cursor: pointer; color: rgba(255,255,255,0.7);
+  line-height: 1; padding: 0 4px; transition: color 0.15s;
+}
+.close-calc-sidebar:hover { color: #FFFFFF; }
+.calc-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+/* ---- Section containers inside the overlay ---- */
+.calc-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+.calc-section-title {
+  grid-column: span 2;
+  font-size: 12px; font-weight: 800; color: #1E3A8A;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding-bottom: 6px; margin-bottom: 4px;
+  border-bottom: 2px solid #DBEAFE;
+  display: flex; align-items: center; gap: 8px;
+}
+.calc-section-title i { font-size: 13px; color: #3B82F6; }
+/* ---- Input rows ---- */
+.calc-row { display: flex; flex-direction: column; gap: 3px; }
+.calc-row.span-2 { grid-column: span 2; }
+.calc-row label { font-size: 11px; font-weight: 600; color: #64748B; }
+.calc-row input, .calc-row select {
+  padding: 7px 10px; border: 1px solid #E2E8F0; border-radius: 6px;
+  font-size: 14px; background: #F8FAFC; color: #1E293B;
+  width: 100%; box-sizing: border-box; transition: all 0.15s;
+}
+.calc-row input:focus, .calc-row select:focus {
+  outline: none; border-color: #3B82F6; background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+/* ---- Results section ---- */
+.calc-results-area {
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.calc-results-area h4 {
+  font-size: 12px; font-weight: 800; color: #166534;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.calc-results-area h4 i { font-size: 13px; }
+.calc-result-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.calc-result-col {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cr-row { display: flex; justify-content: space-between; align-items: center; }
+.cr-lbl { font-size: 13px; color: #334155; font-weight: 500; }
+.cr-val { font-size: 14px; color: #0F172A; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cr-sep { height: 1px; background: #BBF7D0; margin: 4px 0; }
+.cr-big { font-size: 22px; font-weight: 800; color: #15803D; }
+/* ---- DTI Summary ---- */
+.calc-dti-summary {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 4px;
+}
+.calc-dti-summary h5 {
+  font-size: 11px; font-weight: 700; color: #1E40AF;
+  text-transform: uppercase; margin: 0 0 8px;
+}
+.calc-dti-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 0;
+}
+.calc-dti-row:not(:last-child) { border-bottom: 1px solid #DBEAFE; }
+.calc-dti-label { font-size: 12px; color: #334155; font-weight: 500; }
+.calc-dti-value { font-size: 13px; color: #1E40AF; font-weight: 700; }
+/* ---- Toggle buttons (Annual/Monthly etc.) ---- */
+.calc-toggle-group { display: flex; gap: 0; }
+.calc-toggle-btn {
+  padding: 4px 10px; border: 1px solid #E2E8F0; background: #F8FAFC;
+  font-size: 10px; font-weight: 600; color: #64748B; cursor: pointer;
+  transition: all 0.15s;
+}
+.calc-toggle-btn:first-child { border-radius: 5px 0 0 5px; }
+.calc-toggle-btn:last-child { border-radius: 0 5px 5px 0; }
+.calc-toggle-btn.active { background: #2563EB; color: white; border-color: #2563EB; }
+/* CHECKLIST PANEL — Centered overlay like Affordability */
+.checklist-panel {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  z-index: 10010;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  width: auto;
+  height: auto;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  overflow: visible;
+}
+.checklist-panel.open {
+  opacity: 1;
+  visibility: visible;
+  display: flex;
+}
+.checklist-panel.hidden {
+  display: none !important;
+}
+/* ---- Card width for all 3 sections ---- */
+.checklist-panel > .checklist-panel-header,
+.checklist-panel > .checklist-panel-body,
+.checklist-panel > .checklist-panel-footer {
+  background: white;
+  position: relative;
+  z-index: 1;
+  width: 620px;
+  max-width: 94vw;
+}
+/* ---- Header ---- */
+.checklist-panel > .checklist-panel-header {
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.06);
+}
+.checklist-panel-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #E2E8F0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #F8FAFC;
+  flex-shrink: 0;
+}
+.checklist-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.checklist-header-left i {
+  color: #2563EB;
+  font-size: 16px;
+}
+.checklist-header-left h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1E293B;
+  margin: 0;
+}
+.checklist-progress-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563EB;
+  background: #DBEAFE;
+  border-radius: 10px;
+  padding: 2px 10px;
+}
+.checklist-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checklist-collapse-btn,
+.checklist-expand-btn {
+  background: none;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: #64748B;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.checklist-collapse-btn:hover,
+.checklist-expand-btn:hover {
+  background: #F1F5F9;
+  color: #334155;
+}
+.close-checklist-panel {
+  font-size: 26px;
+  font-weight: 300;
+  color: #94A3B8;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+.close-checklist-panel:hover {
+  color: #334155;
+}
+/* ---- Body (scrollable) ---- */
+.checklist-panel > .checklist-panel-body {
+  flex-shrink: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(85vh - 160px);
+}
+.checklist-panel-body {
+  padding: 0;
+}
+.checklist-loading {
+  padding: 40px;
+  text-align: center;
+  color: #94A3B8;
+  font-size: 14px;
+}
+/* ---- Footer ---- */
+.checklist-panel > .checklist-panel-footer {
+  border-radius: 0 0 16px 16px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+}
+.checklist-panel-footer {
+  padding: 12px 24px;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #FFFFFF;
+}
+/* ---- Progress bar ---- */
+.checklist-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #E2E8F0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.checklist-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6, #2563EB);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.checklist-auto-save-status {
+  font-size: 11px;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+.checklist-auto-save-status.saving {
+  color: #F59E0B;
+}
+.checklist-auto-save-status.saved {
+  color: #22C55E;
+}
+.checklist-auto-save-status.error {
+  color: #EF4444;
+}
+/* CHECKLIST GROUPS & ITEMS */
+/* ---- Group container ---- */
+.cl-group {
+  border-bottom: 1px solid #F1F5F9;
+}
+.cl-group:last-child {
+  border-bottom: none;
+}
+/* ---- Group header (clickable to collapse) ---- */
+.cl-group-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  cursor: pointer;
+  gap: 10px;
+  background: #FAFBFC;
+  border-bottom: 1px solid #F1F5F9;
+  transition: background 0.15s;
+  user-select: none;
+}
+.cl-group-header:hover {
+  background: #F1F5F9;
+}
+.cl-group-chevron {
+  font-size: 10px;
+  color: #94A3B8;
+  transition: transform 0.2s ease;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.cl-group.collapsed .cl-group-chevron {
+  transform: rotate(-90deg);
+}
+.cl-group-icon {
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.cl-group-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+.cl-group-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 1px 8px;
+}
+.cl-group-count.complete {
+  background: #DCFCE7;
+  color: #15803D;
+}
+/* ---- Group items container ---- */
+.cl-group-items {
+  max-height: 2000px;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
+  opacity: 1;
+}
+.cl-group.collapsed .cl-group-items {
+  max-height: 0;
+  opacity: 0;
+}
+/* ---- Individual checklist item ---- */
+.cl-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 24px 10px 50px;
+  gap: 10px;
+  border-bottom: 1px solid #F8FAFC;
+  transition: background 0.1s;
+}
+.cl-item:hover {
+  background: #F8FAFC;
+}
+.cl-item:last-child {
+  border-bottom: none;
+}
+/* ---- Custom checkbox ---- */
+.cl-checkbox {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.cl-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  z-index: 2;
+  margin: 0;
+}
+.cl-checkbox .cl-checkmark {
+  position: absolute;
+  top: 0; left: 0;
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border: 2px solid #CBD5E1;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cl-checkbox .cl-checkmark::after {
+  content: '';
+  display: none;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-top: -2px;
+}
+.cl-checkbox input:checked + .cl-checkmark {
+  background: #2563EB;
+  border-color: #2563EB;
+}
+.cl-checkbox input:checked + .cl-checkmark::after {
+  display: block;
+}
+.cl-checkbox input:hover + .cl-checkmark {
+  border-color: #93C5FD;
+}
+/* ---- Item label ---- */
+.cl-label {
+  flex: 1;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  line-height: 1.3;
+}
+.cl-item.checked .cl-label {
+  color: #94A3B8;
+  text-decoration: line-through;
+  text-decoration-color: #CBD5E1;
+}
+/* ---- Item date input ---- */
+.cl-date {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  color: #475569;
+  background: #FFFFFF;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cl-date:focus {
+  border-color: #93C5FD;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+.cl-date::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+.cl-item.checked .cl-date {
+  color: #94A3B8;
+  background: #F8FAFC;
+}
+/* ---- N/A button ---- */
+.cl-na-btn {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  background: #FFFFFF;
+  color: #94A3B8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.3;
+}
+.cl-na-btn:hover {
+  border-color: #CBD5E1;
+  color: #64748B;
+  background: #F8FAFC;
+}
+.cl-na-btn.active {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+  color: #92400E;
+}
+.cl-na-btn.active:hover {
+  background: #FDE68A;
+}
+/* ---- N/A item state ---- */
+.cl-item.na {
+  background: #FAFAFA;
+}
+.cl-item.na .cl-label {
+  color: #94A3B8;
+  font-style: italic;
+  text-decoration: line-through;
+  text-decoration-color: #CBD5E1;
+}
+.cl-item.na .cl-checkmark {
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+}
+.cl-item.na .cl-drag-handle {
+  color: #E2E8F0;
+}
+/* ---- N/A badge ---- */
+.cl-na-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  font-style: normal;
+  padding: 1px 5px;
+  margin-left: 6px;
+  border-radius: 3px;
+  background: #FEF3C7;
+  color: #92400E;
+  vertical-align: middle;
+  text-decoration: none;
+}
+/* ---- Item text input (for Wire Amount etc.) ---- */
+.cl-text {
+  width: 120px;
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  color: #475569;
+  background: #FFFFFF;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.cl-text:focus {
+  border-color: #93C5FD;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+/* DRAG & DROP STYLES */
+.cl-item.dragging {
+  opacity: 0.4;
+  background: #EFF6FF;
+}
+.cl-item.drag-over {
+  border-top: 2px solid #3B82F6;
+}
+.cl-drag-handle {
+  cursor: grab;
+  color: #CBD5E1;
+  font-size: 11px;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.cl-drag-handle:hover {
+  color: #64748B;
+}
+.cl-drag-handle:active {
+  cursor: grabbing;
+}
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .checklist-panel {
+    padding: 16px;
+  }
+  .checklist-panel > .checklist-panel-header,
+  .checklist-panel > .checklist-panel-body,
+  .checklist-panel > .checklist-panel-footer {
+    width: 100%;
+    max-width: 100%;
+  }
+  .cl-item {
+    padding: 10px 16px 10px 36px;
+  }
+  .cl-group-header {
+    padding: 10px 16px;
+  }
+  .cl-date, .cl-text {
+    width: 100px;
+  }
+  .cl-na-btn {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .checklist-panel-header {
+    padding: 12px 16px;
+  }
+  .checklist-panel-footer {
+    padding: 10px 16px;
+  }
+}
+/* AFFORDABILITY CALC — Input Field Layout Helpers — .calc-field-group, .calc-input-row, .calc-toggle, — .calc-row-2col, .calc-row-3col */
+.calc-field-group {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.calc-field-group label {
+  font-size: 11px; font-weight: 600; color: #64748B;
+  margin: 0; line-height: 1.2;
+}
+.calc-input-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.calc-input-row .form-control { flex: 1; min-width: 0; }
+.calc-toggle {
+  display: flex; flex-shrink: 0;
+}
+.calc-row-2col {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
+.calc-row-3col {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px 12px;
+}
+/* AFFORDABILITY CALC — Results Section (bottom of overlay) — 2-column flex layout: left = amounts + DTI, right = breakdown */
+.calc-results {
+  display: flex;
+  gap: 16px;
+  padding: 14px 20px 16px;
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+/* ---- Left column: key values + DTI ---- */
+.calc-results-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.calc-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #E2E8F0;
+}
+.calc-result-item:last-of-type {
+  border-bottom: none;
+}
+.calc-result-item.primary {
+  padding: 6px 0 8px;
+  border-bottom: 2px solid #DBEAFE;
+}
+.calc-result-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+}
+.calc-result-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  font-variant-numeric: tabular-nums;
+}
+.calc-result-item.primary .calc-result-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1E40AF;
+}
+/* ---- DTI color classes (set by JS) ---- */
+.dti-green  { color: #16A34A !important; }
+.dti-yellow { color: #D97706 !important; }
+.dti-red    { color: #DC2626 !important; }
+/* ---- Right column: payment breakdown ---- */
+.calc-results-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.calc-payment-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1E3A8A;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-bottom: 5px;
+  margin-bottom: 2px;
+  border-bottom: 2px solid #DBEAFE;
+}
+.calc-payment-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+  color: #334155;
+  border-bottom: 1px solid #F1F5F9;
+}
+.calc-payment-line:last-of-type {
+  border-bottom: none;
+}
+.calc-payment-line span:last-child {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1E293B;
+}
+.calc-payment-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0 2px;
+  margin-top: 2px;
+  border-top: 2px solid #CBD5E1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1E293B;
+}
+.calc-payment-total span:last-child {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1E40AF;
+  font-variant-numeric: tabular-nums;
+}
+/* ============================================================
+   EQUITY LOAN — Subordinate Financing Section (v12.4)
+   Conditional divider + fields + auto-calc results strip
+   inside the Loan Details card.
+   ============================================================ */
+/* Divider with centered label */
+.equity-loan-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 8px;
+}
+.equity-loan-divider::before,
+.equity-loan-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #CBD5E1;
+}
+.equity-loan-divider span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748B;
+  white-space: nowrap;
+}
+/* Auto-calc results strip */
+.equity-calc-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.equity-calc-item {
+  background: #F1F5F9;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.equity-calc-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 3px;
+}
+.equity-calc-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1E293B;
+  font-variant-numeric: tabular-nums;
+}
+/* Highlighted item (Max New Loan) */
+.equity-calc-highlight {
+  background: #EFF6FF;
+  border: 1.5px solid #93C5FD;
+}
+.equity-calc-highlight .equity-calc-label {
+  color: #2563EB;
+}
+.equity-calc-highlight .equity-calc-value {
+  color: #1D4ED8;
+  font-size: 15px;
+}
+/* Responsive: stack on small screens */
+@media (max-width: 600px) {
+  .equity-calc-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}`;
+  return new Response(cssContent, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/css; charset=utf-8",
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      ...getCorsHeaders(request)
+    }
+  });
+}
+
+// PIPELINE HTML TEMPLATE (migrated from Webflow embed Pipeline_Page_Embed_HTML_v12_0.html)
+// Served as: GET /static/pipeline-template.html
+
+async function getPipelineTemplateHTML(request) {
+  const htmlContent = `<!-- PIPELINE HTML v12.0 — Closing Costs calc button enabled (no longer Coming Soon) -->
+<div class="app-page-content">
+<div class="pipeline-container" id="pipeline-app">
+  <div class="pipeline-header"><div class="header-left"><h1 class="pipeline-title">Pipeline</h1></div><div class="header-right"><div class="view-toggle"><button class="view-btn active" data-view="table" onclick="switchView('table')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg> Table</button><button class="view-btn" data-view="kanban" onclick="switchView('kanban')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="13" rx="1"></rect><rect x="16" y="3" width="6" height="8" rx="1"></rect></svg> Board</button></div><button class="btn btn-primary" onclick="openNewLoanModal()">+ Add Loan</button><button class="btn btn-secondary btn-sm" onclick="exportPipeline()" title="Export to CSV" id="export-pipeline-btn"><i class="fa-solid fa-download"></i> Export</button><button class="btn btn-secondary btn-sm" onclick="refreshPipelineData()" title="Refresh data">&#8635;</button></div></div>
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card highlight"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Total Active</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-active">-</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-closing">-</div><div class="stat-label">Closing Soon</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-volume">-</div><div class="stat-label">Pipeline Volume</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-won" style="color:#15803D;">-</div><div class="stat-label">Won</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-lost" style="color:#DC2626;">-</div><div class="stat-label">Lost</div></div>
+  </div>
+  <div class="loading" id="loading-state"><div class="spinner"></div></div>
+  <div class="empty-state hidden" id="empty-state"><div style="font-size:48px;">&#128194;</div><h3>No loans in your pipeline</h3><p>Create your first loan to get started</p><button class="btn btn-primary" onclick="openNewLoanModal()" style="margin-top:16px;">+ Add First Loan</button></div>
+  <div class="kanban-board hidden" id="kanban-view"></div>
+  <!-- Table View -->
+  <div class="table-container hidden" id="table-view"><div class="table-toolbar"><div class="search-and-status"><div class="search-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><input type="text" placeholder="Search loans..." id="search-input" oninput="filterTable()"></div>
+        <div class="status-toggle">
+          <button class="status-btn" data-status="All" onclick="setStatusFilter('All')">All</button>
+          <button class="status-btn" data-status="Leads" onclick="setStatusFilter('Leads')">Leads</button>
+          <button class="status-btn active" data-status="Active" onclick="setStatusFilter('Active')">Active</button>
+          <button class="status-btn" data-status="Won" onclick="setStatusFilter('Won')">Won</button>
+          <button class="status-btn" data-status="Lost" onclick="setStatusFilter('Lost')">Lost</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <select class="filter-select" id="stage-filter" onchange="filterTable()">
+          <option value="">All Stages</option>
+        </select>
+        <select class="filter-select" id="type-filter" onchange="filterTable()">
+          <option value="">All Loan Types</option>
+        </select>
+        <select class="filter-select" id="lock-status-filter" onchange="filterTable()">
+          <option value="">All Lock Status</option>
+          <option value="Floating">Floating</option>
+          <option value="Locked">Locked</option>
+          <option value="Expired">Expired</option>
+          <option value="-">Not Set</option>
+        </select>
+        <select class="filter-select" id="pay-status-filter" onchange="filterTable()">
+          <option value="">All Pay Status</option>
+          <option value="Preparing">Preparing</option>
+          <option value="Ready for Payroll">Ready for Payroll</option>
+          <option value="Payroll Submitted">Payroll Submitted</option>
+          <option value="Pay Received">Pay Received</option>
+          <option value="-">Not Set</option>
+        </select>
+        <div class="column-selector">
+          <button class="column-selector-btn" onclick="toggleColumnSelector()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Columns
+          </button>
+          <div class="column-selector-dropdown" id="column-selector-dropdown">
+            <div class="column-selector-header">Show/Hide &amp; Reorder Columns</div>
+            <div id="column-options-list">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="pipeline-table">
+        <thead>
+          <tr id="table-header-row">
+          </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Loan Modal -->
+<div class="modal-overlay hidden" id="loan-modal">
+  <div class="modal-content">
+    <!-- Header -->
+    <div class="modal-header"><div class="modal-nav-left"><button type="button" class="back-to-pipeline-btn" onclick="closeModal()"><i class="fa-solid fa-arrow-left"></i> Back</button><h2 id="modal-title">New Loan</h2><div class="header-borrower-names hidden" id="borrower-name-bar"><span class="hbn-sep">—</span><span class="hbn-primary" id="header-borrower-name"></span><span class="hbn-amp hidden" id="header-name-separator">&amp;</span><span class="hbn-secondary" id="header-coborrower-name"></span></div></div><div class="modal-nav-right"><button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button><button type="button" class="btn btn-primary" id="save-loan-btn-top" onclick="saveLoan()">Save Loan</button></div></div>
+    <div class="deal-status-bar hidden" id="deal-status-bar"><div class="deal-status-left"><span class="status-label">Deal Status:</span><button class="deal-status-btn won-btn" id="btn-won" onclick="setDealStatus('Won')">&#10003; Won</button><button class="deal-status-btn lost-btn" id="btn-lost" onclick="setDealStatus('Lost')">&#10007; Lost</button><div class="deal-status-banner won-banner hidden" id="won-banner">&#10003; WON</div><div class="deal-status-banner lost-banner hidden" id="lost-banner">&#10007; LOST</div><button class="deal-status-btn reopen-btn hidden" id="btn-reopen" onclick="setDealStatus('Active')">&#8634; Reopen</button></div><div class="deal-status-right"><label class="deal-status-field-label">Last Contact</label><input type="date" class="fc deal-status-date" id="last-contact-date"></div></div>
+    <!-- 3-PANEL LAYOUT -->
+    <div class="modal-body-wrapper">
+      <!-- LEFT NAV SIDEBAR -->
+      <div class="modal-nav-sidebar" id="modal-nav-sidebar">
+        <a class="mnav-item active" data-section="section-borrower" onclick="showSection('main')"><i class="fa-solid fa-user"></i><span>Borrower</span></a>
+        <a class="mnav-item active" data-section="section-deal" onclick="showSection('main')"><i class="fa-solid fa-handshake"></i><span>Deal</span></a>
+        <a class="mnav-item" data-section="section-credit" onclick="showSection('section-credit')"><i class="fa-solid fa-chart-line"></i><span>Credit</span></a>
+        <a class="mnav-item" data-section="section-income" onclick="showSection('section-income')"><i class="fa-solid fa-money-bill-trend-up"></i><span>Income</span></a>
+        <a class="mnav-item" data-section="section-assets" onclick="showSection('section-assets')"><i class="fa-solid fa-vault"></i><span>Assets</span></a>
+        <a class="mnav-item" data-section="section-loan-details" onclick="showSection('section-loan-details')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Loan Details</span></a>
+        <a class="mnav-item" data-section="section-payment" onclick="showSection('section-payment')"><i class="fa-solid fa-money-check-dollar"></i><span>Payment</span></a>
+        <a class="mnav-item" data-section="section-property" onclick="showSection('section-property')"><i class="fa-solid fa-house"></i><span>Property</span></a>
+        <a class="mnav-item" data-section="section-comp-pay" onclick="showSection('section-comp-pay')"><i class="fa-solid fa-sack-dollar"></i><span>Comp</span></a>
+        <a class="mnav-item" data-section="section-lock" onclick="showSection('section-lock')"><i class="fa-solid fa-lock"></i><span>Lock</span></a>
+        <a class="mnav-item" data-section="section-notes" onclick="showSection('section-notes')"><i class="fa-solid fa-pen-to-square"></i><span>Notes</span></a>
+        <a class="mnav-item" data-section="section-links" onclick="showSection('section-links')"><i class="fa-solid fa-link"></i><span>Links</span></a>
+        <div class="mnav-divider"></div>
+        <a class="mnav-item mnav-checklist-btn" onclick="toggleChecklistPanel()"><i class="fa-solid fa-clipboard-check"></i><span>Checklist</span><span class="checklist-badge" id="checklist-badge">0/43</span></a>
+      </div>
+      <!-- MAIN SCROLLABLE CONTENT -->
+      <div class="modal-main-scroll" id="modal-main-scroll">
+        <form id="loan-form">
+          <input type="hidden" id="loan-id">
+          <input type="hidden" id="checklist-json">
+  <!-- SECTION PAGES -->
+          <div class="section-pages" id="section-pages">
+            <!-- BORROWER (main) -->
+            <div class="card section-card" id="section-borrower" data-page="main">
+              <div class="card-title"><i class="fa-solid fa-user"></i> Borrower</div>
+              <div class="cg cg3">
+                <div class="ff"><label>First Name *</label><input type="text" class="fc" id="borrower-first" required></div>
+                <div class="ff"><label>Middle</label><input type="text" class="fc" id="borrower-middle"></div>
+                <div class="ff"><label>Last Name *</label><input type="text" class="fc" id="borrower-last" required></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Email</label><input type="email" class="fc" id="borrower-email"></div>
+                <div class="ff"><label>Phone</label><input type="tel" class="fc" id="borrower-phone"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="borrower-dob"></div>
+                <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+              </div>
+              <div class="cb-toggle" onclick="toggleCoBorrower()">
+                <span class="cb-toggle-label">Co-Borrower</span>
+                <span class="cb-toggle-icon" id="coborrower-toggle-icon">&#9662;</span>
+              </div>
+              <div class="cb-body collapsed" id="coborrower-toggle-body">
+                <div class="cg cg3">
+                  <div class="ff"><label>First Name</label><input type="text" class="fc" id="co-borrower-first"></div>
+                  <div class="ff"><label>Middle</label><input type="text" class="fc" id="co-borrower-middle"></div>
+                  <div class="ff"><label>Last Name</label><input type="text" class="fc" id="co-borrower-last"></div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Role</label>
+                    <select class="fc" id="co-borrower-role"><option value="">Select...</option><option value="Borrower">Borrower</option><option value="Non-Occupant Co-Borrower">Non-Occupant Co-Borrower</option><option value="Title Holder Only">Title Holder Only</option><option value="Guarantor">Guarantor</option><option value="Non-title Spouse">Non-title Spouse</option></select>
+                  </div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Email</label><input type="email" class="fc" id="co-borrower-email"></div>
+                  <div class="ff"><label>Phone</label><input type="tel" class="fc" id="co-borrower-phone"></div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="co-borrower-dob"></div>
+                  <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="co-borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+                </div>
+              </div>
+            </div>
+            <!-- DEAL (main) -->
+            <div class="card section-card" id="section-deal" data-page="main">
+              <div class="card-title"><i class="fa-solid fa-handshake"></i> Deal</div>
+              <div class="cg">
+                <div class="ff"><label>Stage *</label>
+                  <select class="fc" id="loan-stage" required>
+                    <option value="01 - Lead">01 - Lead</option>
+                    <option value="02 - Application">02 - Application</option>
+                    <option value="03 - Prequal | AUS">03 - Prequal | AUS</option>
+                    <option value="04 - (Purchase) Shopping">04 - (Purchase) Shopping</option>
+                    <option value="04 - (Purchase) Under Contract">04 - (Purchase) Under Contract</option>
+                    <option value="04 - (Refi) Quotes">04 - (Refi) Quotes</option>
+                    <option value="05 - Disclosure">05 - Disclosure</option>
+                    <option value="06 - Processing">06 - Processing</option>
+                    <option value="07 - Underwriting">07 - Underwriting</option>
+                    <option value="08 - Conditional Approval">08 - Conditional Approval</option>
+                    <option value="09 - Resubmittal">09 - Resubmittal</option>
+                    <option value="10 - CTC">10 - CTC</option>
+                    <option value="11 - Closing | Funding">11 - Closing | Funding</option>
+                    <option value="12 - Closed">12 - Closed</option>
+                  </select>
+                </div>
+                <div class="ff"><label>Purpose</label>
+                  <select class="fc" id="loan-purpose" onchange="togglePurchasePriceField(); toggleEquityLoanFields();"><option value="">Select...</option><option value="Purchase">Purchase</option><option value="Refi (Rate-Term)">Refi (Rate-Term)</option><option value="Refi (Cash-Out)">Refi (Cash-Out)</option><option value="Equity Loan">Equity Loan</option><option value="Construction">Construction</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Occupancy</label>
+                  <select class="fc" id="occupancy"><option value="">Select...</option><option value="Primary Residence">Primary Residence</option><option value="Second Home">Second Home</option><option value="Investment Property">Investment Property</option><option value="Commercial">Commercial</option></select>
+                </div>
+                <div class="ff"><label>Expected Close</label><input type="date" class="fc" id="expected-close"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Lead Source</label>
+                  <select class="fc" id="lead-source"><option value="">Select...</option><option value="Self-Generated">Self-Generated</option><option value="Past Client">Past Client</option><option value="Referral - Realtor">Referral - Realtor</option><option value="Referral - Client">Referral - Client</option><option value="Referral - Financial Planner">Referral - Financial Planner</option><option value="Referral - Builder">Referral - Builder</option><option value="Referral - Other">Referral - Other</option><option value="Website">Website</option><option value="Social Media">Social Media</option><option value="Cold Call">Cold Call</option><option value="Direct Mail">Direct Mail</option><option value="Lead Service">Lead Service</option><option value="Walk-In">Walk-In</option><option value="Other">Other</option></select>
+                </div>
+                <div class="ff"><label>Lender</label><input type="text" class="fc" id="loan-lender"></div>
+              </div>
+              <div class="cg">
+                <div class="ff sp2"><label>Deal Notes</label><textarea class="fc" id="deal-notes" placeholder="Quick notes about the deal..." style="min-height:60px;"></textarea></div>
+              </div>
+            </div>
+            <!-- CREDIT (own page) -->
+            <div class="card section-card section-hidden" id="section-credit" data-page="section-credit">
+              <div class="card-title"><i class="fa-solid fa-chart-line"></i> Credit</div>
+              <div class="cg">
+                <div class="ff"><label>Score</label><input type="number" class="fc" id="credit-score" min="300" max="850" placeholder="740"></div>
+                <div class="ff"><label>Date Pulled</label><input type="date" class="fc" id="date-credit-pulled"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Pull Type</label><select class="fc" id="credit-pull-type"><option value="">—</option><option value="Soft">Soft</option><option value="Hard">Hard</option></select></div>
+                <div class="ff"><label># Scores</label><input type="number" class="fc" id="scores-pulled" placeholder="3"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Vendor</label><input type="text" class="fc" id="credit-vendor"></div>
+                <div class="ff"><label>Report #</label><input type="text" class="fc" id="credit-report-number"></div>
+              </div>
+            </div>
+            <!-- INCOME v11.3 -->
+            <div class="card section-card section-hidden" id="section-income" data-page="section-income">
+              <div class="card-title"><i class="fa-solid fa-money-bill-trend-up"></i> Income</div>
+<div id="income-section-content"></div>
+            </div>
+            <!-- ASSETS v11.7 (own page - content built by pipeline-assets.js) -->
+            <div class="card section-card section-hidden" id="section-assets" data-page="section-assets">
+              <div class="card-title"><i class="fa-solid fa-vault"></i> Assets</div>
+              <div id="assets-section-content"></div>
+            </div>
+            <!-- LOAN DETAILS (own page) -->
+            <div class="card section-card section-hidden" id="section-loan-details" data-page="section-loan-details">
+              <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Loan Details</div>
+              <div class="cg" id="property-value-row">
+                <div class="ff" id="purchase-price-group"><label>Purchase Price ($)</label><input type="text" class="fc currency-input" id="purchase-price"></div>
+                <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="property-value"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>LTV (%)</label><input type="number" class="fc" id="ltv" step="0.01" placeholder="80"></div>
+                <div class="ff"><label>Loan Amount ($)</label><input type="text" class="fc currency-input" id="loan-amount"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Loan Type</label><select class="fc" id="loan-type" onchange="toggleHelocSection(); toggleOtherLoanTypeField();"><option value="">Select...</option></select></div>
+                <div class="ff"><label>Term (Years)</label><input type="number" class="fc" id="loan-term" placeholder="30"></div>
+              </div>
+              <div class="cg hidden" id="other-loan-type-row">
+                <div class="ff sp2"><label>Other Loan Type</label><input type="text" class="fc" id="other-loan-type" placeholder="Specify loan type..."></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Interest Rate (%)</label><input type="text" class="fc rate-input" id="loan-interest-rate" placeholder="6.500" inputmode="decimal"></div>
+                <div class="ff"><label>Qualifying Rate (%)</label><input type="text" class="fc rate-input" id="qualifying-interest-rate" placeholder="7.500" inputmode="decimal"></div>
+              </div>
+              <!-- Equity Loan / Subordinate Financing -->
+              <div class="equity-loan-divider hidden" id="equity-loan-divider"><span>Subordinate Financing</span></div>
+              <div class="cg hidden" id="equity-loan-fields">
+                <div class="ff"><label>Lien Position</label><select class="fc" id="lien-position" onchange="toggleExisting2ndField(); calcEquityLoan();"><option value="">Select...</option><option value="2nd">2nd</option><option value="3rd">3rd</option></select></div>
+                <div class="ff"><label>Max CLTV (%)</label><input type="number" class="fc" id="max-cltv" step="0.01" placeholder="90" oninput="calcEquityLoan();"></div>
+              </div>
+              <div class="cg hidden" id="equity-loan-fields-2">
+                <div class="ff"><label>Existing 1st Mortgage ($)</label><input type="text" class="fc currency-input" id="existing-1st-balance" oninput="calcEquityLoan();"></div>
+                <div class="ff hidden" id="existing-2nd-group"><label>Existing 2nd Mortgage ($)</label><input type="text" class="fc currency-input" id="existing-2nd-balance" oninput="calcEquityLoan();"></div>
+              </div>
+              <div class="hidden" id="equity-loan-results"><div class="equity-calc-strip"><div class="equity-calc-item"><span class="equity-calc-label">Total Existing Liens</span><span class="equity-calc-value" id="eq-total-liens">&mdash;</span></div><div class="equity-calc-item"><span class="equity-calc-label">Max Total Debt</span><span class="equity-calc-value" id="eq-max-debt">&mdash;</span></div><div class="equity-calc-item equity-calc-highlight"><span class="equity-calc-label">Max New Loan</span><span class="equity-calc-value" id="eq-max-loan">&mdash;</span></div><div class="equity-calc-item"><span class="equity-calc-label">Actual CLTV</span><span class="equity-calc-value" id="eq-actual-cltv">&mdash;</span></div></div></div>
+            </div>
+            <!-- HELOC (loan-details, conditional) -->
+            <div class="card section-card section-hidden hidden" id="heloc-section" data-page="section-loan-details">
+              <div class="card-title"><i class="fa-solid fa-piggy-bank"></i> HELOC Details</div>
+              <div class="cg" style="max-width:500px;">
+                <div class="ff"><label>Line Amount ($)</label><input type="text" class="fc currency-input" id="heloc-line-amount"></div>
+                <div class="ff"><label>Initial Draw ($)</label><input type="text" class="fc currency-input" id="heloc-initial-draw"></div>
+              </div>
+            </div>
+            <!-- PAYMENT (own page) -->
+            <div class="card section-card section-hidden" id="section-payment" data-page="section-payment">
+              <div class="card-title"><i class="fa-solid fa-money-check-dollar"></i> Payment</div>
+              <table class="pt">
+                <thead><tr><th>Item</th><th>Annual</th><th>Monthly</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="pt-lbl">P&amp;I</td>
+                    <td class="pt-inp"><span class="pt-auto">Auto</span></td>
+                    <td class="pt-mo"><span class="pt-val" id="pi-calc-display">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">HOI</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-hoi" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="hoi-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">Taxes</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-taxes" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="taxes-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">Supp. Ins.</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-supp-ins" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="supp-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">HOA <span class="pt-hint">(mo)</span></td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-hoa" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="hoa-monthly">—</span></td>
+                  </tr>
+                </tbody>
+                <tfoot><tr class="pt-foot">
+                  <td class="pt-tot-lbl" colspan="2">Total PITIA</td>
+                  <td class="pt-tot-val"><span id="total-pitia-display">—</span></td>
+                </tr></tfoot>
+              </table>
+              <div style="display:none;" id="monthly-expenses-display">—</div>
+            </div>
+            <!-- PROPERTY (own page) -->
+            <div class="card section-card section-hidden" id="section-property" data-page="section-property">
+              <div class="card-title"><i class="fa-solid fa-house"></i> Property</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Street Address</label><input type="text" class="fc" id="property-street"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>City</label><input type="text" class="fc" id="property-city"></div>
+                <div class="ff"><label>State</label><input type="text" class="fc" id="property-state" maxlength="2"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Zip</label><input type="text" class="fc" id="property-zip" maxlength="10"></div>
+                <div class="ff"><label>County</label><input type="text" class="fc" id="property-county"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Type</label>
+                  <select class="fc" id="property-type"><option value="">Select...</option><option value="SFR">SFR</option><option value="Condo">Condo</option><option value="Townhome">Townhome</option><option value="2-4 Unit">2-4 Unit</option><option value="Multi 5+">Multi 5+</option><option value="Manufactured">Manufactured</option><option value="Land">Land</option></select>
+                </div>
+                <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="prop-page-value"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><button type="button" class="btn btn-secondary" onclick="zillowLookup()" style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-arrow-up-right-from-square"></i>Zillow Lookup</button></div>
+              </div>
+            </div>
+            <!-- COMPENSATION (own page) -->
+            <div class="card section-card section-hidden" id="section-compensation" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-sack-dollar"></i> Compensation</div>
+              <div class="cg">
+                <div class="ff"><label>Channel</label>
+                  <select class="fc" id="comp-channel" onchange="togglePointsYsp()"><option value="">Select...</option><option value="Broker">Broker</option><option value="NonDel">NonDel</option><option value="Correspondent">Correspondent</option><option value="Other">Other</option></select>
+                </div>
+                <div class="ff"><label>Comp Type</label>
+                  <select class="fc" id="comp-type"><option value="">Select...</option><option value="BPC">BPC</option><option value="LPC">LPC</option><option value="Other">Other</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Comp (BPS)</label>
+                  <input type="number" class="fc" id="comp-bps" step="1" placeholder="250">
+                  <span class="comp-sync-indicator" id="bps-sync-indicator"></span>
+                </div>
+                <div class="ff"><label>Comp ($)</label>
+                  <input type="text" class="fc currency-input" id="comp-amount-input" placeholder="5,000">
+                  <span class="comp-sync-indicator" id="amount-sync-indicator"></span>
+                </div>
+              </div>
+              <div class="cg hidden" id="points-ysp-row">
+                <div class="ff"><label>Points</label><input type="number" class="fc" id="comp-points" step="0.001" placeholder="0.000"></div>
+                <div class="ff"><label>YSP</label><input type="number" class="fc" id="comp-ysp" step="0.001" placeholder="0.000"></div>
+              </div>
+            </div>
+            <!-- LOCK (own page) -->
+            <div class="card section-card section-hidden" id="section-lock" data-page="section-lock">
+              <div class="card-title"><i class="fa-solid fa-lock"></i> Lock Info</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Lock Status</label><select class="fc" id="lock-status"><option value="-">-</option><option value="Floating">Floating</option><option value="Locked">Locked</option><option value="Expired">Expired</option></select></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Lock Date</label><input type="date" class="fc" id="lock-date"></div>
+                <div class="ff"><label>Expiration</label><input type="date" class="fc" id="lock-expiration-date"></div>
+              </div>
+            </div>
+            <!-- PAYROLL (comp-pay page) -->
+            <div class="card section-card section-hidden" id="section-payroll" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-wallet"></i> Payroll</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Pay Status</label>
+                  <select class="fc" id="pay-status"><option value="-">-</option><option value="Preparing">Preparing</option><option value="Ready for Payroll">Ready for Payroll</option><option value="Payroll Submitted">Payroll Submitted</option><option value="Pay Received">Pay Received</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Submitted</label><input type="date" class="fc" id="payroll-submitted-date"></div>
+                <div class="ff"><label>Processed</label><input type="date" class="fc" id="payroll-processed-date"></div>
+              </div>
+              <div class="cg">
+                <div class="ff sp2"><label>Pay Received</label><input type="date" class="fc" id="pay-received-date"></div>
+              </div>
+            </div>
+            <!-- PAYROLL NOTES (comp-pay page) -->
+            <div class="card section-card section-hidden" id="section-payroll-notes" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Payroll Notes</div>
+              <div class="ff"><textarea class="fc" id="payroll-notes" placeholder="Payroll details, submission notes, commission splits..."></textarea></div>
+            </div>
+            <!-- NOTES -->
+            <div class="card section-card section-hidden" id="section-notes" data-page="section-notes">
+              <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>
+              <div class="ff"><textarea class="fc" id="loan-notes" placeholder="Add any notes about this loan..."></textarea></div>
+            </div>
+            <!-- TASKS (notes page) -->
+            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-notes">
+              <div class="card-title"><i class="fa-solid fa-list-check"></i> Tasks</div>
+              <div class="task-list" id="task-list"></div>
+              <div class="add-task-row">
+                <input type="text" class="fc" id="new-task-name" placeholder="Add a task...">
+                <input type="date" class="fc" id="new-task-due" style="max-width:120px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addTask()">Add</button>
+              </div>
+            </div>
+            <!-- LINKS (own page) -->
+            <div class="card section-card section-hidden" id="section-links" data-page="section-links">
+              <div class="card-title"><i class="fa-solid fa-link"></i> Links</div>
+              <div id="links-content"></div>
+            </div>
+          </div><!-- /section-pages -->
+        </form>
+      </div><!-- /modal-main-scroll -->
+      <!-- RIGHT CALCULATOR PANEL
+           v10.4: Added "Coming Soon" badges to calculators that
+           aren't yet integrated into the pipeline modal.
+-->
+      <div class="modal-calc-panel" id="modal-calc-panel">
+        <div class="calc-panel-header"><i class="fa-solid fa-calculator"></i> Calculators</div>
+        <div class="calc-panel-list">
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Affordability Calculator')"><i class="fa-solid fa-house-circle-check"></i><span>Affordability</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Mortgage Calculator')"><i class="fa-solid fa-calculator"></i><span>Mortgage</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Refinance Analysis')"><i class="fa-solid fa-arrows-rotate"></i><span>Refinance</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Lender Pricing Comparison')"><i class="fa-solid fa-tags"></i><span>Lender Pricing</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Closing Costs')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Closing Costs</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('DSCR Calculator')"><i class="fa-solid fa-building"></i><span>DSCR</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Loan Scenario Comparison')"><i class="fa-solid fa-code-compare"></i><span>Compare</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Rent vs Buy')"><i class="fa-solid fa-scale-balanced"></i><span>Rent vs Buy</span><span class="calc-coming-soon">Coming Soon</span></button>
+        </div>
+      </div>
+    </div><!-- /modal-body -->
+    <!-- Affordability Calculator Sidebar -->
+    <div id="calc-sidebar" class="calc-sidebar hidden">
+      <div class="calc-sidebar-card">
+      <div class="calc-sidebar-header">
+        <h3><i class="fa-solid fa-house-circle-check"></i> Affordability</h3>
+        <span class="close-calc-sidebar" onclick="closeCalcSidebar()">&times;</span>
+      </div>
+      <div class="calc-sidebar-body">
+          <!-- Income -->
+        <div class="calc-section">
+          <div class="calc-section-title">Income &amp; Liabilities</div>
+          <!-- Gross Income -->
+          <div class="calc-field-group">
+            <label>Gross Income ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-income" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn active" data-mode="annual" onclick="toggleIncomeMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn" data-mode="monthly" onclick="toggleIncomeMode('monthly')">Monthly</button>
+              </div>
+            </div>
+            <div id="calc-income-sync-row" style="margin-top:4px;display:flex;align-items:center;gap:6px;"><button type="button" onclick="syncIncomeFromTab()" style="padding:3px 8px;font-size:10px;font-weight:600;border-radius:4px;cursor:pointer;border:1px solid #93C5FD;background:#EFF6FF;color:#2563EB;white-space:nowrap;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Use Income Tab</button><span id="calc-income-sync-msg" style="font-size:10px;color:#64748B;"></span></div>
+          </div>
+          <!-- Monthly Liabilities -->
+          <div class="calc-field-group">
+            <label>Monthly Liabilities ($)</label>
+            <input type="text" id="calc-debts" class="form-control currency-input" placeholder="0">
+          </div>
+        </div>
+        <!-- ===== SECTION 2: Housing Costs ===== -->
+        <div class="calc-section">
+          <div class="calc-section-title">Housing Costs</div>
+          <!-- Homeowners Insurance (HOI) -->
+          <div class="calc-field-group">
+            <label>Homeowners Insurance ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-insurance" class="form-control currency-input" value="1,800">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-ins-toggle active" data-mode="annual" onclick="toggleCalcInsMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-ins-toggle" data-mode="monthly" onclick="toggleCalcInsMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- Property Taxes -->
+          <div class="calc-field-group">
+            <label>Property Taxes ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-taxes" class="form-control currency-input" value="3,000">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-tax-toggle active" data-mode="annual" onclick="toggleCalcTaxMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-tax-toggle" data-mode="monthly" onclick="toggleCalcTaxMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- Supp Insurance -->
+          <div class="calc-field-group">
+            <label>Supplemental Insurance ($) <span style="font-size:11px;color:#94A3B8;font-weight:400;">Flood, etc.</span></label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-supp-insurance" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-supp-toggle active" data-mode="annual" onclick="toggleCalcSuppMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-supp-toggle" data-mode="monthly" onclick="toggleCalcSuppMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- HOA -->
+          <div class="calc-field-group">
+            <label>HOA Dues ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-hoa" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-hoa-toggle" data-mode="annual" onclick="toggleCalcHOAMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-hoa-toggle active" data-mode="monthly" onclick="toggleCalcHOAMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+        </div>
+          <!-- Loan Parameters -->
+        <div class="calc-section">
+          <div class="calc-section-title">Loan Parameters</div>
+          <!-- Note Rate + Qualifying Rate row -->
+          <div class="calc-row-2col">
+            <div class="calc-field-group">
+              <label>Note Rate (%)</label>
+              <input type="number" id="calc-rate" class="form-control" value="6.5" step="0.001" min="0">
+            </div>
+            <div class="calc-field-group">
+              <label>Qualifying Rate (%)</label>
+              <input type="number" id="calc-qual-rate" class="form-control" placeholder="Same as Note" step="0.001" min="0">
+            </div>
+          </div>
+          <!-- Down Payment + DTI -->
+          <div class="calc-row-3col">
+            <div class="calc-field-group">
+              <label>Term (yrs)</label>
+              <input type="number" id="calc-term" class="form-control" value="30" min="1" max="50" step="1">
+            </div>
+            <div class="calc-field-group">
+              <label>Down (%)</label>
+              <input type="number" id="calc-down-pct" class="form-control" value="20" step="0.1" min="0" max="100">
+            </div>
+            <div class="calc-field-group">
+              <label>Target DTI (%)</label>
+              <input type="number" id="calc-dti" class="form-control" value="45" step="0.1" min="0" max="65">
+            </div>
+          </div>
+        </div>
+        <!-- ===== SECTION 4: MI Rate ===== -->
+        <div class="calc-section">
+          <div class="calc-section-title">Mortgage Insurance</div>
+          <div class="calc-field-group">
+            <label>MI Rate (%)</label>
+            <input type="number" id="calc-mi-rate" class="form-control" value="0" step="0.01" min="0" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <!-- ===== RESULTS: 2-Column Layout ===== -->
+      <div class="calc-results">
+        <!-- Left Column: Amounts + DTI -->
+        <div class="calc-results-left">
+          <div class="calc-result-item primary">
+            <span class="calc-result-label">Max Purchase Price</span>
+            <span class="calc-result-value" id="calc-max-purchase">&mdash;</span>
+          </div>
+          <div class="calc-result-item">
+            <span class="calc-result-label">Max Loan Amount</span>
+            <span class="calc-result-value" id="calc-max-loan">&mdash;</span>
+          </div>
+          <div class="calc-result-item">
+            <span class="calc-result-label">Max Monthly PITIA</span>
+            <span class="calc-result-value" id="calc-max-pitia">&mdash;</span>
+          </div>
+          <!-- DTI Summary -->
+          <div class="calc-dti-summary">
+            <div class="calc-dti-row">
+              <span>Max DTI</span>
+              <span id="calc-max-dti" class="dti-green">&mdash;</span>
+            </div>
+            <div class="calc-dti-row">
+              <span>Current DTI</span>
+              <span id="calc-current-dti">&mdash;</span>
+            </div>
+            <div class="calc-dti-row">
+              <span>Available DTI</span>
+              <span id="calc-available-dti">&mdash;</span>
+            </div>
+          </div>
+        </div>
+        <!-- Right Column: Payment Breakdown -->
+        <div class="calc-results-right">
+          <div class="calc-payment-title">Payment Breakdown</div>
+          <div id="calc-breakdown">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <!-- CHECKLIST SIDE PANEL -->
+    <div id="checklist-panel" class="checklist-panel hidden">
+      <div class="checklist-panel-header"><div class="checklist-header-left"><i class="fa-solid fa-clipboard-check"></i><h3>Loan Checklist</h3><span class="checklist-progress-pill" id="checklist-progress-pill">0 / 43</span></div><div class="checklist-header-right"><button type="button" class="checklist-collapse-btn" onclick="collapseAllGroups()" title="Collapse all"><i class="fa-solid fa-compress"></i></button><button type="button" class="checklist-expand-btn" onclick="expandAllGroups()" title="Expand all"><i class="fa-solid fa-expand"></i></button><span class="close-checklist-panel" onclick="closeChecklistPanel()">&times;</span></div></div>
+      <div class="checklist-panel-body" id="checklist-panel-body"><div class="checklist-loading">Loading checklist...</div></div>
+      <div class="checklist-panel-footer"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="checklist-progress-fill" style="width:0%"></div></div><div class="checklist-auto-save-status" id="checklist-save-status">Auto-saved</div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-danger hidden" id="delete-loan-btn" onclick="deleteLoan()">Delete Loan</button><div class="modal-footer-right"><button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button><button type="button" class="btn btn-primary" id="save-loan-btn" onclick="saveLoan()">Save Loan</button></div></div>
+  </div>
+</div>
+<!-- Lost Reason Popup Modal -->
+<div class="modal-overlay hidden" id="lost-reason-modal" style="z-index:10001;"><div class="lost-reason-content"><h3>Why was this deal lost?</h3><textarea class="form-control" id="lost-reason-text" rows="3" placeholder="Enter the reason this deal was lost..."></textarea><div class="lost-reason-actions"><button class="btn btn-secondary" onclick="cancelLostReason()">Cancel</button><button class="btn btn-danger" onclick="confirmLostDeal()">Mark as Lost</button></div></div></div>
+</div>
+<!-- EXPORT TO CSV (PRO only) -->
+<script>
+async function exportPipeline() {
+  /* Gate check: only PRO users can export */
+  await window.MTG_Billing.gateAction('pipeline-export', async function() {
+    /* Get user email for API auth */
+    var email = await window.MTG_Billing.getUserEmail();
+    if (!email) {
+      alert('Please log in to export your pipeline.');
+      return;
+    }
+    /* Fetch loans from the Pipeline API */
+    try {
+      var response = await fetch('https://mtg-broker-pipeline.rich-e00.workers.dev/api/pipeline/loans', {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + email,
+          'Content-Type': 'application/json'
+        }
+      });
+      var records = await response.json();
+      /* The API returns Airtable records: [{ id, fields: {...} }, ...] */
+      if (!Array.isArray(records) || records.length === 0) {
+        alert('No loans to export.');
+        return;
+      }
+      /* Define CSV columns — keys match Airtable field names */
+      var cols = [
+        { key: 'Borrower First Name', label: 'Borrower First' },
+        { key: 'Borrower Last Name', label: 'Borrower Last' },
+        { key: 'Stage', label: 'Stage' },
+        { key: 'Deal Status', label: 'Deal Status' },
+        { key: 'Loan Purpose', label: 'Purpose' },
+        { key: 'Occupancy', label: 'Occupancy' },
+        { key: 'Lender', label: 'Lender' },
+        { key: 'Loan Amount', label: 'Loan Amount' },
+        { key: 'Loan Type', label: 'Loan Type' },
+        { key: 'Loan Interest Rate', label: 'Interest Rate' },
+        { key: 'Loan Term', label: 'Term' },
+        { key: 'Credit Score', label: 'Credit Score' },
+        { key: 'Property Street', label: 'Property Address' },
+        { key: 'Property City', label: 'City' },
+        { key: 'Property State', label: 'State' },
+        { key: 'Property Zip', label: 'Zip' },
+        { key: 'Expected Close Date', label: 'Expected Close' },
+        { key: 'Lock Status', label: 'Lock Status' },
+        { key: 'Lead Source', label: 'Lead Source' },
+        { key: 'Compensation (BPS)', label: 'Comp BPS' },
+        { key: 'Compensation Amount', label: 'Comp $' },
+        { key: 'Notes', label: 'Notes' }
+      ];
+      /* Build CSV string */
+      var header = cols.map(function(c) { return '"' + c.label + '"'; }).join(',');
+      var rows = records.map(function(rec) {
+        var f = rec.fields || {};
+        return cols.map(function(c) {
+          var val = (f[c.key] != null) ? String(f[c.key]) : '';
+          return '"' + val.replace(/"/g, '""') + '"';
+        }).join(',');
+      });
+      var csv = header + '\\n' + rows.join('\\n');
+      /* Trigger CSV download */
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'pipeline-export-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Error exporting pipeline. Please try again.');
+    }
+  });
+}
+</script>`;
+  return new Response(htmlContent, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      ...getCorsHeaders(request)
+    }
+  });
+}
+
+// PIPELINE LOADER JS (migrated from Webflow embed Pipeline_Page_Embed_JS_v13_8.html)
+// Served as: GET /static/pipeline-bootstrap.html
+// Contains: Google Maps loader, address autocomplete, showSection hooks, module loaders
+// NOTE: This is served as HTML (contains <script> tags) and injected via innerHTML
+
+async function getPipelineBootstrapHTML(request) {
+  const htmlContent = `<!--
+  ============================================================
+  Pipeline Page — JS Loader Embed (v13.8)
+  ============================================================
+  Place this in: Pipeline page → Before </body> tag
+
+  v13.8 — Deal String: clickable copy-to-clipboard string in
+           the yellow deal-status-bar showing combined deal info
+           (Borrower & Co-Borrower - Buyer Agent - Seller Agent -
+           Lender - Loan#: - Loan Type: - Occupancy: - Address).
+           Auto-updates as fields change. Skips empty segments.
+           Placeholder-ready for Processor, Title Rep, Loan Number.
+  v13.7 — Added pipeline-closing-costs.js module loader (v1.0).
+           Cache-bust pipeline-calcs.js to v3.5 for Closing Costs
+           routing in launchCalculator (worker v7.28).
+  v13.6 — Cache-bust pipeline-calcs.js to v3.4 for Refinance
+           Analysis v3.0 two-panel layout (worker v7.27).
+  v13.5 — FIX: Google address autocomplete click bug.
+  v13.4 — Documents tab v2.1: Two independent cards + note blur fix.
+  v13.3 — Purchase Agreement PDF extraction v1.1.
+  v13.2 — Purchase Agreement tab: pipeline-purchase-agreement.js.
+  v13.1 — FIX: showSection 2-column grid layout restoration.
+  v13.0 — Documents tab: pipeline-documents.js module loader.
+  v12.9 — Loan Detail Bar: clickable chips in modal header.
+  v12.8–v11.0 — See earlier changelogs.
+
+  Worker: mtg-broker-pipeline.rich-e00.workers.dev
+  Google API Key: mtg-broker-places
+  ============================================================
+-->
+
+<!-- ============================================================
+     Google Maps JS API — async bootstrap loader
+     ============================================================ -->
+<script>
+(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=\`https://maps.googleapis.com/maps/api/js?\`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+  key: "AIzaSyBdmYPIFxOVgOBZUT8PDpB29b6Ko5-A9SI",
+  v: "weekly"
+});
+</script>
+
+<!-- ============================================================
+     Custom Address Autocomplete
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+  var style = document.createElement('style');
+  style.textContent = '.address-autocomplete-wrap{position:relative}.address-dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:100000;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-top:-1px}.address-dropdown.open{display:block}.address-dropdown-item{padding:10px 12px;cursor:pointer;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:8px}.address-dropdown-item:last-child{border-bottom:none}.address-dropdown-item:hover,.address-dropdown-item.active{background:#eff6ff}.address-dropdown-item .addr-icon{color:#9ca3af;font-size:13px;margin-top:2px;flex-shrink:0}.address-dropdown-item .addr-main{font-weight:500}.address-dropdown-item .addr-secondary{color:#6b7280;font-size:13px}.address-dropdown-loading{padding:10px 12px;color:#9ca3af;font-size:13px;text-align:center}.address-dropdown-attr{padding:4px 12px;text-align:right;font-size:10px;color:#9ca3af;background:#f9fafb;border-top:1px solid #f3f4f6}';
+  document.head.appendChild(style);
+
+  var placesLib = null, sessionToken = null, dropdown = null;
+  var debounceTimer = null, activeIndex = -1, currentSuggestions = [];
+  var isInteractingWithDropdown = false; /* v13.5: prevents blur from closing dropdown during selection */
+
+  function debounce(fn, ms) {
+    return function() {
+      var args = arguments;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() { fn.apply(null, args); }, ms);
+    };
+  }
+
+  function newSession() {
+    if (placesLib && placesLib.AutocompleteSessionToken) {
+      sessionToken = new placesLib.AutocompleteSessionToken();
+    }
+  }
+
+  function createDropdown(streetInput) {
+    var parent = streetInput.parentNode;
+    var wrap = document.createElement('div');
+    wrap.className = 'address-autocomplete-wrap';
+    parent.insertBefore(wrap, streetInput);
+    wrap.appendChild(streetInput);
+    dropdown = document.createElement('div');
+    dropdown.className = 'address-dropdown';
+    /* v13.5: Prevent blur when clicking dropdown */
+    dropdown.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      isInteractingWithDropdown = true;
+    });
+    wrap.appendChild(dropdown);
+  }
+
+  function showDropdown(items) {
+    currentSuggestions = items;
+    activeIndex = -1;
+    if (!items.length) { dropdown.classList.remove('open'); dropdown.innerHTML = ''; return; }
+    var html = '';
+    items.forEach(function(item, i) {
+      var main = item.mainText || item.text || '';
+      var secondary = item.secondaryText || '';
+      html += '<div class="address-dropdown-item" data-index="' + i + '">'
+        + '<span class="addr-icon"><i class="fa-solid fa-location-dot"></i></span>'
+        + '<div><div class="addr-main">' + main + '</div>'
+        + (secondary ? '<div class="addr-secondary">' + secondary + '</div>' : '')
+        + '</div></div>';
+    });
+    html += '<div class="address-dropdown-attr">Powered by Google</div>';
+    dropdown.innerHTML = html;
+    dropdown.classList.add('open');
+    dropdown.querySelectorAll('.address-dropdown-item').forEach(function(el) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isInteractingWithDropdown = true; /* v13.5: flag to prevent blur-close */
+        selectSuggestion(parseInt(el.dataset.index));
+      });
+    });
+  }
+
+  async function selectSuggestion(index) {
+    var item = currentSuggestions[index]; if (!item) return;
+    dropdown.classList.remove('open');
+    try {
+      var place = new placesLib.Place({ id: item.placeId });
+      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+      var comps = place.addressComponents || [];
+      var get = function(type) {
+        var c = comps.find(function(comp) { return comp.types && comp.types.indexOf(type) !== -1; });
+        return c ? (type === 'administrative_area_level_1' ? (c.shortText || c.text || '') : (c.text || c.longText || '')) : '';
+      };
+      var streetNum = get('street_number');
+      var route = get('route');
+      var streetFull = streetNum ? streetNum + ' ' + route : route;
+      document.getElementById('property-street').value = streetFull;
+      document.getElementById('property-city').value = get('locality') || get('sublocality') || get('administrative_area_level_2') || '';
+      document.getElementById('property-state').value = get('administrative_area_level_1');
+      document.getElementById('property-zip').value = get('postal_code');
+      var countyField = document.getElementById('property-county');
+      if (countyField) {
+        var county = get('administrative_area_level_2');
+        countyField.value = county.replace(/ County$/i, '');
+      }
+      newSession();
+      /* v13.5: After populating fields, blur input + clear suggestions */
+      currentSuggestions = [];
+      var streetEl = document.getElementById('property-street');
+      if (streetEl) streetEl.blur();
+    } catch (err) { console.warn('Place details error:', err); }
+    isInteractingWithDropdown = false; /* v13.5: reset flag */
+  }
+
+  async function fetchSuggestions(query) {
+    if (!query || query.length < 3) { showDropdown([]); return; }
+    try {
+      var request = { input: query, includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'], includedRegionCodes: ['us'], sessionToken: sessionToken };
+      var res = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      var suggestions = (res.suggestions || []).map(function(s) {
+        var p = s.placePrediction; if (!p) return null;
+        return { placeId: p.placeId, text: p.text ? p.text.text : '', mainText: p.mainText ? p.mainText.text : '', secondaryText: p.secondaryText ? p.secondaryText.text : '' };
+      }).filter(Boolean);
+      showDropdown(suggestions);
+    } catch (err) { console.warn('Autocomplete error:', err); showDropdown([]); }
+  }
+
+  var debouncedFetch = debounce(fetchSuggestions, 300);
+
+  function handleKeydown(e) {
+    var items = dropdown.querySelectorAll('.address-dropdown-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); updateActive(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); updateActive(items); }
+    else if (e.key === 'Enter' && activeIndex >= 0) { e.preventDefault(); selectSuggestion(activeIndex); }
+    else if (e.key === 'Escape') { dropdown.classList.remove('open'); }
+  }
+
+  function updateActive(items) {
+    items.forEach(function(el, i) { el.classList.toggle('active', i === activeIndex); });
+    if (activeIndex >= 0 && items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  async function init() {
+    var streetInput = document.getElementById('property-street');
+    if (!streetInput) return;
+    try {
+      placesLib = await google.maps.importLibrary('places');
+      newSession();
+      createDropdown(streetInput);
+      streetInput.addEventListener('input', function() { debouncedFetch(streetInput.value); });
+      /* v13.5: Fixed blur handler — prevents dropdown from eating clicks */
+      streetInput.addEventListener('blur', function() {
+        if (isInteractingWithDropdown) return; /* don't close during selection */
+        if (dropdown) dropdown.style.pointerEvents = 'none'; /* instantly stop intercepting clicks */
+        setTimeout(function() {
+          dropdown.classList.remove('open');
+          if (dropdown) dropdown.style.pointerEvents = ''; /* restore for next use */
+        }, 120);
+      });
+      streetInput.addEventListener('keydown', handleKeydown);
+      streetInput.addEventListener('focus', function() {
+        var val = streetInput.value.trim();
+        if (val.length >= 3 && currentSuggestions.length === 0) { debouncedFetch(val); }
+      });
+    } catch (err) { console.warn('Address autocomplete failed to load:', err); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 500); });
+  } else { setTimeout(init, 500); }
+})();
+</script>
+
+<!-- ============================================================
+     Pipeline Calculator JS (Affordability calcs, toggle logic)
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-calcs.js?v=3.5';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     Pipeline App JS (Main app: load loans, save, modals, etc.)
+     v13.3: Cache-bust to v15.15 for PA PDF extraction (v7.23 worker)
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js?v=15.15';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     v11.2: Pipeline Checklist JS (Loan workflow checklist)
+     Must load AFTER pipeline-app.js to access globals
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-checklist.js?v=2.2';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.0: Pipeline Documents JS -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-documents.js?v=2.1';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.2+: Pipeline Purchase Agreement JS (Contract tab) -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-purchase-agreement.js?v=1.2';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.7: Pipeline Closing Costs JS -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-closing-costs.js?v=1.0';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     v11.8: Zillow Lookup — opens Zillow search from address fields
+     ============================================================ -->
+<script>
+function zillowLookup() {
+  var street = (document.getElementById('property-street').value || '').trim();
+  if (!street) { alert('Enter a street address first.'); return; }
+  var addr = street;
+  var city = (document.getElementById('property-city').value || '').trim();
+  var state = (document.getElementById('property-state').value || '').trim();
+  var zip = (document.getElementById('property-zip').value || '').trim();
+  if (city) addr += ', ' + city;
+  if (state) addr += ', ' + state;
+  if (zip) addr += ' ' + zip;
+  window.open('https://www.zillow.com/homes/' + encodeURIComponent(addr) + '_rb/', '_blank');
+}
+</script>
+
+<!-- ============================================================
+     v12.1+: Pricing Card, Pricing Notes, Layout hooks,
+     v12.9: Loan Detail Bar, v13.8: Deal String
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════
+     CSS — injected at runtime (embed at 50K limit)
+     ══════════════════════════════════════════════ */
+  var css = document.createElement('style');
+  css.textContent = ''
+    /* v12.1: rate inputs + v12.2: 3-col names */
+    +'.rate-input{text-align:left!important}'
+    +'.cg3{grid-template-columns:1fr 1fr 1fr!important}'
+    +'@media(max-width:900px){.cg3{grid-template-columns:1fr!important}}'
+    /* v12.8: Assets tab styles */
+    +'.ast-group{margin-bottom:16px;padding:14px 16px;border:1px solid #E2E8F0;border-radius:8px;background:#FAFBFE}'
+    +'.ast-group:last-of-type{margin-bottom:8px}'
+    +'.ast-group-title{font-size:12px;font-weight:700;color:#1E3A8A;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #DBEAFE}'
+    +'.ast-sub-label{font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;margin-top:2px}'
+    +'.ast-sync-btn{padding:4px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;border:1px solid #93C5FD;background:#EFF6FF;color:#2563EB;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:background .15s,border-color .15s}'
+    +'.ast-sync-btn:hover{background:#DBEAFE;border-color:#60A5FA}'
+    +'.ast-sync-btn i{font-size:10px}'
+    +'.ast-sync-msg{font-size:10px;color:#64748B;margin-top:2px;display:block;min-height:14px}'
+    +'.ast-subtotal-row,.ast-total-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:13px;margin-top:6px}'
+    +'.ast-subtotal-row span:first-child,.ast-total-row span:first-child{font-weight:600;color:#475569}'
+    +'.ast-subtotal-row span:last-child,.ast-total-row span:last-child{font-weight:700;color:#1E293B}'
+    +'.ast-total-row{border-top:2px solid #CBD5E1;padding-top:10px;margin-top:10px}'
+    +'.ast-total-row span:last-child{font-size:15px;color:#1E40AF}'
+    +'.ast-acct-row{margin-bottom:8px;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;transition:background .1s}'
+    +'.ast-acct-row:hover{background:#F8FAFC}'
+    +'.ast-acct-fields{display:flex;align-items:flex-end;gap:8px;flex:1;min-width:0}'
+    +'.ast-acct-fields .ff{margin-bottom:0}'
+    +'.ast-acct-fields .ff label{font-size:11px;font-weight:600;color:#64748B;margin-bottom:3px}'
+    +'.ast-acct-fields .ff select,.ast-acct-fields .ff input{font-size:13px;padding:7px 10px}'
+    +'.ast-remove-btn{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:6px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0;align-self:flex-end;margin-bottom:2px}'
+    +'.ast-remove-btn:hover{color:#EF4444;background:#FEF2F2}'
+    +'.ast-acct-desc-row{display:flex;gap:8px;margin-top:6px}'
+    +'.ast-acct-desc-row.hidden{display:none}'
+    +'.ast-add-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #CBD5E1;border-radius:6px;background:#FAFBFE;color:#64748B;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}'
+    +'.ast-add-btn:hover{border-color:#93C5FD;color:#3B82F6;background:#EFF6FF}'
+    +'.ast-add-btn i{font-size:11px}'
+    +'.ast-acct-total{display:flex;align-items:center;gap:8px;font-size:13px}'
+    +'.ast-acct-total span:first-child{font-weight:600;color:#475569}'
+    +'.ast-acct-total .ast-total-val{font-weight:700;color:#1E293B;font-size:14px}'
+    +'.ast-acct-grand-total{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:1px solid #93C5FD}'
+    +'.ast-acct-grand-total span:first-child{font-size:13px;font-weight:700;color:#1E3A8A}'
+    +'.ast-acct-grand-val{font-size:16px;font-weight:800;color:#1D4ED8}'
+    /* v13.1: Asset Summary card (Excess / Shortage) */
+    +'.ast-summary-card{grid-column:1/-1!important;max-width:none!important;justify-self:stretch!important}'
+    +'.ast-summary-grid{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;flex-wrap:wrap}'
+    +'.ast-summary-item{text-align:center;min-width:140px}'
+    +'.ast-summary-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
+    +'.ast-summary-value{font-size:18px;font-weight:700;color:#1E293B}'
+    +'.ast-summary-op{font-size:20px;font-weight:300;color:#94A3B8;padding:0 4px}'
+    +'.ast-summary-result{padding:10px 20px;border-radius:8px;background:#F8FAFC;border:1px solid #E2E8F0}'
+    +'.ast-summary-result-val{font-size:22px;font-weight:800}'
+    +'.ast-excess{color:#15803D!important}'
+    +'.ast-shortage{color:#DC2626!important}'
+    +'.ast-summary-result:has(.ast-excess){background:#F0FDF4;border-color:#86EFAC}'
+    +'.ast-summary-result:has(.ast-shortage){background:#FEF2F2;border-color:#FECACA}'
+    +'.ast-grand-total{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:1px solid #93C5FD}'
+    +'.ast-grand-total span:first-child{font-size:14px;font-weight:700;color:#1E3A8A}'
+    +'.ast-grand-val{font-size:17px;font-weight:800;color:#1D4ED8}'
+    +'.ast-hint{font-size:11px;color:#94A3B8;font-weight:400;margin-left:auto;margin-right:8px}'
+    +'@media(max-width:600px){.ast-acct-fields{flex-wrap:wrap}.ast-acct-fields .ff{min-width:100%!important}}'
+    /* v12.1: Pricing summary */
+    +'.ld-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ld-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'.ld-pe-strip{padding:8px 0;margin-bottom:10px;border-bottom:1px solid #F1F5F9}'
+    +'.ld-pe-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'
+    +'.ld-pe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}'
+    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:6px;background:#fff;text-decoration:none;transition:all .15s}'
+    +'.ld-pe-btn:hover{background:#EFF6FF;border-color:#93C5FD}'
+    +'.ld-pe-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0}'
+    +'.ld-pe-name{font-size:11px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.ld-pe-arrow{width:12px;height:12px;flex-shrink:0;color:#94A3B8;margin-left:auto}'
+    +'.ps-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
+    +'.ps-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px}'
+    +'.ps-refresh{font-size:10px;font-weight:600;color:#3B82F6;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s}'
+    +'.ps-refresh:hover{background:#EFF6FF}'
+    +'.ps-table{width:100%;border-collapse:collapse;font-size:13px}'
+    +'.ps-table tr{border-bottom:1px solid #F1F5F9}.ps-table tr:last-child{border-bottom:none}'
+    +'.ps-table td{padding:7px 0;vertical-align:middle}'
+    +'.ps-table td:first-child{color:#64748B;font-weight:500;padding-right:12px;white-space:nowrap}'
+    +'.ps-table td:last-child{text-align:right;font-weight:600;color:#1E293B}'
+    +'.ps-empty{color:#CBD5E1!important;font-weight:400!important;font-style:italic}'
+    +'.ps-purchase-only{display:none}.ps-purchase-only.ps-show{display:table-row}'
+    +'.ps-notes-textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;font-family:inherit;color:#1E293B;background:#F8FAFC;resize:vertical;transition:all .15s;box-sizing:border-box}'
+    +'.ps-notes-textarea:focus{outline:none;border-color:#3B82F6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1)}'
+    +'.ps-notes-textarea::placeholder{color:#CBD5E1}'
+    +'@media(max-width:900px){.ld-col-left,.ld-col-right{grid-column:1/-1!important;grid-row:auto!important}}'
+    /* v13.1: Pricing card in right column — 2-col engines grid, prevent text overflow */
+    +'.ld-col-right .ld-pe-grid{grid-template-columns:repeat(2,1fr)!important}'
+    +'.ld-col-right .ps-table td:first-child{max-width:120px;overflow:hidden;text-overflow:ellipsis}'
+    /* v12.9: Assets 2-column layout (left: Cash/Reserves, right: Accounts) */
+    +'.ast-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ast-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'@media(max-width:900px){.ast-col-left,.ast-col-right{grid-column:1/-1!important;grid-row:auto!important}}'
+    /* v12.9: Loan Detail Bar */
+    +'.loan-detail-bar{display:flex;align-items:center;gap:6px;padding:6px 24px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
+    +'.loan-detail-bar::-webkit-scrollbar{display:none}'
+    +'.loan-detail-bar.hidden{display:none}'
+    +'.ldb-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;font-size:12px;font-weight:500;color:#334155;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;line-height:1.3}'
+    +'.ldb-chip:hover{background:#EFF6FF;border-color:#93C5FD;color:#1E40AF}'
+    +'.ldb-label{font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px}'
+    +'.ldb-chip:hover .ldb-label{color:#60A5FA}'
+    +'.ldb-dot{width:3px;height:3px;border-radius:50%;background:#CBD5E1;flex-shrink:0}'
+    +'.ldb-val{font-size:12px;font-weight:600;color:#1E293B}'
+    +'.ldb-chip:hover .ldb-val{color:#1E40AF}'
+    +'.ldb-val.ldb-empty{color:#CBD5E1;font-weight:400;font-style:italic}'
+    +'@media(max-width:900px){.loan-detail-bar{padding:5px 12px;gap:5px}.ldb-chip{padding:3px 8px}.ldb-label{font-size:9px}.ldb-val{font-size:11px}}'
+    /* v13.8: Deal String — clickable copy element in deal-status-bar */
+    +'.deal-string-wrap{flex:1;min-width:0;display:flex;align-items:center;overflow:hidden}'
+    +'.deal-string-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.6);border:1px solid #D4A017;border-radius:6px;cursor:pointer;max-width:100%;min-width:0;transition:all .15s}'
+    +'.deal-string-btn:hover{background:#fff;border-color:#B8860B;box-shadow:0 1px 4px rgba(0,0,0,.08)}'
+    +'.deal-string-text{font-size:11px;color:#6B4F00;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;line-height:1.3}'
+    +'.deal-string-icon{flex-shrink:0;font-size:12px;color:#9A7B00;transition:color .15s}'
+    +'.deal-string-btn:hover .deal-string-icon{color:#6B4F00}'
+    +'.deal-string-btn.ds-copied{background:#ECFDF5;border-color:#34D399}'
+    +'.deal-string-btn.ds-copied .deal-string-text{color:#047857}'
+    +'.deal-string-btn.ds-copied .deal-string-icon{color:#059669}'
+    +'.deal-string-empty{font-size:11px;color:#B8A060;font-style:italic;padding:0 8px}'
+    +'@media(max-width:900px){.deal-string-wrap{display:none}}';
+  document.head.appendChild(css);
+
+
+  /* ══════════════════════════════════════════════
+     PRICING CARD HTML TEMPLATES
+     ══════════════════════════════════════════════ */
+  var arrow = '<svg class="ld-pe-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
+  var lsLogo = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAAAAAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCABAAEADASIAAhEBAxEB/8QAGwAAAgIDAQAAAAAAAAAAAAAABwgACQEFBgr/xAA3EAABAwMCBAQBCwUDAAAAAAABAgMEBQYRAAcIEiFBEzFRYXEJFCIjMlKBgpGhsRVCQ2IWNXL/xAAZAQEBAQEBAQAAAAAAAAAAAAAGBQQHAAP/xAAwEQABAwIDBAkEAwAAAAAAAAABAgMEAAURITETQVGRBhJhcYGhwdHwFBUy8SKx4f/aAAwDAQACEQMRAD8AtT1NTWCca9XqzqaHF97/AFm2DIciTKgqZUEHCoUBHiuIPoo5CUn2Jz7aGznGlSg7hu16gpr7ypLYV+nX+dR37xAjL6jroB5/1jVmPZrhKRtGmSRx05Y4UyGtbcVxUy0qFPrVZnMU2lQWVSJMuSsIbabSMlSifIDQxs7ijsm53240mQ/QpKyEhNSQEtk58vESSkfjjQ4+UkpFauDhUraqEHJDEaZEm1BEf6RXDQ5lZwPNKT4az7IJ8hqlBkR55GxcBBO7dU+XFkQj1X0FJ7d/dxqUL5SzY+u3YiiCr1KA0474TdWn05bMJRJwCVk8yEn7y0pA7kaaRpxLzaVoUFIUAQpJyCPXXnKAyPLmB6YAzzZ7D1z6d9X18MlGrtvcP23tMuVLqK5FokVqU2+SXG1BsYQrP9yU8qT7jVydERHAKDrUxh1ThINEzS1cSm/MqmTHrPtqQucce6G0l5b11g21ZDr9ShyVR6rXo1VVFaqL6DyrKWUoUCQUlPi9CrHkRgln+Gfiw2Z2v4WK7XqFbT1rroEhtqoUBEj5zKmzHgQytL6sF0OchHMrHIG1DACRlEOIDh4u/aHcKqwpVInVCjSpTj9KrMSOt+POjuLK21JcQCOblUAUk5Bz2wSWtvOBTci5uGi8LiNGlwq1ImQplKoElJakzY7Ae8VXIrBSpQfy2lWCeQ/eGuuuNx1MIBX/HLfr88q5qkuBass+6i1aPyuc527Gk3PYUSJbDjvK47TJq3ZcZsn7eFpCXMDqQOUnt16ab7iUrtPq2xL0+JIblQ6guG7DfbOUupWtK0qT7FPX4apltHZK/b5u1u2KLaNYkVtbngqjvQXWQwc4KnlLSA2kdyrGP21Y3uxW2qHZ1k7W0yb/U49p0+PCly2eqZEptoNYT6hOFfirHbQ7pauNBt6urkpYKQOOOVKejDD0y4N8EEKJ4Ye+lGjgzZcTYVacVkNrqh5D64abzpgNcHshY7lg7b0mmSE8k5SDIlD0dWeZSfw6J/LrvNY7UwqNBaaXqAMfHOvl2fTJnvOo0JOHdpU0HN+thmtzYyapS1NxLjjI5EqX0RKQMkIWexHXlV2zg9PIx6xjWqVFamNFl4YpNZIkt6E8H2DgofMD2Uj1obtXzsTNVQqjDWqG2r/q6mFJ5OvUsrHkD7cyevlopMcaFKMb662Kgh/HVCJDak5/9HB/bR/rNu0y4Yhi1SnxqjHP+KUylxP6EdNcW5w8bdOulxVqwwo9cJU4lP6BWNF0Wu6wxs4ckFG4KGnkfTupWu62madpNjEL3lJyPhiPU9tLtfHE7dd+hVGoEJVGZk/V+HDUp+Y6D05QoDp+UZ99dxsBw3SKPOjXLdjAblMkOQ6YrCi0rs4725h2T2PU9egPNuWLb9otlNFo8KmZGCqMwlKlfFXmf11vAMa0RrItT4lXF3aLGg0SPD9Vnk3xCWDEtrWyQdTqo+P8AprOpqamldEa//9k=';
+
+  var pricingCardHtml = '<div class="card section-card section-hidden ld-col-right" id="pricing-summary-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
+
+  var notesCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Pricing Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
+
+
+  /* ══════════════════════════════════════════════
+     PRICING SUMMARY HELPERS + REFRESH
+     ══════════════════════════════════════════════ */
+  function fmtCurrency(val) {
+    var num = parseFloat(String(val).replace(/[^0-9.\\-]/g, ''));
+    if (isNaN(num)) return '';
+    return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function getVal(id) {
+    var el = document.getElementById(id); if (!el) return '';
+    if (el.tagName === 'SELECT') { var o = el.options[el.selectedIndex]; return o ? o.text : ''; }
+    return (el.value || '').trim();
+  }
+  function getNum(id) { return parseFloat(getVal(id).replace(/[^0-9.\\-]/g, '')) || 0; }
+  function setCell(id, value) {
+    var el = document.getElementById(id); if (!el) return;
+    if (!value || value === 'Select...' || value === '\\u2014') { el.textContent = '\\u2014'; el.className = 'ps-empty'; }
+    else { el.textContent = value; el.className = ''; }
+  }
+
+  window.refreshPricingSummary = function() {
+    var loanType=getVal('loan-type'),loanTerm=getVal('loan-term'),loanPurpose=getVal('loan-purpose');
+    var propValue=getNum('property-value'),purchasePrice=getNum('purchase-price'),loanAmt=getNum('loan-amount'),ltv=getNum('ltv');
+    var fico=getVal('credit-score'),occupancy=getVal('occupancy'),zip=getVal('property-zip'),street=getVal('property-street');
+    var occDisplay = occupancy;
+    if (occupancy === 'Primary Residence') occDisplay = 'Primary';
+    if (occupancy === 'Investment Property') occDisplay = 'Investment';
+    var isPurchase = loanPurpose.toLowerCase().indexOf('purchase') !== -1;
+    document.querySelectorAll('.ps-purchase-only').forEach(function(row) {
+      row.classList.toggle('ps-show', isPurchase);
+    });
+    var basis=purchasePrice||propValue, downPct=0, downAmt=0;
+    if (isPurchase && basis > 0 && loanAmt > 0) { downAmt=basis-loanAmt; downPct=(downAmt/basis)*100; }
+    else if (isPurchase && ltv > 0) { downPct=100-ltv; if(basis>0)downAmt=basis*(downPct/100); }
+    var bVal=getNum('borrower-income'),cVal=getNum('coborrower-income');
+    var bMode=window.borrowerIncomeMode||'annual',cMode=window.coBorrowerIncomeMode||'annual';
+    var bA=(bMode==='monthly')?bVal*12:bVal, cA=(cMode==='monthly')?cVal*12:cVal;
+    var monthlyIncome=(bA+cA)/12;
+    setCell('ps-loan-type',loanType); setCell('ps-loan-term',loanTerm||'');
+    setCell('ps-loan-purpose',loanPurpose);
+    setCell('ps-property-value',propValue?fmtCurrency(propValue):'');
+    setCell('ps-purchase-price',purchasePrice?fmtCurrency(purchasePrice):'');
+    setCell('ps-loan-amount',loanAmt?fmtCurrency(loanAmt):'');
+    setCell('ps-ltv',ltv?(ltv+'%'):'');
+    setCell('ps-down-pct',downPct?(downPct.toFixed(2)+'%'):'');
+    setCell('ps-down-amt',downAmt?fmtCurrency(downAmt):'');
+    setCell('ps-fico',fico); setCell('ps-occupancy',occDisplay);
+    setCell('ps-zip',zip); setCell('ps-address',street);
+    setCell('ps-monthly-income',monthlyIncome?fmtCurrency(monthlyIncome):'');
+  };
+
+
+  /* ══════════════════════════════════════════════
+     v12.9: LOAN DETAIL BAR — clickable info chips
+     ══════════════════════════════════════════════ */
+  function buildLoanDetailBar() {
+    var header = document.querySelector('.modal-header');
+    if (!header || document.getElementById('loan-detail-bar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'loan-detail-bar';
+    bar.className = 'loan-detail-bar hidden';
+    header.insertAdjacentElement('afterend', bar);
+  }
+
+  function updateLoanDetailBar() {
+    var bar = document.getElementById('loan-detail-bar');
+    if (!bar) return;
+    var isNew = document.getElementById('modal-title').textContent === 'New Loan';
+    if (isNew) { bar.classList.add('hidden'); return; }
+    bar.classList.remove('hidden');
+
+    function chip(label, valId, navTarget) {
+      var el = document.getElementById(valId);
+      var val = el ? (el.tagName === 'SELECT' ? (el.options[el.selectedIndex]||{}).text||'' : el.value||'') : '';
+      if (val === 'Select...' || val === '-') val = '';
+      var isEmpty = !val;
+      var display = val;
+      if (valId === 'ltv' && val) display = val + '%';
+      if (valId === 'loan-interest-rate' && val) display = val + '%';
+      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+label+'">'
+        +'<span class="ldb-label">'+label+'</span>'
+        +'<span class="ldb-dot"></span>'
+        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display||'\\u2014')+'</span>'
+        +'</div>';
+    }
+
+    var checklistBadge = document.getElementById('checklist-badge');
+    var checklistVal = checklistBadge ? checklistBadge.textContent : '0/43';
+
+    bar.innerHTML = ''
+      + chip('Stage', 'loan-stage', "showSection('main')")
+      + chip('Address', 'property-street', "showSection('section-property')")
+      + chip('Credit', 'credit-score', "showSection('section-credit')")
+      + chip('Occupancy', 'occupancy', "showSection('main')")
+      + chip('Purpose', 'loan-purpose', "showSection('main')")
+      + chip('Type', 'loan-type', "showSection('section-loan-details')")
+      + chip('Lender', 'loan-lender', "showSection('main')")
+      + chip('Rate', 'loan-interest-rate', "showSection('section-loan-details')")
+      + '<div class="ldb-chip" onclick="toggleChecklistPanel()" title="Open Checklist">'
+      + '<span class="ldb-label">Checklist</span><span class="ldb-dot"></span>'
+      + '<span class="ldb-val">'+checklistVal+'</span></div>';
+  }
+
+  /* Debounced updater for field changes */
+  var ldbTimer = null;
+  function scheduleLdbUpdate() {
+    clearTimeout(ldbTimer);
+    ldbTimer = setTimeout(function() {
+      updateLoanDetailBar();
+      updateDealString(); /* v13.8: also refresh deal string */
+    }, 200);
+  }
+
+
+  /* ══════════════════════════════════════════════
+     v13.8: DEAL STRING — copy-to-clipboard in deal-status-bar
+     Builds " - " delimited string from form fields.
+     Empty segments skipped. Placeholder IDs for future fields:
+     processor, title-rep, loan-number, affordable-loan-type
+     ══════════════════════════════════════════════ */
+
+  /* Inject the deal string container into the deal-status-bar */
+  function injectDealStringEl() {
+    var statusBar = document.getElementById('deal-status-bar');
+    if (!statusBar || document.getElementById('deal-string-wrap')) return;
+    /* Find the right side (Last Contact) to insert before it */
+    var rightDiv = statusBar.querySelector('.deal-status-right');
+    var wrap = document.createElement('div');
+    wrap.id = 'deal-string-wrap';
+    wrap.className = 'deal-string-wrap';
+    wrap.innerHTML = '<div class="deal-string-btn" onclick="copyDealString()" title="Click to copy deal string">'
+      + '<i class="fa-regular fa-copy deal-string-icon"></i>'
+      + '<span class="deal-string-text" id="deal-string-text"></span></div>';
+    if (rightDiv) {
+      statusBar.insertBefore(wrap, rightDiv);
+    } else {
+      statusBar.appendChild(wrap);
+    }
+  }
+
+  /* Build the deal string from form fields */
+  function buildDealString() {
+    /* Helper: get trimmed value from an element by ID (supports input + select) */
+    function gv(id) {
+      var el = document.getElementById(id);
+      if (!el) return '';
+      if (el.tagName === 'SELECT') {
+        var opt = el.options[el.selectedIndex];
+        var txt = opt ? opt.text : '';
+        return (txt === 'Select...' || txt === '-' || txt === '') ? '' : txt.trim();
+      }
+      return (el.value || '').trim();
+    }
+
+    /* Borrower Name (first + last combined) */
+    var bFirst = gv('borrower-first'), bLast = gv('borrower-last');
+    var borrower = [bFirst, bLast].filter(Boolean).join(' ');
+
+    /* Co-Borrower Name */
+    var cFirst = gv('co-borrower-first'), cLast = gv('co-borrower-last');
+    var coBorrower = [cFirst, cLast].filter(Boolean).join(' ');
+
+    /* Names portion: "Borrower & Co-Borrower" or just "Borrower" */
+    var names = borrower;
+    if (coBorrower) names += ' & ' + coBorrower;
+
+    /* Buyer Agent + Seller Agent from Purchase Agreement tab */
+    var buyerAgent = gv('pa-buyers-agent');
+    var sellerAgent = gv('pa-sellers-agent');
+
+    /* Processor + Title Rep — placeholder IDs (not yet in form) */
+    var processor = gv('processor');
+    var titleRep = gv('title-rep');
+
+    /* Lender */
+    var lender = gv('loan-lender');
+
+    /* Loan Number — placeholder ID (not yet in form) */
+    var loanNumber = gv('loan-number');
+
+    /* Loan Type + Affordable Loan Type */
+    var loanType = gv('loan-type');
+    var affordableType = gv('affordable-loan-type');
+    var loanTypeStr = [loanType, affordableType].filter(Boolean).join(' ');
+
+    /* Occupancy */
+    var occupancy = gv('occupancy');
+
+    /* Address: Street, City State Zip */
+    var street = gv('property-street');
+    var city = gv('property-city');
+    var state = gv('property-state');
+    var zip = gv('property-zip');
+    var cityStateZip = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    var fullAddress = street;
+    if (cityStateZip) fullAddress += (street ? ', ' : '') + cityStateZip;
+
+    /* Build segments array — labeled items get their prefix,
+       unlabeled items (names, agents, lender) are bare values.
+       Empty segments are skipped entirely. */
+    var segments = [];
+    if (names) segments.push(names);
+    if (buyerAgent) segments.push(buyerAgent);
+    if (sellerAgent) segments.push(sellerAgent);
+    if (processor) segments.push(processor);
+    if (titleRep) segments.push(titleRep);
+    if (lender) segments.push(lender);
+    if (loanNumber) segments.push('Loan#: ' + loanNumber);
+    if (loanTypeStr) segments.push('Loan Type: ' + loanTypeStr);
+    if (occupancy) segments.push('Occupancy: ' + occupancy);
+    if (fullAddress) segments.push(fullAddress);
+
+    return segments.join(' - ');
+  }
+
+  /* Update the deal string display */
+  function updateDealString() {
+    var textEl = document.getElementById('deal-string-text');
+    if (!textEl) return;
+    var str = buildDealString();
+    var wrap = document.getElementById('deal-string-wrap');
+    if (!str) {
+      if (wrap) wrap.style.display = 'none';
+      return;
+    }
+    if (wrap) wrap.style.display = '';
+    textEl.textContent = str;
+    textEl.title = str; /* full text on hover */
+  }
+
+  /* Copy deal string to clipboard + visual feedback */
+  window.copyDealString = function() {
+    var str = buildDealString();
+    if (!str) return;
+    navigator.clipboard.writeText(str).then(function() {
+      var btn = document.querySelector('.deal-string-btn');
+      if (!btn) return;
+      btn.classList.add('ds-copied');
+      var icon = btn.querySelector('.deal-string-icon');
+      var textEl = btn.querySelector('.deal-string-text');
+      var origText = textEl.textContent;
+      if (icon) icon.className = 'fa-solid fa-check deal-string-icon';
+      textEl.textContent = 'Copied!';
+      setTimeout(function() {
+        btn.classList.remove('ds-copied');
+        if (icon) icon.className = 'fa-regular fa-copy deal-string-icon';
+        textEl.textContent = origText;
+      }, 1500);
+    }).catch(function() {
+      /* Fallback for older browsers */
+      var ta = document.createElement('textarea');
+      ta.value = str;
+      ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    });
+  };
+
+
+  /* ══════════════════════════════════════════════
+     INJECTION ON DOM READY
+     ══════════════════════════════════════════════ */
+  function injectPricingCards() {
+    var pages = document.getElementById('section-pages');
+    if (!pages) return;
+    if (document.getElementById('pricing-summary-card')) return;
+    pages.insertAdjacentHTML('beforeend', pricingCardHtml);
+    pages.insertAdjacentHTML('beforeend', notesCardHtml);
+  }
+
+  function setup() {
+    injectPricingCards();
+    buildLoanDetailBar();
+    injectDealStringEl(); /* v13.8: inject deal string container */
+
+    /* Listen for form changes to update detail bar + deal string */
+    var form = document.getElementById('loan-form');
+    if (form) {
+      form.addEventListener('change', scheduleLdbUpdate);
+      form.addEventListener('input', scheduleLdbUpdate);
+    }
+
+    /* Watch checklist badge changes via MutationObserver */
+    var checkBadge = document.getElementById('checklist-badge');
+    if (checkBadge) {
+      var obs = new MutationObserver(scheduleLdbUpdate);
+      obs.observe(checkBadge, { childList: true, characterData: true, subtree: true });
+    }
+
+    /* Watch modal open/close to update detail bar + deal string */
+    var modal = document.getElementById('loan-modal');
+    if (modal) {
+      var lastHidden = modal.classList.contains('hidden');
+      new MutationObserver(function() {
+        var h = modal.classList.contains('hidden');
+        if (h !== lastHidden) {
+          lastHidden = h;
+          if (!h) setTimeout(function() { refreshPricingSummary(); updateLoanDetailBar(); updateDealString(); }, 200);
+        }
+      }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(setup, 600); });
+  } else {
+    setTimeout(setup, 600);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     v12.8: Pipeline Assets JS Module Loader
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js?v=1.3';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.1: showSection 2-column layout fix -->
+<script>
+(function() {
+  'use strict';
+  var TWO_COL_PAGES = ['section-loan-details', 'section-assets', 'section-comp-pay', 'section-notes'];
+
+  function hookShowSection() {
+    if (typeof window.showSection !== 'function') return false;
+    if (window._showSectionHooked) return true;
+    var origShowSection = window.showSection;
+
+    window.showSection = function(pageId) {
+      origShowSection(pageId);
+      if (TWO_COL_PAGES.indexOf(pageId) === -1) return;
+
+      var pages = document.getElementById('section-pages');
+      if (!pages) return;
+
+      var cards = pages.querySelectorAll('[data-page="' + pageId + '"]');
+
+      /* ── LOAN DETAILS ── */
+      if (pageId === 'section-loan-details') {
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (!card.classList.contains('ld-col-right') && !card.classList.contains('ld-col-left')) card.classList.add('ld-col-left');
+        });
+      }
+      /* ── ASSETS ── */
+      if (pageId === 'section-assets') {
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (card.id === 'section-assets-accounts') { if (!card.classList.contains('ast-col-right')) card.classList.add('ast-col-right'); }
+          else if (!card.classList.contains('ast-summary-card')) { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
+        });
+      }
+      /* ── COMP/PAY ── */
+      if (pageId === 'section-comp-pay') { cards.forEach(function(card) { card.classList.remove('section-full'); }); }
+      /* ── NOTES ── */
+      if (pageId === 'section-notes') {
+        var visibleNoteCards = 0;
+        cards.forEach(function(card) {
+          if (!card.classList.contains('hidden')) visibleNoteCards++;
+        });
+        if (visibleNoteCards >= 2) {
+          cards.forEach(function(card) {
+            if (!card.classList.contains('hidden')) {
+              card.classList.remove('section-full');
+            }
+          });
+        }
+      }
+    };
+
+    window._showSectionHooked = true;
+    return true;
+  }
+
+  /* Poll until showSection is available (pipeline-app.js loads async) */
+  if (!hookShowSection()) {
+    var attempts = 0;
+    var timer = setInterval(function() {
+      if (hookShowSection() || ++attempts > 50) clearInterval(timer);
+    }, 100);
+  }
+})();
+</script>`;
+  return new Response(htmlContent, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      ...getCorsHeaders(request)
+    }
+  });
+}
+
 // ============================================================
 // MAIN WORKER HANDLER
 // ============================================================
@@ -8294,12 +11630,29 @@ export default {
       return await getClosingCostsJS(request);
     }
 
+    // --- Pipeline page static files (migrated from Webflow embeds) ---
+
+    // Pipeline CSS (was Webflow CSS embed, ~49K)
+    if (path === '/static/pipeline.css' && method === 'GET') {
+      return await getPipelineCSS(request);
+    }
+
+    // Pipeline HTML template (was Webflow HTML embed, ~49K)
+    if (path === '/static/pipeline-template.html' && method === 'GET') {
+      return await getPipelineTemplateHTML(request);
+    }
+
+    // Pipeline bootstrap HTML (was Webflow JS embed — Google Maps, address autocomplete, showSection hooks, module loaders)
+    if (path === '/static/pipeline-bootstrap.html' && method === 'GET') {
+      return await getPipelineBootstrapHTML(request);
+    }
+
     // Health check
     if (path === '/health' || path === '/') {
       return jsonResponse({
         status: 'ok',
         service: 'mtg-broker-pipeline',
-        version: '7.28',
+        version: '7.30',
         timestamp: new Date().toISOString(),
         endpoints: [
           'GET    /api/pipeline/loans              - List loans (cached)',
@@ -8317,6 +11670,9 @@ export default {
           'GET    /static/pipeline-app.js           - Main pipeline app JS module',
           'GET    /static/pipeline-calcs.js        - Calculator JS module',
           'GET    /static/pipeline-closing-costs.js - Closing Costs calculator module',
+          'GET    /static/pipeline.css              - Pipeline page CSS (migrated from Webflow embed)',
+          'GET    /static/pipeline-template.html    - Pipeline HTML template (migrated from Webflow embed)',
+          'GET    /static/pipeline-bootstrap.html   - Pipeline bootstrap JS/HTML (Google Maps, hooks, loaders)',
           'GET    /static/pipeline-checklist.js    - Checklist JS module',
           'GET    /static/pipeline-assets.js       - Assets tab JS module',
           'GET    /static/pipeline-documents.js   - Documents tab JS module',

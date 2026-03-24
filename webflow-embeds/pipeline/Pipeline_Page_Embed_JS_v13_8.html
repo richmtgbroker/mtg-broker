@@ -1,0 +1,785 @@
+<!--
+  ============================================================
+  Pipeline Page — JS Loader Embed (v13.8)
+  ============================================================
+  Place this in: Pipeline page → Before </body> tag
+
+  v13.8 — Deal String: clickable copy-to-clipboard string in
+           the yellow deal-status-bar showing combined deal info
+           (Borrower & Co-Borrower - Buyer Agent - Seller Agent -
+           Lender - Loan#: - Loan Type: - Occupancy: - Address).
+           Auto-updates as fields change. Skips empty segments.
+           Placeholder-ready for Processor, Title Rep, Loan Number.
+  v13.7 — Added pipeline-closing-costs.js module loader (v1.0).
+           Cache-bust pipeline-calcs.js to v3.5 for Closing Costs
+           routing in launchCalculator (worker v7.28).
+  v13.6 — Cache-bust pipeline-calcs.js to v3.4 for Refinance
+           Analysis v3.0 two-panel layout (worker v7.27).
+  v13.5 — FIX: Google address autocomplete click bug.
+  v13.4 — Documents tab v2.1: Two independent cards + note blur fix.
+  v13.3 — Purchase Agreement PDF extraction v1.1.
+  v13.2 — Purchase Agreement tab: pipeline-purchase-agreement.js.
+  v13.1 — FIX: showSection 2-column grid layout restoration.
+  v13.0 — Documents tab: pipeline-documents.js module loader.
+  v12.9 — Loan Detail Bar: clickable chips in modal header.
+  v12.8–v11.0 — See earlier changelogs.
+
+  Worker: mtg-broker-pipeline.rich-e00.workers.dev
+  Google API Key: mtg-broker-places
+  ============================================================
+-->
+
+<!-- ============================================================
+     Google Maps JS API — async bootstrap loader
+     ============================================================ -->
+<script>
+(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+  key: "AIzaSyBdmYPIFxOVgOBZUT8PDpB29b6Ko5-A9SI",
+  v: "weekly"
+});
+</script>
+
+<!-- ============================================================
+     Custom Address Autocomplete
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+  var style = document.createElement('style');
+  style.textContent = '.address-autocomplete-wrap{position:relative}.address-dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:100000;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-top:-1px}.address-dropdown.open{display:block}.address-dropdown-item{padding:10px 12px;cursor:pointer;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:8px}.address-dropdown-item:last-child{border-bottom:none}.address-dropdown-item:hover,.address-dropdown-item.active{background:#eff6ff}.address-dropdown-item .addr-icon{color:#9ca3af;font-size:13px;margin-top:2px;flex-shrink:0}.address-dropdown-item .addr-main{font-weight:500}.address-dropdown-item .addr-secondary{color:#6b7280;font-size:13px}.address-dropdown-loading{padding:10px 12px;color:#9ca3af;font-size:13px;text-align:center}.address-dropdown-attr{padding:4px 12px;text-align:right;font-size:10px;color:#9ca3af;background:#f9fafb;border-top:1px solid #f3f4f6}';
+  document.head.appendChild(style);
+
+  var placesLib = null, sessionToken = null, dropdown = null;
+  var debounceTimer = null, activeIndex = -1, currentSuggestions = [];
+  var isInteractingWithDropdown = false; /* v13.5: prevents blur from closing dropdown during selection */
+
+  function debounce(fn, ms) {
+    return function() {
+      var args = arguments;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() { fn.apply(null, args); }, ms);
+    };
+  }
+
+  function newSession() {
+    if (placesLib && placesLib.AutocompleteSessionToken) {
+      sessionToken = new placesLib.AutocompleteSessionToken();
+    }
+  }
+
+  function createDropdown(streetInput) {
+    var parent = streetInput.parentNode;
+    var wrap = document.createElement('div');
+    wrap.className = 'address-autocomplete-wrap';
+    parent.insertBefore(wrap, streetInput);
+    wrap.appendChild(streetInput);
+    dropdown = document.createElement('div');
+    dropdown.className = 'address-dropdown';
+    /* v13.5: Prevent blur when clicking dropdown */
+    dropdown.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      isInteractingWithDropdown = true;
+    });
+    wrap.appendChild(dropdown);
+  }
+
+  function showDropdown(items) {
+    currentSuggestions = items;
+    activeIndex = -1;
+    if (!items.length) { dropdown.classList.remove('open'); dropdown.innerHTML = ''; return; }
+    var html = '';
+    items.forEach(function(item, i) {
+      var main = item.mainText || item.text || '';
+      var secondary = item.secondaryText || '';
+      html += '<div class="address-dropdown-item" data-index="' + i + '">'
+        + '<span class="addr-icon"><i class="fa-solid fa-location-dot"></i></span>'
+        + '<div><div class="addr-main">' + main + '</div>'
+        + (secondary ? '<div class="addr-secondary">' + secondary + '</div>' : '')
+        + '</div></div>';
+    });
+    html += '<div class="address-dropdown-attr">Powered by Google</div>';
+    dropdown.innerHTML = html;
+    dropdown.classList.add('open');
+    dropdown.querySelectorAll('.address-dropdown-item').forEach(function(el) {
+      el.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        isInteractingWithDropdown = true; /* v13.5: flag to prevent blur-close */
+        selectSuggestion(parseInt(el.dataset.index));
+      });
+    });
+  }
+
+  async function selectSuggestion(index) {
+    var item = currentSuggestions[index]; if (!item) return;
+    dropdown.classList.remove('open');
+    try {
+      var place = new placesLib.Place({ id: item.placeId });
+      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+      var comps = place.addressComponents || [];
+      var get = function(type) {
+        var c = comps.find(function(comp) { return comp.types && comp.types.indexOf(type) !== -1; });
+        return c ? (type === 'administrative_area_level_1' ? (c.shortText || c.text || '') : (c.text || c.longText || '')) : '';
+      };
+      var streetNum = get('street_number');
+      var route = get('route');
+      var streetFull = streetNum ? streetNum + ' ' + route : route;
+      document.getElementById('property-street').value = streetFull;
+      document.getElementById('property-city').value = get('locality') || get('sublocality') || get('administrative_area_level_2') || '';
+      document.getElementById('property-state').value = get('administrative_area_level_1');
+      document.getElementById('property-zip').value = get('postal_code');
+      var countyField = document.getElementById('property-county');
+      if (countyField) {
+        var county = get('administrative_area_level_2');
+        countyField.value = county.replace(/ County$/i, '');
+      }
+      newSession();
+      /* v13.5: After populating fields, blur input + clear suggestions */
+      currentSuggestions = [];
+      var streetEl = document.getElementById('property-street');
+      if (streetEl) streetEl.blur();
+    } catch (err) { console.warn('Place details error:', err); }
+    isInteractingWithDropdown = false; /* v13.5: reset flag */
+  }
+
+  async function fetchSuggestions(query) {
+    if (!query || query.length < 3) { showDropdown([]); return; }
+    try {
+      var request = { input: query, includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'], includedRegionCodes: ['us'], sessionToken: sessionToken };
+      var res = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+      var suggestions = (res.suggestions || []).map(function(s) {
+        var p = s.placePrediction; if (!p) return null;
+        return { placeId: p.placeId, text: p.text ? p.text.text : '', mainText: p.mainText ? p.mainText.text : '', secondaryText: p.secondaryText ? p.secondaryText.text : '' };
+      }).filter(Boolean);
+      showDropdown(suggestions);
+    } catch (err) { console.warn('Autocomplete error:', err); showDropdown([]); }
+  }
+
+  var debouncedFetch = debounce(fetchSuggestions, 300);
+
+  function handleKeydown(e) {
+    var items = dropdown.querySelectorAll('.address-dropdown-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); updateActive(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); updateActive(items); }
+    else if (e.key === 'Enter' && activeIndex >= 0) { e.preventDefault(); selectSuggestion(activeIndex); }
+    else if (e.key === 'Escape') { dropdown.classList.remove('open'); }
+  }
+
+  function updateActive(items) {
+    items.forEach(function(el, i) { el.classList.toggle('active', i === activeIndex); });
+    if (activeIndex >= 0 && items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  async function init() {
+    var streetInput = document.getElementById('property-street');
+    if (!streetInput) return;
+    try {
+      placesLib = await google.maps.importLibrary('places');
+      newSession();
+      createDropdown(streetInput);
+      streetInput.addEventListener('input', function() { debouncedFetch(streetInput.value); });
+      /* v13.5: Fixed blur handler — prevents dropdown from eating clicks */
+      streetInput.addEventListener('blur', function() {
+        if (isInteractingWithDropdown) return; /* don't close during selection */
+        if (dropdown) dropdown.style.pointerEvents = 'none'; /* instantly stop intercepting clicks */
+        setTimeout(function() {
+          dropdown.classList.remove('open');
+          if (dropdown) dropdown.style.pointerEvents = ''; /* restore for next use */
+        }, 120);
+      });
+      streetInput.addEventListener('keydown', handleKeydown);
+      streetInput.addEventListener('focus', function() {
+        var val = streetInput.value.trim();
+        if (val.length >= 3 && currentSuggestions.length === 0) { debouncedFetch(val); }
+      });
+    } catch (err) { console.warn('Address autocomplete failed to load:', err); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 500); });
+  } else { setTimeout(init, 500); }
+})();
+</script>
+
+<!-- ============================================================
+     Pipeline Calculator JS (Affordability calcs, toggle logic)
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-calcs.js?v=3.5';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     Pipeline App JS (Main app: load loans, save, modals, etc.)
+     v13.3: Cache-bust to v15.15 for PA PDF extraction (v7.23 worker)
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js?v=15.15';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     v11.2: Pipeline Checklist JS (Loan workflow checklist)
+     Must load AFTER pipeline-app.js to access globals
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-checklist.js?v=2.2';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.0: Pipeline Documents JS -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-documents.js?v=2.1';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.2+: Pipeline Purchase Agreement JS (Contract tab) -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-purchase-agreement.js?v=1.2';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.7: Pipeline Closing Costs JS -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-closing-costs.js?v=1.0';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- ============================================================
+     v11.8: Zillow Lookup — opens Zillow search from address fields
+     ============================================================ -->
+<script>
+function zillowLookup() {
+  var street = (document.getElementById('property-street').value || '').trim();
+  if (!street) { alert('Enter a street address first.'); return; }
+  var addr = street;
+  var city = (document.getElementById('property-city').value || '').trim();
+  var state = (document.getElementById('property-state').value || '').trim();
+  var zip = (document.getElementById('property-zip').value || '').trim();
+  if (city) addr += ', ' + city;
+  if (state) addr += ', ' + state;
+  if (zip) addr += ' ' + zip;
+  window.open('https://www.zillow.com/homes/' + encodeURIComponent(addr) + '_rb/', '_blank');
+}
+</script>
+
+<!-- ============================================================
+     v12.1+: Pricing Card, Pricing Notes, Layout hooks,
+     v12.9: Loan Detail Bar, v13.8: Deal String
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════
+     CSS — injected at runtime (embed at 50K limit)
+     ══════════════════════════════════════════════ */
+  var css = document.createElement('style');
+  css.textContent = ''
+    /* v12.1: rate inputs + v12.2: 3-col names */
+    +'.rate-input{text-align:left!important}'
+    +'.cg3{grid-template-columns:1fr 1fr 1fr!important}'
+    +'@media(max-width:900px){.cg3{grid-template-columns:1fr!important}}'
+    /* v12.8: Assets tab styles */
+    +'.ast-group{margin-bottom:16px;padding:14px 16px;border:1px solid #E2E8F0;border-radius:8px;background:#FAFBFE}'
+    +'.ast-group:last-of-type{margin-bottom:8px}'
+    +'.ast-group-title{font-size:12px;font-weight:700;color:#1E3A8A;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #DBEAFE}'
+    +'.ast-sub-label{font-size:12px;font-weight:600;color:#334155;margin-bottom:6px;margin-top:2px}'
+    +'.ast-sync-btn{padding:4px 10px;font-size:11px;font-weight:600;border-radius:5px;cursor:pointer;border:1px solid #93C5FD;background:#EFF6FF;color:#2563EB;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:background .15s,border-color .15s}'
+    +'.ast-sync-btn:hover{background:#DBEAFE;border-color:#60A5FA}'
+    +'.ast-sync-btn i{font-size:10px}'
+    +'.ast-sync-msg{font-size:10px;color:#64748B;margin-top:2px;display:block;min-height:14px}'
+    +'.ast-subtotal-row,.ast-total-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:13px;margin-top:6px}'
+    +'.ast-subtotal-row span:first-child,.ast-total-row span:first-child{font-weight:600;color:#475569}'
+    +'.ast-subtotal-row span:last-child,.ast-total-row span:last-child{font-weight:700;color:#1E293B}'
+    +'.ast-total-row{border-top:2px solid #CBD5E1;padding-top:10px;margin-top:10px}'
+    +'.ast-total-row span:last-child{font-size:15px;color:#1E40AF}'
+    +'.ast-acct-row{margin-bottom:8px;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;transition:background .1s}'
+    +'.ast-acct-row:hover{background:#F8FAFC}'
+    +'.ast-acct-fields{display:flex;align-items:flex-end;gap:8px;flex:1;min-width:0}'
+    +'.ast-acct-fields .ff{margin-bottom:0}'
+    +'.ast-acct-fields .ff label{font-size:11px;font-weight:600;color:#64748B;margin-bottom:3px}'
+    +'.ast-acct-fields .ff select,.ast-acct-fields .ff input{font-size:13px;padding:7px 10px}'
+    +'.ast-remove-btn{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:6px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0;align-self:flex-end;margin-bottom:2px}'
+    +'.ast-remove-btn:hover{color:#EF4444;background:#FEF2F2}'
+    +'.ast-acct-desc-row{display:flex;gap:8px;margin-top:6px}'
+    +'.ast-acct-desc-row.hidden{display:none}'
+    +'.ast-add-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #CBD5E1;border-radius:6px;background:#FAFBFE;color:#64748B;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}'
+    +'.ast-add-btn:hover{border-color:#93C5FD;color:#3B82F6;background:#EFF6FF}'
+    +'.ast-add-btn i{font-size:11px}'
+    +'.ast-acct-total{display:flex;align-items:center;gap:8px;font-size:13px}'
+    +'.ast-acct-total span:first-child{font-weight:600;color:#475569}'
+    +'.ast-acct-total .ast-total-val{font-weight:700;color:#1E293B;font-size:14px}'
+    +'.ast-acct-grand-total{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:1px solid #93C5FD}'
+    +'.ast-acct-grand-total span:first-child{font-size:13px;font-weight:700;color:#1E3A8A}'
+    +'.ast-acct-grand-val{font-size:16px;font-weight:800;color:#1D4ED8}'
+    /* v13.1: Asset Summary card (Excess / Shortage) */
+    +'.ast-summary-card{grid-column:1/-1!important;max-width:none!important;justify-self:stretch!important}'
+    +'.ast-summary-grid{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;flex-wrap:wrap}'
+    +'.ast-summary-item{text-align:center;min-width:140px}'
+    +'.ast-summary-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
+    +'.ast-summary-value{font-size:18px;font-weight:700;color:#1E293B}'
+    +'.ast-summary-op{font-size:20px;font-weight:300;color:#94A3B8;padding:0 4px}'
+    +'.ast-summary-result{padding:10px 20px;border-radius:8px;background:#F8FAFC;border:1px solid #E2E8F0}'
+    +'.ast-summary-result-val{font-size:22px;font-weight:800}'
+    +'.ast-excess{color:#15803D!important}'
+    +'.ast-shortage{color:#DC2626!important}'
+    +'.ast-summary-result:has(.ast-excess){background:#F0FDF4;border-color:#86EFAC}'
+    +'.ast-summary-result:has(.ast-shortage){background:#FEF2F2;border-color:#FECACA}'
+    +'.ast-grand-total{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);border:1px solid #93C5FD}'
+    +'.ast-grand-total span:first-child{font-size:14px;font-weight:700;color:#1E3A8A}'
+    +'.ast-grand-val{font-size:17px;font-weight:800;color:#1D4ED8}'
+    +'.ast-hint{font-size:11px;color:#94A3B8;font-weight:400;margin-left:auto;margin-right:8px}'
+    +'@media(max-width:600px){.ast-acct-fields{flex-wrap:wrap}.ast-acct-fields .ff{min-width:100%!important}}'
+    /* v12.1: Pricing summary */
+    +'.ld-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ld-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'.ld-pe-strip{padding:8px 0;margin-bottom:10px;border-bottom:1px solid #F1F5F9}'
+    +'.ld-pe-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'
+    +'.ld-pe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}'
+    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:6px;background:#fff;text-decoration:none;transition:all .15s}'
+    +'.ld-pe-btn:hover{background:#EFF6FF;border-color:#93C5FD}'
+    +'.ld-pe-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0}'
+    +'.ld-pe-name{font-size:11px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.ld-pe-arrow{width:12px;height:12px;flex-shrink:0;color:#94A3B8;margin-left:auto}'
+    +'.ps-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
+    +'.ps-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px}'
+    +'.ps-refresh{font-size:10px;font-weight:600;color:#3B82F6;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s}'
+    +'.ps-refresh:hover{background:#EFF6FF}'
+    +'.ps-table{width:100%;border-collapse:collapse;font-size:13px}'
+    +'.ps-table tr{border-bottom:1px solid #F1F5F9}.ps-table tr:last-child{border-bottom:none}'
+    +'.ps-table td{padding:7px 0;vertical-align:middle}'
+    +'.ps-table td:first-child{color:#64748B;font-weight:500;padding-right:12px;white-space:nowrap}'
+    +'.ps-table td:last-child{text-align:right;font-weight:600;color:#1E293B}'
+    +'.ps-empty{color:#CBD5E1!important;font-weight:400!important;font-style:italic}'
+    +'.ps-purchase-only{display:none}.ps-purchase-only.ps-show{display:table-row}'
+    +'.ps-notes-textarea{width:100%;min-height:80px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:6px;font-size:13px;font-family:inherit;color:#1E293B;background:#F8FAFC;resize:vertical;transition:all .15s;box-sizing:border-box}'
+    +'.ps-notes-textarea:focus{outline:none;border-color:#3B82F6;background:#fff;box-shadow:0 0 0 3px rgba(59,130,246,.1)}'
+    +'.ps-notes-textarea::placeholder{color:#CBD5E1}'
+    +'@media(max-width:900px){.ld-col-left,.ld-col-right{grid-column:1/-1!important;grid-row:auto!important}}'
+    /* v13.1: Pricing card in right column — 2-col engines grid, prevent text overflow */
+    +'.ld-col-right .ld-pe-grid{grid-template-columns:repeat(2,1fr)!important}'
+    +'.ld-col-right .ps-table td:first-child{max-width:120px;overflow:hidden;text-overflow:ellipsis}'
+    /* v12.9: Assets 2-column layout (left: Cash/Reserves, right: Accounts) */
+    +'.ast-col-left{grid-column:1!important;max-width:none!important;justify-self:stretch!important;width:100%!important}'
+    +'.ast-col-right{grid-column:2!important;grid-row:1/span 4!important;max-width:none!important;justify-self:stretch!important;width:100%!important;align-self:start;min-width:0!important}'
+    +'@media(max-width:900px){.ast-col-left,.ast-col-right{grid-column:1/-1!important;grid-row:auto!important}}'
+    /* v12.9: Loan Detail Bar */
+    +'.loan-detail-bar{display:flex;align-items:center;gap:6px;padding:6px 24px;background:#F8FAFC;border-bottom:1px solid #E2E8F0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
+    +'.loan-detail-bar::-webkit-scrollbar{display:none}'
+    +'.loan-detail-bar.hidden{display:none}'
+    +'.ldb-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;font-size:12px;font-weight:500;color:#334155;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;line-height:1.3}'
+    +'.ldb-chip:hover{background:#EFF6FF;border-color:#93C5FD;color:#1E40AF}'
+    +'.ldb-label{font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px}'
+    +'.ldb-chip:hover .ldb-label{color:#60A5FA}'
+    +'.ldb-dot{width:3px;height:3px;border-radius:50%;background:#CBD5E1;flex-shrink:0}'
+    +'.ldb-val{font-size:12px;font-weight:600;color:#1E293B}'
+    +'.ldb-chip:hover .ldb-val{color:#1E40AF}'
+    +'.ldb-val.ldb-empty{color:#CBD5E1;font-weight:400;font-style:italic}'
+    +'@media(max-width:900px){.loan-detail-bar{padding:5px 12px;gap:5px}.ldb-chip{padding:3px 8px}.ldb-label{font-size:9px}.ldb-val{font-size:11px}}'
+    /* v13.8: Deal String — clickable copy element in deal-status-bar */
+    +'.deal-string-wrap{flex:1;min-width:0;display:flex;align-items:center;overflow:hidden}'
+    +'.deal-string-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(255,255,255,.6);border:1px solid #D4A017;border-radius:6px;cursor:pointer;max-width:100%;min-width:0;transition:all .15s}'
+    +'.deal-string-btn:hover{background:#fff;border-color:#B8860B;box-shadow:0 1px 4px rgba(0,0,0,.08)}'
+    +'.deal-string-text{font-size:11px;color:#6B4F00;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;line-height:1.3}'
+    +'.deal-string-icon{flex-shrink:0;font-size:12px;color:#9A7B00;transition:color .15s}'
+    +'.deal-string-btn:hover .deal-string-icon{color:#6B4F00}'
+    +'.deal-string-btn.ds-copied{background:#ECFDF5;border-color:#34D399}'
+    +'.deal-string-btn.ds-copied .deal-string-text{color:#047857}'
+    +'.deal-string-btn.ds-copied .deal-string-icon{color:#059669}'
+    +'.deal-string-empty{font-size:11px;color:#B8A060;font-style:italic;padding:0 8px}'
+    +'@media(max-width:900px){.deal-string-wrap{display:none}}';
+  document.head.appendChild(css);
+
+
+  /* ══════════════════════════════════════════════
+     PRICING CARD HTML TEMPLATES
+     ══════════════════════════════════════════════ */
+  var arrow = '<svg class="ld-pe-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
+  var lsLogo = 'data:image/jpeg;base64,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';
+
+  var pricingCardHtml = '<div class="card section-card section-hidden ld-col-right" id="pricing-summary-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\u2014</td></tr><tr><td>Address</td><td id="ps-address">\u2014</td></tr></tbody></table></div>';
+
+  var notesCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Pricing Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
+
+
+  /* ══════════════════════════════════════════════
+     PRICING SUMMARY HELPERS + REFRESH
+     ══════════════════════════════════════════════ */
+  function fmtCurrency(val) {
+    var num = parseFloat(String(val).replace(/[^0-9.\-]/g, ''));
+    if (isNaN(num)) return '';
+    return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function getVal(id) {
+    var el = document.getElementById(id); if (!el) return '';
+    if (el.tagName === 'SELECT') { var o = el.options[el.selectedIndex]; return o ? o.text : ''; }
+    return (el.value || '').trim();
+  }
+  function getNum(id) { return parseFloat(getVal(id).replace(/[^0-9.\-]/g, '')) || 0; }
+  function setCell(id, value) {
+    var el = document.getElementById(id); if (!el) return;
+    if (!value || value === 'Select...' || value === '\u2014') { el.textContent = '\u2014'; el.className = 'ps-empty'; }
+    else { el.textContent = value; el.className = ''; }
+  }
+
+  window.refreshPricingSummary = function() {
+    var loanType=getVal('loan-type'),loanTerm=getVal('loan-term'),loanPurpose=getVal('loan-purpose');
+    var propValue=getNum('property-value'),purchasePrice=getNum('purchase-price'),loanAmt=getNum('loan-amount'),ltv=getNum('ltv');
+    var fico=getVal('credit-score'),occupancy=getVal('occupancy'),zip=getVal('property-zip'),street=getVal('property-street');
+    var occDisplay = occupancy;
+    if (occupancy === 'Primary Residence') occDisplay = 'Primary';
+    if (occupancy === 'Investment Property') occDisplay = 'Investment';
+    var isPurchase = loanPurpose.toLowerCase().indexOf('purchase') !== -1;
+    document.querySelectorAll('.ps-purchase-only').forEach(function(row) {
+      row.classList.toggle('ps-show', isPurchase);
+    });
+    var basis=purchasePrice||propValue, downPct=0, downAmt=0;
+    if (isPurchase && basis > 0 && loanAmt > 0) { downAmt=basis-loanAmt; downPct=(downAmt/basis)*100; }
+    else if (isPurchase && ltv > 0) { downPct=100-ltv; if(basis>0)downAmt=basis*(downPct/100); }
+    var bVal=getNum('borrower-income'),cVal=getNum('coborrower-income');
+    var bMode=window.borrowerIncomeMode||'annual',cMode=window.coBorrowerIncomeMode||'annual';
+    var bA=(bMode==='monthly')?bVal*12:bVal, cA=(cMode==='monthly')?cVal*12:cVal;
+    var monthlyIncome=(bA+cA)/12;
+    setCell('ps-loan-type',loanType); setCell('ps-loan-term',loanTerm||'');
+    setCell('ps-loan-purpose',loanPurpose);
+    setCell('ps-property-value',propValue?fmtCurrency(propValue):'');
+    setCell('ps-purchase-price',purchasePrice?fmtCurrency(purchasePrice):'');
+    setCell('ps-loan-amount',loanAmt?fmtCurrency(loanAmt):'');
+    setCell('ps-ltv',ltv?(ltv+'%'):'');
+    setCell('ps-down-pct',downPct?(downPct.toFixed(2)+'%'):'');
+    setCell('ps-down-amt',downAmt?fmtCurrency(downAmt):'');
+    setCell('ps-fico',fico); setCell('ps-occupancy',occDisplay);
+    setCell('ps-zip',zip); setCell('ps-address',street);
+    setCell('ps-monthly-income',monthlyIncome?fmtCurrency(monthlyIncome):'');
+  };
+
+
+  /* ══════════════════════════════════════════════
+     v12.9: LOAN DETAIL BAR — clickable info chips
+     ══════════════════════════════════════════════ */
+  function buildLoanDetailBar() {
+    var header = document.querySelector('.modal-header');
+    if (!header || document.getElementById('loan-detail-bar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'loan-detail-bar';
+    bar.className = 'loan-detail-bar hidden';
+    header.insertAdjacentElement('afterend', bar);
+  }
+
+  function updateLoanDetailBar() {
+    var bar = document.getElementById('loan-detail-bar');
+    if (!bar) return;
+    var isNew = document.getElementById('modal-title').textContent === 'New Loan';
+    if (isNew) { bar.classList.add('hidden'); return; }
+    bar.classList.remove('hidden');
+
+    function chip(label, valId, navTarget) {
+      var el = document.getElementById(valId);
+      var val = el ? (el.tagName === 'SELECT' ? (el.options[el.selectedIndex]||{}).text||'' : el.value||'') : '';
+      if (val === 'Select...' || val === '-') val = '';
+      var isEmpty = !val;
+      var display = val;
+      if (valId === 'ltv' && val) display = val + '%';
+      if (valId === 'loan-interest-rate' && val) display = val + '%';
+      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+label+'">'
+        +'<span class="ldb-label">'+label+'</span>'
+        +'<span class="ldb-dot"></span>'
+        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display||'\u2014')+'</span>'
+        +'</div>';
+    }
+
+    var checklistBadge = document.getElementById('checklist-badge');
+    var checklistVal = checklistBadge ? checklistBadge.textContent : '0/43';
+
+    bar.innerHTML = ''
+      + chip('Stage', 'loan-stage', "showSection('main')")
+      + chip('Address', 'property-street', "showSection('section-property')")
+      + chip('Credit', 'credit-score', "showSection('section-credit')")
+      + chip('Occupancy', 'occupancy', "showSection('main')")
+      + chip('Purpose', 'loan-purpose', "showSection('main')")
+      + chip('Type', 'loan-type', "showSection('section-loan-details')")
+      + chip('Lender', 'loan-lender', "showSection('main')")
+      + chip('Rate', 'loan-interest-rate', "showSection('section-loan-details')")
+      + '<div class="ldb-chip" onclick="toggleChecklistPanel()" title="Open Checklist">'
+      + '<span class="ldb-label">Checklist</span><span class="ldb-dot"></span>'
+      + '<span class="ldb-val">'+checklistVal+'</span></div>';
+  }
+
+  /* Debounced updater for field changes */
+  var ldbTimer = null;
+  function scheduleLdbUpdate() {
+    clearTimeout(ldbTimer);
+    ldbTimer = setTimeout(function() {
+      updateLoanDetailBar();
+      updateDealString(); /* v13.8: also refresh deal string */
+    }, 200);
+  }
+
+
+  /* ══════════════════════════════════════════════
+     v13.8: DEAL STRING — copy-to-clipboard in deal-status-bar
+     Builds " - " delimited string from form fields.
+     Empty segments skipped. Placeholder IDs for future fields:
+     processor, title-rep, loan-number, affordable-loan-type
+     ══════════════════════════════════════════════ */
+
+  /* Inject the deal string container into the deal-status-bar */
+  function injectDealStringEl() {
+    var statusBar = document.getElementById('deal-status-bar');
+    if (!statusBar || document.getElementById('deal-string-wrap')) return;
+    /* Find the right side (Last Contact) to insert before it */
+    var rightDiv = statusBar.querySelector('.deal-status-right');
+    var wrap = document.createElement('div');
+    wrap.id = 'deal-string-wrap';
+    wrap.className = 'deal-string-wrap';
+    wrap.innerHTML = '<div class="deal-string-btn" onclick="copyDealString()" title="Click to copy deal string">'
+      + '<i class="fa-regular fa-copy deal-string-icon"></i>'
+      + '<span class="deal-string-text" id="deal-string-text"></span></div>';
+    if (rightDiv) {
+      statusBar.insertBefore(wrap, rightDiv);
+    } else {
+      statusBar.appendChild(wrap);
+    }
+  }
+
+  /* Build the deal string from form fields */
+  function buildDealString() {
+    /* Helper: get trimmed value from an element by ID (supports input + select) */
+    function gv(id) {
+      var el = document.getElementById(id);
+      if (!el) return '';
+      if (el.tagName === 'SELECT') {
+        var opt = el.options[el.selectedIndex];
+        var txt = opt ? opt.text : '';
+        return (txt === 'Select...' || txt === '-' || txt === '') ? '' : txt.trim();
+      }
+      return (el.value || '').trim();
+    }
+
+    /* Borrower Name (first + last combined) */
+    var bFirst = gv('borrower-first'), bLast = gv('borrower-last');
+    var borrower = [bFirst, bLast].filter(Boolean).join(' ');
+
+    /* Co-Borrower Name */
+    var cFirst = gv('co-borrower-first'), cLast = gv('co-borrower-last');
+    var coBorrower = [cFirst, cLast].filter(Boolean).join(' ');
+
+    /* Names portion: "Borrower & Co-Borrower" or just "Borrower" */
+    var names = borrower;
+    if (coBorrower) names += ' & ' + coBorrower;
+
+    /* Buyer Agent + Seller Agent from Purchase Agreement tab */
+    var buyerAgent = gv('pa-buyers-agent');
+    var sellerAgent = gv('pa-sellers-agent');
+
+    /* Processor + Title Rep — placeholder IDs (not yet in form) */
+    var processor = gv('processor');
+    var titleRep = gv('title-rep');
+
+    /* Lender */
+    var lender = gv('loan-lender');
+
+    /* Loan Number — placeholder ID (not yet in form) */
+    var loanNumber = gv('loan-number');
+
+    /* Loan Type + Affordable Loan Type */
+    var loanType = gv('loan-type');
+    var affordableType = gv('affordable-loan-type');
+    var loanTypeStr = [loanType, affordableType].filter(Boolean).join(' ');
+
+    /* Occupancy */
+    var occupancy = gv('occupancy');
+
+    /* Address: Street, City State Zip */
+    var street = gv('property-street');
+    var city = gv('property-city');
+    var state = gv('property-state');
+    var zip = gv('property-zip');
+    var cityStateZip = [city, [state, zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    var fullAddress = street;
+    if (cityStateZip) fullAddress += (street ? ', ' : '') + cityStateZip;
+
+    /* Build segments array — labeled items get their prefix,
+       unlabeled items (names, agents, lender) are bare values.
+       Empty segments are skipped entirely. */
+    var segments = [];
+    if (names) segments.push(names);
+    if (buyerAgent) segments.push(buyerAgent);
+    if (sellerAgent) segments.push(sellerAgent);
+    if (processor) segments.push(processor);
+    if (titleRep) segments.push(titleRep);
+    if (lender) segments.push(lender);
+    if (loanNumber) segments.push('Loan#: ' + loanNumber);
+    if (loanTypeStr) segments.push('Loan Type: ' + loanTypeStr);
+    if (occupancy) segments.push('Occupancy: ' + occupancy);
+    if (fullAddress) segments.push(fullAddress);
+
+    return segments.join(' - ');
+  }
+
+  /* Update the deal string display */
+  function updateDealString() {
+    var textEl = document.getElementById('deal-string-text');
+    if (!textEl) return;
+    var str = buildDealString();
+    var wrap = document.getElementById('deal-string-wrap');
+    if (!str) {
+      if (wrap) wrap.style.display = 'none';
+      return;
+    }
+    if (wrap) wrap.style.display = '';
+    textEl.textContent = str;
+    textEl.title = str; /* full text on hover */
+  }
+
+  /* Copy deal string to clipboard + visual feedback */
+  window.copyDealString = function() {
+    var str = buildDealString();
+    if (!str) return;
+    navigator.clipboard.writeText(str).then(function() {
+      var btn = document.querySelector('.deal-string-btn');
+      if (!btn) return;
+      btn.classList.add('ds-copied');
+      var icon = btn.querySelector('.deal-string-icon');
+      var textEl = btn.querySelector('.deal-string-text');
+      var origText = textEl.textContent;
+      if (icon) icon.className = 'fa-solid fa-check deal-string-icon';
+      textEl.textContent = 'Copied!';
+      setTimeout(function() {
+        btn.classList.remove('ds-copied');
+        if (icon) icon.className = 'fa-regular fa-copy deal-string-icon';
+        textEl.textContent = origText;
+      }, 1500);
+    }).catch(function() {
+      /* Fallback for older browsers */
+      var ta = document.createElement('textarea');
+      ta.value = str;
+      ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    });
+  };
+
+
+  /* ══════════════════════════════════════════════
+     INJECTION ON DOM READY
+     ══════════════════════════════════════════════ */
+  function injectPricingCards() {
+    var pages = document.getElementById('section-pages');
+    if (!pages) return;
+    if (document.getElementById('pricing-summary-card')) return;
+    pages.insertAdjacentHTML('beforeend', pricingCardHtml);
+    pages.insertAdjacentHTML('beforeend', notesCardHtml);
+  }
+
+  function setup() {
+    injectPricingCards();
+    buildLoanDetailBar();
+    injectDealStringEl(); /* v13.8: inject deal string container */
+
+    /* Listen for form changes to update detail bar + deal string */
+    var form = document.getElementById('loan-form');
+    if (form) {
+      form.addEventListener('change', scheduleLdbUpdate);
+      form.addEventListener('input', scheduleLdbUpdate);
+    }
+
+    /* Watch checklist badge changes via MutationObserver */
+    var checkBadge = document.getElementById('checklist-badge');
+    if (checkBadge) {
+      var obs = new MutationObserver(scheduleLdbUpdate);
+      obs.observe(checkBadge, { childList: true, characterData: true, subtree: true });
+    }
+
+    /* Watch modal open/close to update detail bar + deal string */
+    var modal = document.getElementById('loan-modal');
+    if (modal) {
+      var lastHidden = modal.classList.contains('hidden');
+      new MutationObserver(function() {
+        var h = modal.classList.contains('hidden');
+        if (h !== lastHidden) {
+          lastHidden = h;
+          if (!h) setTimeout(function() { refreshPricingSummary(); updateLoanDetailBar(); updateDealString(); }, 200);
+        }
+      }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(setup, 600); });
+  } else {
+    setTimeout(setup, 600);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     v12.8: Pipeline Assets JS Module Loader
+     ============================================================ -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js?v=1.3';s.defer=true;document.body.appendChild(s);})();
+</script>
+
+<!-- v13.1: showSection 2-column layout fix -->
+<script>
+(function() {
+  'use strict';
+  var TWO_COL_PAGES = ['section-loan-details', 'section-assets', 'section-comp-pay', 'section-notes'];
+
+  function hookShowSection() {
+    if (typeof window.showSection !== 'function') return false;
+    if (window._showSectionHooked) return true;
+    var origShowSection = window.showSection;
+
+    window.showSection = function(pageId) {
+      origShowSection(pageId);
+      if (TWO_COL_PAGES.indexOf(pageId) === -1) return;
+
+      var pages = document.getElementById('section-pages');
+      if (!pages) return;
+
+      var cards = pages.querySelectorAll('[data-page="' + pageId + '"]');
+
+      /* ── LOAN DETAILS ── */
+      if (pageId === 'section-loan-details') {
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (!card.classList.contains('ld-col-right') && !card.classList.contains('ld-col-left')) card.classList.add('ld-col-left');
+        });
+      }
+      /* ── ASSETS ── */
+      if (pageId === 'section-assets') {
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (card.id === 'section-assets-accounts') { if (!card.classList.contains('ast-col-right')) card.classList.add('ast-col-right'); }
+          else if (!card.classList.contains('ast-summary-card')) { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
+        });
+      }
+      /* ── COMP/PAY ── */
+      if (pageId === 'section-comp-pay') { cards.forEach(function(card) { card.classList.remove('section-full'); }); }
+      /* ── NOTES ── */
+      if (pageId === 'section-notes') {
+        var visibleNoteCards = 0;
+        cards.forEach(function(card) {
+          if (!card.classList.contains('hidden')) visibleNoteCards++;
+        });
+        if (visibleNoteCards >= 2) {
+          cards.forEach(function(card) {
+            if (!card.classList.contains('hidden')) {
+              card.classList.remove('section-full');
+            }
+          });
+        }
+      }
+    };
+
+    window._showSectionHooked = true;
+    return true;
+  }
+
+  /* Poll until showSection is available (pipeline-app.js loads async) */
+  if (!hookShowSection()) {
+    var attempts = 0;
+    var timer = setInterval(function() {
+      if (hookShowSection() || ++attempts > 50) clearInterval(timer);
+    }, 100);
+  }
+})();
+</script>

@@ -1,0 +1,671 @@
+<!-- PIPELINE HTML v12.0 — Closing Costs calc button enabled (no longer Coming Soon) -->
+<div class="app-page-content">
+<div class="pipeline-container" id="pipeline-app">
+  <div class="pipeline-header"><div class="header-left"><h1 class="pipeline-title">Pipeline</h1></div><div class="header-right"><div class="view-toggle"><button class="view-btn active" data-view="table" onclick="switchView('table')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg> Table</button><button class="view-btn" data-view="kanban" onclick="switchView('kanban')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="13" rx="1"></rect><rect x="16" y="3" width="6" height="8" rx="1"></rect></svg> Board</button></div><button class="btn btn-primary" onclick="openNewLoanModal()">+ Add Loan</button><button class="btn btn-secondary btn-sm" onclick="exportPipeline()" title="Export to CSV" id="export-pipeline-btn"><i class="fa-solid fa-download"></i> Export</button><button class="btn btn-secondary btn-sm" onclick="refreshPipelineData()" title="Refresh data">&#8635;</button></div></div>
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-card highlight"><div class="stat-value" id="stat-total">-</div><div class="stat-label">Total Active</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-active">-</div><div class="stat-label">In Progress</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-closing">-</div><div class="stat-label">Closing Soon</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-volume">-</div><div class="stat-label">Pipeline Volume</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-won" style="color:#15803D;">-</div><div class="stat-label">Won</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-lost" style="color:#DC2626;">-</div><div class="stat-label">Lost</div></div>
+  </div>
+  <div class="loading" id="loading-state"><div class="spinner"></div></div>
+  <div class="empty-state hidden" id="empty-state"><div style="font-size:48px;">&#128194;</div><h3>No loans in your pipeline</h3><p>Create your first loan to get started</p><button class="btn btn-primary" onclick="openNewLoanModal()" style="margin-top:16px;">+ Add First Loan</button></div>
+  <div class="kanban-board hidden" id="kanban-view"></div>
+  <!-- Table View -->
+  <div class="table-container hidden" id="table-view"><div class="table-toolbar"><div class="search-and-status"><div class="search-box"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><input type="text" placeholder="Search loans..." id="search-input" oninput="filterTable()"></div>
+        <div class="status-toggle">
+          <button class="status-btn" data-status="All" onclick="setStatusFilter('All')">All</button>
+          <button class="status-btn" data-status="Leads" onclick="setStatusFilter('Leads')">Leads</button>
+          <button class="status-btn active" data-status="Active" onclick="setStatusFilter('Active')">Active</button>
+          <button class="status-btn" data-status="Won" onclick="setStatusFilter('Won')">Won</button>
+          <button class="status-btn" data-status="Lost" onclick="setStatusFilter('Lost')">Lost</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <select class="filter-select" id="stage-filter" onchange="filterTable()">
+          <option value="">All Stages</option>
+        </select>
+        <select class="filter-select" id="type-filter" onchange="filterTable()">
+          <option value="">All Loan Types</option>
+        </select>
+        <select class="filter-select" id="lock-status-filter" onchange="filterTable()">
+          <option value="">All Lock Status</option>
+          <option value="Floating">Floating</option>
+          <option value="Locked">Locked</option>
+          <option value="Expired">Expired</option>
+          <option value="-">Not Set</option>
+        </select>
+        <select class="filter-select" id="pay-status-filter" onchange="filterTable()">
+          <option value="">All Pay Status</option>
+          <option value="Preparing">Preparing</option>
+          <option value="Ready for Payroll">Ready for Payroll</option>
+          <option value="Payroll Submitted">Payroll Submitted</option>
+          <option value="Pay Received">Pay Received</option>
+          <option value="-">Not Set</option>
+        </select>
+        <div class="column-selector">
+          <button class="column-selector-btn" onclick="toggleColumnSelector()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Columns
+          </button>
+          <div class="column-selector-dropdown" id="column-selector-dropdown">
+            <div class="column-selector-header">Show/Hide &amp; Reorder Columns</div>
+            <div id="column-options-list">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="overflow-x: auto;">
+      <table class="pipeline-table">
+        <thead>
+          <tr id="table-header-row">
+          </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Loan Modal -->
+<div class="modal-overlay hidden" id="loan-modal">
+  <div class="modal-content">
+    <!-- Header -->
+    <div class="modal-header"><div class="modal-nav-left"><button type="button" class="back-to-pipeline-btn" onclick="closeModal()"><i class="fa-solid fa-arrow-left"></i> Back</button><h2 id="modal-title">New Loan</h2><div class="header-borrower-names hidden" id="borrower-name-bar"><span class="hbn-sep">—</span><span class="hbn-primary" id="header-borrower-name"></span><span class="hbn-amp hidden" id="header-name-separator">&amp;</span><span class="hbn-secondary" id="header-coborrower-name"></span></div></div><div class="modal-nav-right"><button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button><button type="button" class="btn btn-primary" id="save-loan-btn-top" onclick="saveLoan()">Save Loan</button></div></div>
+    <div class="deal-status-bar hidden" id="deal-status-bar"><div class="deal-status-left"><span class="status-label">Deal Status:</span><button class="deal-status-btn won-btn" id="btn-won" onclick="setDealStatus('Won')">&#10003; Won</button><button class="deal-status-btn lost-btn" id="btn-lost" onclick="setDealStatus('Lost')">&#10007; Lost</button><div class="deal-status-banner won-banner hidden" id="won-banner">&#10003; WON</div><div class="deal-status-banner lost-banner hidden" id="lost-banner">&#10007; LOST</div><button class="deal-status-btn reopen-btn hidden" id="btn-reopen" onclick="setDealStatus('Active')">&#8634; Reopen</button></div><div class="deal-status-right"><label class="deal-status-field-label">Last Contact</label><input type="date" class="fc deal-status-date" id="last-contact-date"></div></div>
+    <!-- 3-PANEL LAYOUT -->
+    <div class="modal-body-wrapper">
+      <!-- LEFT NAV SIDEBAR -->
+      <div class="modal-nav-sidebar" id="modal-nav-sidebar">
+        <a class="mnav-item active" data-section="section-borrower" onclick="showSection('main')"><i class="fa-solid fa-user"></i><span>Borrower</span></a>
+        <a class="mnav-item active" data-section="section-deal" onclick="showSection('main')"><i class="fa-solid fa-handshake"></i><span>Deal</span></a>
+        <a class="mnav-item" data-section="section-credit" onclick="showSection('section-credit')"><i class="fa-solid fa-chart-line"></i><span>Credit</span></a>
+        <a class="mnav-item" data-section="section-income" onclick="showSection('section-income')"><i class="fa-solid fa-money-bill-trend-up"></i><span>Income</span></a>
+        <a class="mnav-item" data-section="section-assets" onclick="showSection('section-assets')"><i class="fa-solid fa-vault"></i><span>Assets</span></a>
+        <a class="mnav-item" data-section="section-loan-details" onclick="showSection('section-loan-details')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Loan Details</span></a>
+        <a class="mnav-item" data-section="section-payment" onclick="showSection('section-payment')"><i class="fa-solid fa-money-check-dollar"></i><span>Payment</span></a>
+        <a class="mnav-item" data-section="section-property" onclick="showSection('section-property')"><i class="fa-solid fa-house"></i><span>Property</span></a>
+        <a class="mnav-item" data-section="section-comp-pay" onclick="showSection('section-comp-pay')"><i class="fa-solid fa-sack-dollar"></i><span>Comp</span></a>
+        <a class="mnav-item" data-section="section-lock" onclick="showSection('section-lock')"><i class="fa-solid fa-lock"></i><span>Lock</span></a>
+        <a class="mnav-item" data-section="section-notes" onclick="showSection('section-notes')"><i class="fa-solid fa-pen-to-square"></i><span>Notes</span></a>
+        <a class="mnav-item" data-section="section-links" onclick="showSection('section-links')"><i class="fa-solid fa-link"></i><span>Links</span></a>
+        <div class="mnav-divider"></div>
+        <a class="mnav-item mnav-checklist-btn" onclick="toggleChecklistPanel()"><i class="fa-solid fa-clipboard-check"></i><span>Checklist</span><span class="checklist-badge" id="checklist-badge">0/43</span></a>
+      </div>
+      <!-- MAIN SCROLLABLE CONTENT -->
+      <div class="modal-main-scroll" id="modal-main-scroll">
+        <form id="loan-form">
+          <input type="hidden" id="loan-id">
+          <input type="hidden" id="checklist-json">
+  <!-- SECTION PAGES -->
+          <div class="section-pages" id="section-pages">
+            <!-- BORROWER (main) -->
+            <div class="card section-card" id="section-borrower" data-page="main">
+              <div class="card-title"><i class="fa-solid fa-user"></i> Borrower</div>
+              <div class="cg cg3">
+                <div class="ff"><label>First Name *</label><input type="text" class="fc" id="borrower-first" required></div>
+                <div class="ff"><label>Middle</label><input type="text" class="fc" id="borrower-middle"></div>
+                <div class="ff"><label>Last Name *</label><input type="text" class="fc" id="borrower-last" required></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Email</label><input type="email" class="fc" id="borrower-email"></div>
+                <div class="ff"><label>Phone</label><input type="tel" class="fc" id="borrower-phone"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="borrower-dob"></div>
+                <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+              </div>
+              <div class="cb-toggle" onclick="toggleCoBorrower()">
+                <span class="cb-toggle-label">Co-Borrower</span>
+                <span class="cb-toggle-icon" id="coborrower-toggle-icon">&#9662;</span>
+              </div>
+              <div class="cb-body collapsed" id="coborrower-toggle-body">
+                <div class="cg cg3">
+                  <div class="ff"><label>First Name</label><input type="text" class="fc" id="co-borrower-first"></div>
+                  <div class="ff"><label>Middle</label><input type="text" class="fc" id="co-borrower-middle"></div>
+                  <div class="ff"><label>Last Name</label><input type="text" class="fc" id="co-borrower-last"></div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Role</label>
+                    <select class="fc" id="co-borrower-role"><option value="">Select...</option><option value="Borrower">Borrower</option><option value="Non-Occupant Co-Borrower">Non-Occupant Co-Borrower</option><option value="Title Holder Only">Title Holder Only</option><option value="Guarantor">Guarantor</option><option value="Non-title Spouse">Non-title Spouse</option></select>
+                  </div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Email</label><input type="email" class="fc" id="co-borrower-email"></div>
+                  <div class="ff"><label>Phone</label><input type="tel" class="fc" id="co-borrower-phone"></div>
+                </div>
+                <div class="cg">
+                  <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="co-borrower-dob"></div>
+                  <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="co-borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+                </div>
+              </div>
+            </div>
+            <!-- DEAL (main) -->
+            <div class="card section-card" id="section-deal" data-page="main">
+              <div class="card-title"><i class="fa-solid fa-handshake"></i> Deal</div>
+              <div class="cg">
+                <div class="ff"><label>Stage *</label>
+                  <select class="fc" id="loan-stage" required>
+                    <option value="01 - Lead">01 - Lead</option>
+                    <option value="02 - Application">02 - Application</option>
+                    <option value="03 - Prequal | AUS">03 - Prequal | AUS</option>
+                    <option value="04 - (Purchase) Shopping">04 - (Purchase) Shopping</option>
+                    <option value="04 - (Purchase) Under Contract">04 - (Purchase) Under Contract</option>
+                    <option value="04 - (Refi) Quotes">04 - (Refi) Quotes</option>
+                    <option value="05 - Disclosure">05 - Disclosure</option>
+                    <option value="06 - Processing">06 - Processing</option>
+                    <option value="07 - Underwriting">07 - Underwriting</option>
+                    <option value="08 - Conditional Approval">08 - Conditional Approval</option>
+                    <option value="09 - Resubmittal">09 - Resubmittal</option>
+                    <option value="10 - CTC">10 - CTC</option>
+                    <option value="11 - Closing | Funding">11 - Closing | Funding</option>
+                    <option value="12 - Closed">12 - Closed</option>
+                  </select>
+                </div>
+                <div class="ff"><label>Purpose</label>
+                  <select class="fc" id="loan-purpose" onchange="togglePurchasePriceField(); toggleEquityLoanFields();"><option value="">Select...</option><option value="Purchase">Purchase</option><option value="Refi (Rate-Term)">Refi (Rate-Term)</option><option value="Refi (Cash-Out)">Refi (Cash-Out)</option><option value="Equity Loan">Equity Loan</option><option value="Construction">Construction</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Occupancy</label>
+                  <select class="fc" id="occupancy"><option value="">Select...</option><option value="Primary Residence">Primary Residence</option><option value="Second Home">Second Home</option><option value="Investment Property">Investment Property</option><option value="Commercial">Commercial</option></select>
+                </div>
+                <div class="ff"><label>Expected Close</label><input type="date" class="fc" id="expected-close"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Lead Source</label>
+                  <select class="fc" id="lead-source"><option value="">Select...</option><option value="Self-Generated">Self-Generated</option><option value="Past Client">Past Client</option><option value="Referral - Realtor">Referral - Realtor</option><option value="Referral - Client">Referral - Client</option><option value="Referral - Financial Planner">Referral - Financial Planner</option><option value="Referral - Builder">Referral - Builder</option><option value="Referral - Other">Referral - Other</option><option value="Website">Website</option><option value="Social Media">Social Media</option><option value="Cold Call">Cold Call</option><option value="Direct Mail">Direct Mail</option><option value="Lead Service">Lead Service</option><option value="Walk-In">Walk-In</option><option value="Other">Other</option></select>
+                </div>
+                <div class="ff"><label>Lender</label><input type="text" class="fc" id="loan-lender"></div>
+              </div>
+              <div class="cg">
+                <div class="ff sp2"><label>Deal Notes</label><textarea class="fc" id="deal-notes" placeholder="Quick notes about the deal..." style="min-height:60px;"></textarea></div>
+              </div>
+            </div>
+            <!-- CREDIT (own page) -->
+            <div class="card section-card section-hidden" id="section-credit" data-page="section-credit">
+              <div class="card-title"><i class="fa-solid fa-chart-line"></i> Credit</div>
+              <div class="cg">
+                <div class="ff"><label>Score</label><input type="number" class="fc" id="credit-score" min="300" max="850" placeholder="740"></div>
+                <div class="ff"><label>Date Pulled</label><input type="date" class="fc" id="date-credit-pulled"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Pull Type</label><select class="fc" id="credit-pull-type"><option value="">—</option><option value="Soft">Soft</option><option value="Hard">Hard</option></select></div>
+                <div class="ff"><label># Scores</label><input type="number" class="fc" id="scores-pulled" placeholder="3"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Vendor</label><input type="text" class="fc" id="credit-vendor"></div>
+                <div class="ff"><label>Report #</label><input type="text" class="fc" id="credit-report-number"></div>
+              </div>
+            </div>
+            <!-- INCOME v11.3 -->
+            <div class="card section-card section-hidden" id="section-income" data-page="section-income">
+              <div class="card-title"><i class="fa-solid fa-money-bill-trend-up"></i> Income</div>
+<div id="income-section-content"></div>
+            </div>
+            <!-- ASSETS v11.7 (own page - content built by pipeline-assets.js) -->
+            <div class="card section-card section-hidden" id="section-assets" data-page="section-assets">
+              <div class="card-title"><i class="fa-solid fa-vault"></i> Assets</div>
+              <div id="assets-section-content"></div>
+            </div>
+            <!-- LOAN DETAILS (own page) -->
+            <div class="card section-card section-hidden" id="section-loan-details" data-page="section-loan-details">
+              <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Loan Details</div>
+              <div class="cg" id="property-value-row">
+                <div class="ff" id="purchase-price-group"><label>Purchase Price ($)</label><input type="text" class="fc currency-input" id="purchase-price"></div>
+                <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="property-value"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>LTV (%)</label><input type="number" class="fc" id="ltv" step="0.01" placeholder="80"></div>
+                <div class="ff"><label>Loan Amount ($)</label><input type="text" class="fc currency-input" id="loan-amount"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Loan Type</label><select class="fc" id="loan-type" onchange="toggleHelocSection(); toggleOtherLoanTypeField();"><option value="">Select...</option></select></div>
+                <div class="ff"><label>Term (Years)</label><input type="number" class="fc" id="loan-term" placeholder="30"></div>
+              </div>
+              <div class="cg hidden" id="other-loan-type-row">
+                <div class="ff sp2"><label>Other Loan Type</label><input type="text" class="fc" id="other-loan-type" placeholder="Specify loan type..."></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Interest Rate (%)</label><input type="text" class="fc rate-input" id="loan-interest-rate" placeholder="6.500" inputmode="decimal"></div>
+                <div class="ff"><label>Qualifying Rate (%)</label><input type="text" class="fc rate-input" id="qualifying-interest-rate" placeholder="7.500" inputmode="decimal"></div>
+              </div>
+              <!-- Equity Loan / Subordinate Financing -->
+              <div class="equity-loan-divider hidden" id="equity-loan-divider"><span>Subordinate Financing</span></div>
+              <div class="cg hidden" id="equity-loan-fields">
+                <div class="ff"><label>Lien Position</label><select class="fc" id="lien-position" onchange="toggleExisting2ndField(); calcEquityLoan();"><option value="">Select...</option><option value="2nd">2nd</option><option value="3rd">3rd</option></select></div>
+                <div class="ff"><label>Max CLTV (%)</label><input type="number" class="fc" id="max-cltv" step="0.01" placeholder="90" oninput="calcEquityLoan();"></div>
+              </div>
+              <div class="cg hidden" id="equity-loan-fields-2">
+                <div class="ff"><label>Existing 1st Mortgage ($)</label><input type="text" class="fc currency-input" id="existing-1st-balance" oninput="calcEquityLoan();"></div>
+                <div class="ff hidden" id="existing-2nd-group"><label>Existing 2nd Mortgage ($)</label><input type="text" class="fc currency-input" id="existing-2nd-balance" oninput="calcEquityLoan();"></div>
+              </div>
+              <div class="hidden" id="equity-loan-results"><div class="equity-calc-strip"><div class="equity-calc-item"><span class="equity-calc-label">Total Existing Liens</span><span class="equity-calc-value" id="eq-total-liens">&mdash;</span></div><div class="equity-calc-item"><span class="equity-calc-label">Max Total Debt</span><span class="equity-calc-value" id="eq-max-debt">&mdash;</span></div><div class="equity-calc-item equity-calc-highlight"><span class="equity-calc-label">Max New Loan</span><span class="equity-calc-value" id="eq-max-loan">&mdash;</span></div><div class="equity-calc-item"><span class="equity-calc-label">Actual CLTV</span><span class="equity-calc-value" id="eq-actual-cltv">&mdash;</span></div></div></div>
+            </div>
+            <!-- HELOC (loan-details, conditional) -->
+            <div class="card section-card section-hidden hidden" id="heloc-section" data-page="section-loan-details">
+              <div class="card-title"><i class="fa-solid fa-piggy-bank"></i> HELOC Details</div>
+              <div class="cg" style="max-width:500px;">
+                <div class="ff"><label>Line Amount ($)</label><input type="text" class="fc currency-input" id="heloc-line-amount"></div>
+                <div class="ff"><label>Initial Draw ($)</label><input type="text" class="fc currency-input" id="heloc-initial-draw"></div>
+              </div>
+            </div>
+            <!-- PAYMENT (own page) -->
+            <div class="card section-card section-hidden" id="section-payment" data-page="section-payment">
+              <div class="card-title"><i class="fa-solid fa-money-check-dollar"></i> Payment</div>
+              <table class="pt">
+                <thead><tr><th>Item</th><th>Annual</th><th>Monthly</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="pt-lbl">P&amp;I</td>
+                    <td class="pt-inp"><span class="pt-auto">Auto</span></td>
+                    <td class="pt-mo"><span class="pt-val" id="pi-calc-display">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">HOI</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-hoi" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="hoi-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">Taxes</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-taxes" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="taxes-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">Supp. Ins.</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-supp-ins" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="supp-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">HOA <span class="pt-hint">(mo)</span></td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-hoa" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="hoa-monthly">—</span></td>
+                  </tr>
+                </tbody>
+                <tfoot><tr class="pt-foot">
+                  <td class="pt-tot-lbl" colspan="2">Total PITIA</td>
+                  <td class="pt-tot-val"><span id="total-pitia-display">—</span></td>
+                </tr></tfoot>
+              </table>
+              <div style="display:none;" id="monthly-expenses-display">—</div>
+            </div>
+            <!-- PROPERTY (own page) -->
+            <div class="card section-card section-hidden" id="section-property" data-page="section-property">
+              <div class="card-title"><i class="fa-solid fa-house"></i> Property</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Street Address</label><input type="text" class="fc" id="property-street"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>City</label><input type="text" class="fc" id="property-city"></div>
+                <div class="ff"><label>State</label><input type="text" class="fc" id="property-state" maxlength="2"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Zip</label><input type="text" class="fc" id="property-zip" maxlength="10"></div>
+                <div class="ff"><label>County</label><input type="text" class="fc" id="property-county"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Type</label>
+                  <select class="fc" id="property-type"><option value="">Select...</option><option value="SFR">SFR</option><option value="Condo">Condo</option><option value="Townhome">Townhome</option><option value="2-4 Unit">2-4 Unit</option><option value="Multi 5+">Multi 5+</option><option value="Manufactured">Manufactured</option><option value="Land">Land</option></select>
+                </div>
+                <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="prop-page-value"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><button type="button" class="btn btn-secondary" onclick="zillowLookup()" style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-arrow-up-right-from-square"></i>Zillow Lookup</button></div>
+              </div>
+            </div>
+            <!-- COMPENSATION (own page) -->
+            <div class="card section-card section-hidden" id="section-compensation" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-sack-dollar"></i> Compensation</div>
+              <div class="cg">
+                <div class="ff"><label>Channel</label>
+                  <select class="fc" id="comp-channel" onchange="togglePointsYsp()"><option value="">Select...</option><option value="Broker">Broker</option><option value="NonDel">NonDel</option><option value="Correspondent">Correspondent</option><option value="Other">Other</option></select>
+                </div>
+                <div class="ff"><label>Comp Type</label>
+                  <select class="fc" id="comp-type"><option value="">Select...</option><option value="BPC">BPC</option><option value="LPC">LPC</option><option value="Other">Other</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Comp (BPS)</label>
+                  <input type="number" class="fc" id="comp-bps" step="1" placeholder="250">
+                  <span class="comp-sync-indicator" id="bps-sync-indicator"></span>
+                </div>
+                <div class="ff"><label>Comp ($)</label>
+                  <input type="text" class="fc currency-input" id="comp-amount-input" placeholder="5,000">
+                  <span class="comp-sync-indicator" id="amount-sync-indicator"></span>
+                </div>
+              </div>
+              <div class="cg hidden" id="points-ysp-row">
+                <div class="ff"><label>Points</label><input type="number" class="fc" id="comp-points" step="0.001" placeholder="0.000"></div>
+                <div class="ff"><label>YSP</label><input type="number" class="fc" id="comp-ysp" step="0.001" placeholder="0.000"></div>
+              </div>
+            </div>
+            <!-- LOCK (own page) -->
+            <div class="card section-card section-hidden" id="section-lock" data-page="section-lock">
+              <div class="card-title"><i class="fa-solid fa-lock"></i> Lock Info</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Lock Status</label><select class="fc" id="lock-status"><option value="-">-</option><option value="Floating">Floating</option><option value="Locked">Locked</option><option value="Expired">Expired</option></select></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Lock Date</label><input type="date" class="fc" id="lock-date"></div>
+                <div class="ff"><label>Expiration</label><input type="date" class="fc" id="lock-expiration-date"></div>
+              </div>
+            </div>
+            <!-- PAYROLL (comp-pay page) -->
+            <div class="card section-card section-hidden" id="section-payroll" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-wallet"></i> Payroll</div>
+              <div class="cg">
+                <div class="ff sp2"><label>Pay Status</label>
+                  <select class="fc" id="pay-status"><option value="-">-</option><option value="Preparing">Preparing</option><option value="Ready for Payroll">Ready for Payroll</option><option value="Payroll Submitted">Payroll Submitted</option><option value="Pay Received">Pay Received</option></select>
+                </div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Submitted</label><input type="date" class="fc" id="payroll-submitted-date"></div>
+                <div class="ff"><label>Processed</label><input type="date" class="fc" id="payroll-processed-date"></div>
+              </div>
+              <div class="cg">
+                <div class="ff sp2"><label>Pay Received</label><input type="date" class="fc" id="pay-received-date"></div>
+              </div>
+            </div>
+            <!-- PAYROLL NOTES (comp-pay page) -->
+            <div class="card section-card section-hidden" id="section-payroll-notes" data-page="section-comp-pay">
+              <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Payroll Notes</div>
+              <div class="ff"><textarea class="fc" id="payroll-notes" placeholder="Payroll details, submission notes, commission splits..."></textarea></div>
+            </div>
+            <!-- NOTES -->
+            <div class="card section-card section-hidden" id="section-notes" data-page="section-notes">
+              <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>
+              <div class="ff"><textarea class="fc" id="loan-notes" placeholder="Add any notes about this loan..."></textarea></div>
+            </div>
+            <!-- TASKS (notes page) -->
+            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-notes">
+              <div class="card-title"><i class="fa-solid fa-list-check"></i> Tasks</div>
+              <div class="task-list" id="task-list"></div>
+              <div class="add-task-row">
+                <input type="text" class="fc" id="new-task-name" placeholder="Add a task...">
+                <input type="date" class="fc" id="new-task-due" style="max-width:120px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addTask()">Add</button>
+              </div>
+            </div>
+            <!-- LINKS (own page) -->
+            <div class="card section-card section-hidden" id="section-links" data-page="section-links">
+              <div class="card-title"><i class="fa-solid fa-link"></i> Links</div>
+              <div id="links-content"></div>
+            </div>
+          </div><!-- /section-pages -->
+        </form>
+      </div><!-- /modal-main-scroll -->
+      <!-- RIGHT CALCULATOR PANEL
+           v10.4: Added "Coming Soon" badges to calculators that
+           aren't yet integrated into the pipeline modal.
+-->
+      <div class="modal-calc-panel" id="modal-calc-panel">
+        <div class="calc-panel-header"><i class="fa-solid fa-calculator"></i> Calculators</div>
+        <div class="calc-panel-list">
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Affordability Calculator')"><i class="fa-solid fa-house-circle-check"></i><span>Affordability</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Mortgage Calculator')"><i class="fa-solid fa-calculator"></i><span>Mortgage</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Refinance Analysis')"><i class="fa-solid fa-arrows-rotate"></i><span>Refinance</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Lender Pricing Comparison')"><i class="fa-solid fa-tags"></i><span>Lender Pricing</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn" onclick="launchCalculator('Closing Costs')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Closing Costs</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('DSCR Calculator')"><i class="fa-solid fa-building"></i><span>DSCR</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Loan Scenario Comparison')"><i class="fa-solid fa-code-compare"></i><span>Compare</span><span class="calc-coming-soon">Coming Soon</span></button>
+          <button type="button" class="calc-panel-btn disabled" onclick="launchCalculator('Rent vs Buy')"><i class="fa-solid fa-scale-balanced"></i><span>Rent vs Buy</span><span class="calc-coming-soon">Coming Soon</span></button>
+        </div>
+      </div>
+    </div><!-- /modal-body -->
+    <!-- Affordability Calculator Sidebar -->
+    <div id="calc-sidebar" class="calc-sidebar hidden">
+      <div class="calc-sidebar-card">
+      <div class="calc-sidebar-header">
+        <h3><i class="fa-solid fa-house-circle-check"></i> Affordability</h3>
+        <span class="close-calc-sidebar" onclick="closeCalcSidebar()">&times;</span>
+      </div>
+      <div class="calc-sidebar-body">
+          <!-- Income -->
+        <div class="calc-section">
+          <div class="calc-section-title">Income &amp; Liabilities</div>
+          <!-- Gross Income -->
+          <div class="calc-field-group">
+            <label>Gross Income ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-income" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn active" data-mode="annual" onclick="toggleIncomeMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn" data-mode="monthly" onclick="toggleIncomeMode('monthly')">Monthly</button>
+              </div>
+            </div>
+            <div id="calc-income-sync-row" style="margin-top:4px;display:flex;align-items:center;gap:6px;"><button type="button" onclick="syncIncomeFromTab()" style="padding:3px 8px;font-size:10px;font-weight:600;border-radius:4px;cursor:pointer;border:1px solid #93C5FD;background:#EFF6FF;color:#2563EB;white-space:nowrap;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Use Income Tab</button><span id="calc-income-sync-msg" style="font-size:10px;color:#64748B;"></span></div>
+          </div>
+          <!-- Monthly Liabilities -->
+          <div class="calc-field-group">
+            <label>Monthly Liabilities ($)</label>
+            <input type="text" id="calc-debts" class="form-control currency-input" placeholder="0">
+          </div>
+        </div>
+        <!-- ===== SECTION 2: Housing Costs ===== -->
+        <div class="calc-section">
+          <div class="calc-section-title">Housing Costs</div>
+          <!-- Homeowners Insurance (HOI) -->
+          <div class="calc-field-group">
+            <label>Homeowners Insurance ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-insurance" class="form-control currency-input" value="1,800">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-ins-toggle active" data-mode="annual" onclick="toggleCalcInsMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-ins-toggle" data-mode="monthly" onclick="toggleCalcInsMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- Property Taxes -->
+          <div class="calc-field-group">
+            <label>Property Taxes ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-taxes" class="form-control currency-input" value="3,000">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-tax-toggle active" data-mode="annual" onclick="toggleCalcTaxMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-tax-toggle" data-mode="monthly" onclick="toggleCalcTaxMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- Supp Insurance -->
+          <div class="calc-field-group">
+            <label>Supplemental Insurance ($) <span style="font-size:11px;color:#94A3B8;font-weight:400;">Flood, etc.</span></label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-supp-insurance" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-supp-toggle active" data-mode="annual" onclick="toggleCalcSuppMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-supp-toggle" data-mode="monthly" onclick="toggleCalcSuppMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+          <!-- HOA -->
+          <div class="calc-field-group">
+            <label>HOA Dues ($)</label>
+            <div class="calc-input-row">
+              <input type="text" id="calc-hoa" class="form-control currency-input" placeholder="0">
+              <div class="calc-toggle">
+                <button type="button" class="calc-toggle-btn calc-hoa-toggle" data-mode="annual" onclick="toggleCalcHOAMode('annual')">Annual</button>
+                <button type="button" class="calc-toggle-btn calc-hoa-toggle active" data-mode="monthly" onclick="toggleCalcHOAMode('monthly')">Monthly</button>
+              </div>
+            </div>
+          </div>
+        </div>
+          <!-- Loan Parameters -->
+        <div class="calc-section">
+          <div class="calc-section-title">Loan Parameters</div>
+          <!-- Note Rate + Qualifying Rate row -->
+          <div class="calc-row-2col">
+            <div class="calc-field-group">
+              <label>Note Rate (%)</label>
+              <input type="number" id="calc-rate" class="form-control" value="6.5" step="0.001" min="0">
+            </div>
+            <div class="calc-field-group">
+              <label>Qualifying Rate (%)</label>
+              <input type="number" id="calc-qual-rate" class="form-control" placeholder="Same as Note" step="0.001" min="0">
+            </div>
+          </div>
+          <!-- Down Payment + DTI -->
+          <div class="calc-row-3col">
+            <div class="calc-field-group">
+              <label>Term (yrs)</label>
+              <input type="number" id="calc-term" class="form-control" value="30" min="1" max="50" step="1">
+            </div>
+            <div class="calc-field-group">
+              <label>Down (%)</label>
+              <input type="number" id="calc-down-pct" class="form-control" value="20" step="0.1" min="0" max="100">
+            </div>
+            <div class="calc-field-group">
+              <label>Target DTI (%)</label>
+              <input type="number" id="calc-dti" class="form-control" value="45" step="0.1" min="0" max="65">
+            </div>
+          </div>
+        </div>
+        <!-- ===== SECTION 4: MI Rate ===== -->
+        <div class="calc-section">
+          <div class="calc-section-title">Mortgage Insurance</div>
+          <div class="calc-field-group">
+            <label>MI Rate (%)</label>
+            <input type="number" id="calc-mi-rate" class="form-control" value="0" step="0.01" min="0" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <!-- ===== RESULTS: 2-Column Layout ===== -->
+      <div class="calc-results">
+        <!-- Left Column: Amounts + DTI -->
+        <div class="calc-results-left">
+          <div class="calc-result-item primary">
+            <span class="calc-result-label">Max Purchase Price</span>
+            <span class="calc-result-value" id="calc-max-purchase">&mdash;</span>
+          </div>
+          <div class="calc-result-item">
+            <span class="calc-result-label">Max Loan Amount</span>
+            <span class="calc-result-value" id="calc-max-loan">&mdash;</span>
+          </div>
+          <div class="calc-result-item">
+            <span class="calc-result-label">Max Monthly PITIA</span>
+            <span class="calc-result-value" id="calc-max-pitia">&mdash;</span>
+          </div>
+          <!-- DTI Summary -->
+          <div class="calc-dti-summary">
+            <div class="calc-dti-row">
+              <span>Max DTI</span>
+              <span id="calc-max-dti" class="dti-green">&mdash;</span>
+            </div>
+            <div class="calc-dti-row">
+              <span>Current DTI</span>
+              <span id="calc-current-dti">&mdash;</span>
+            </div>
+            <div class="calc-dti-row">
+              <span>Available DTI</span>
+              <span id="calc-available-dti">&mdash;</span>
+            </div>
+          </div>
+        </div>
+        <!-- Right Column: Payment Breakdown -->
+        <div class="calc-results-right">
+          <div class="calc-payment-title">Payment Breakdown</div>
+          <div id="calc-breakdown">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+    <!-- CHECKLIST SIDE PANEL -->
+    <div id="checklist-panel" class="checklist-panel hidden">
+      <div class="checklist-panel-header"><div class="checklist-header-left"><i class="fa-solid fa-clipboard-check"></i><h3>Loan Checklist</h3><span class="checklist-progress-pill" id="checklist-progress-pill">0 / 43</span></div><div class="checklist-header-right"><button type="button" class="checklist-collapse-btn" onclick="collapseAllGroups()" title="Collapse all"><i class="fa-solid fa-compress"></i></button><button type="button" class="checklist-expand-btn" onclick="expandAllGroups()" title="Expand all"><i class="fa-solid fa-expand"></i></button><span class="close-checklist-panel" onclick="closeChecklistPanel()">&times;</span></div></div>
+      <div class="checklist-panel-body" id="checklist-panel-body"><div class="checklist-loading">Loading checklist...</div></div>
+      <div class="checklist-panel-footer"><div class="checklist-progress-bar"><div class="checklist-progress-fill" id="checklist-progress-fill" style="width:0%"></div></div><div class="checklist-auto-save-status" id="checklist-save-status">Auto-saved</div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-danger hidden" id="delete-loan-btn" onclick="deleteLoan()">Delete Loan</button><div class="modal-footer-right"><button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button><button type="button" class="btn btn-primary" id="save-loan-btn" onclick="saveLoan()">Save Loan</button></div></div>
+  </div>
+</div>
+<!-- Lost Reason Popup Modal -->
+<div class="modal-overlay hidden" id="lost-reason-modal" style="z-index:10001;"><div class="lost-reason-content"><h3>Why was this deal lost?</h3><textarea class="form-control" id="lost-reason-text" rows="3" placeholder="Enter the reason this deal was lost..."></textarea><div class="lost-reason-actions"><button class="btn btn-secondary" onclick="cancelLostReason()">Cancel</button><button class="btn btn-danger" onclick="confirmLostDeal()">Mark as Lost</button></div></div></div>
+</div>
+<!-- EXPORT TO CSV (PRO only) -->
+<script>
+async function exportPipeline() {
+  /* Gate check: only PRO users can export */
+  await window.MTG_Billing.gateAction('pipeline-export', async function() {
+    /* Get user email for API auth */
+    var email = await window.MTG_Billing.getUserEmail();
+    if (!email) {
+      alert('Please log in to export your pipeline.');
+      return;
+    }
+    /* Fetch loans from the Pipeline API */
+    try {
+      var response = await fetch('https://mtg-broker-pipeline.rich-e00.workers.dev/api/pipeline/loans', {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer ' + email,
+          'Content-Type': 'application/json'
+        }
+      });
+      var records = await response.json();
+      /* The API returns Airtable records: [{ id, fields: {...} }, ...] */
+      if (!Array.isArray(records) || records.length === 0) {
+        alert('No loans to export.');
+        return;
+      }
+      /* Define CSV columns — keys match Airtable field names */
+      var cols = [
+        { key: 'Borrower First Name', label: 'Borrower First' },
+        { key: 'Borrower Last Name', label: 'Borrower Last' },
+        { key: 'Stage', label: 'Stage' },
+        { key: 'Deal Status', label: 'Deal Status' },
+        { key: 'Loan Purpose', label: 'Purpose' },
+        { key: 'Occupancy', label: 'Occupancy' },
+        { key: 'Lender', label: 'Lender' },
+        { key: 'Loan Amount', label: 'Loan Amount' },
+        { key: 'Loan Type', label: 'Loan Type' },
+        { key: 'Loan Interest Rate', label: 'Interest Rate' },
+        { key: 'Loan Term', label: 'Term' },
+        { key: 'Credit Score', label: 'Credit Score' },
+        { key: 'Property Street', label: 'Property Address' },
+        { key: 'Property City', label: 'City' },
+        { key: 'Property State', label: 'State' },
+        { key: 'Property Zip', label: 'Zip' },
+        { key: 'Expected Close Date', label: 'Expected Close' },
+        { key: 'Lock Status', label: 'Lock Status' },
+        { key: 'Lead Source', label: 'Lead Source' },
+        { key: 'Compensation (BPS)', label: 'Comp BPS' },
+        { key: 'Compensation Amount', label: 'Comp $' },
+        { key: 'Notes', label: 'Notes' }
+      ];
+      /* Build CSV string */
+      var header = cols.map(function(c) { return '"' + c.label + '"'; }).join(',');
+      var rows = records.map(function(rec) {
+        var f = rec.fields || {};
+        return cols.map(function(c) {
+          var val = (f[c.key] != null) ? String(f[c.key]) : '';
+          return '"' + val.replace(/"/g, '""') + '"';
+        }).join(',');
+      });
+      var csv = header + '\n' + rows.join('\n');
+      /* Trigger CSV download */
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'pipeline-export-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('Error exporting pipeline. Please try again.');
+    }
+  });
+}
+</script>
