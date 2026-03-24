@@ -172,7 +172,6 @@
  * Environment Variables Required:
  *   - SUPABASE_URL: Supabase project URL (e.g. https://tcmahfwhdknxhhdvqpum.supabase.co)
  *   - SUPABASE_KEY: Supabase service_role key (NOT anon key — bypasses RLS for server ops)
- *   - AIRTABLE_API_KEY: Airtable personal access token (still used for Usage tracking)
  *   - ANTHROPIC_API_KEY: Claude API key (used for Purchase Agreement PDF extraction)
  * 
  * Endpoints:
@@ -204,8 +203,6 @@
  *   --- Health ---
  *   GET    /health                          - Health check
  */
-
-const AIRTABLE_BASE_ID = 'appuJgI9X93OLaf0u';
 
 // ============================
 // Supabase Config (Pipeline Loans + Tasks)
@@ -422,15 +419,6 @@ function getCorsHeaders(request) {
 }
 
 // ============================
-// Airtable Table IDs
-// ============================
-const TABLES = {
-  LOANS: 'tblH2hB1FlW9a3iXp',
-  TASKS: 'tblI028O1LWD99HQN',
-  USAGE: 'tblEnYBn1mbgEdK2g'
-};
-
-// ============================
 // Plan Limits Configuration
 // ============================
 // UPDATED: February 2, 2026 - Aligned with pricing page
@@ -630,25 +618,6 @@ function jsonResponse(data, status = 200, request) {
     status,
     headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request) }
   });
-}
-
-/**
- * Make an authenticated request to the Airtable API
- * (Still used for Usage tracking — not yet migrated to Supabase)
- */
-async function airtableRequest(endpoint, apiKey, method = 'GET', body = null) {
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${endpoint}`;
-  const options = {
-    method,
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
-  };
-  if (body) options.body = JSON.stringify(body);
-
-  const response = await fetch(url, options);
-  return response.json();
 }
 
 // ============================================================
@@ -884,143 +853,104 @@ async function deleteTask(userEmail, recordId, env, request) {
 }
 
 // ============================================================
-// USAGE TRACKING ENDPOINTS
+// USAGE TRACKING ENDPOINTS — SUPABASE (v8.1)
 // ============================================================
 
 /**
  * GET /api/usage
- * Gets usage stats for the authenticated user.
+ * Gets usage stats for the authenticated user from Supabase.
  * If no usage record exists, creates one with LITE defaults.
  */
-async function getUsage(userEmail, apiKey, request) {
-  const filterFormula = `{User Email} = '${userEmail}'`;
-  const result = await airtableRequest(
-    `${TABLES.USAGE}?filterByFormula=${encodeURIComponent(filterFormula)}`,
-    apiKey
-  );
-
-  if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
-  }
+async function getUsage(userEmail, env, request) {
+  const rows = await supabaseRequest('user_usage', env, 'GET', {
+    filters: `user_email=eq.${encodeURIComponent(userEmail)}`,
+  });
 
   // If no usage record exists, create one
-  if (!result.records || result.records.length === 0) {
-    const createResult = await airtableRequest(
-      TABLES.USAGE,
-      apiKey,
-      'POST',
-      {
-        fields: {
-          'User Email': userEmail,
-          'Current Plan': 'LITE',
-          'Pipeline Loan Count': 0,
-          'Calculator Saves Count': JSON.stringify({}),
-          'Account Created': new Date().toISOString()
-        }
-      }
-    );
-
-    if (createResult.error) {
-      return jsonResponse({ error: createResult.error.message }, 500, request);
-    }
-
+  if (!rows || rows.length === 0) {
+    const created = await supabaseRequest('user_usage', env, 'POST', {
+      body: {
+        user_email: userEmail,
+        current_plan: 'LITE',
+        pipeline_loan_count: 0,
+        calculator_saves_count: {},
+        account_created: new Date().toISOString(),
+      },
+    });
+    const row = Array.isArray(created) ? created[0] : created;
     return jsonResponse({
       usage: {
         currentPlan: 'LITE',
         pipelineLoanCount: 0,
         calculatorSavesCount: {},
-        accountCreated: createResult.fields['Account Created']
+        accountCreated: row.account_created,
       }
     }, 200, request);
   }
 
-  const record = result.records[0];
+  const row = rows[0];
   return jsonResponse({
     usage: {
-      currentPlan: record.fields['Current Plan'] || 'LITE',
-      pipelineLoanCount: record.fields['Pipeline Loan Count'] || 0,
-      calculatorSavesCount: JSON.parse(record.fields['Calculator Saves Count'] || '{}'),
-      accountCreated: record.fields['Account Created']
+      currentPlan: row.current_plan || 'LITE',
+      pipelineLoanCount: row.pipeline_loan_count || 0,
+      calculatorSavesCount: row.calculator_saves_count || {},
+      accountCreated: row.account_created,
     }
   }, 200, request);
 }
 
 /**
  * PUT /api/usage
- * Updates usage stats (plan, loan count, calculator saves count).
+ * Updates usage stats (plan, loan count, calculator saves count) in Supabase.
  * Creates a new record if one doesn't exist yet.
  */
-async function updateUsage(userEmail, apiKey, request) {
-  const filterFormula = `{User Email} = '${userEmail}'`;
-  const result = await airtableRequest(
-    `${TABLES.USAGE}?filterByFormula=${encodeURIComponent(filterFormula)}`,
-    apiKey
-  );
-
-  if (result.error) {
-    return jsonResponse({ error: result.error.message }, 500, request);
-  }
+async function updateUsage(userEmail, env, request) {
+  const rows = await supabaseRequest('user_usage', env, 'GET', {
+    filters: `user_email=eq.${encodeURIComponent(userEmail)}`,
+  });
 
   const body = await request.json();
-  const updateFields = {};
-
-  if (body.currentPlan) updateFields['Current Plan'] = body.currentPlan;
-  if (body.pipelineLoanCount !== undefined) updateFields['Pipeline Loan Count'] = body.pipelineLoanCount;
-  if (body.calculatorSavesCount) updateFields['Calculator Saves Count'] = JSON.stringify(body.calculatorSavesCount);
-
-  let recordId;
 
   // If no usage record exists, create one
-  if (!result.records || result.records.length === 0) {
-    const createResult = await airtableRequest(
-      TABLES.USAGE,
-      apiKey,
-      'POST',
-      {
-        fields: {
-          'User Email': userEmail,
-          'Current Plan': body.currentPlan || 'LITE',
-          'Pipeline Loan Count': body.pipelineLoanCount || 0,
-          'Calculator Saves Count': JSON.stringify(body.calculatorSavesCount || {}),
-          'Account Created': new Date().toISOString()
-        }
-      }
-    );
-
-    if (createResult.error) {
-      return jsonResponse({ error: createResult.error.message }, 500, request);
-    }
-
+  if (!rows || rows.length === 0) {
+    const created = await supabaseRequest('user_usage', env, 'POST', {
+      body: {
+        user_email: userEmail,
+        current_plan: body.currentPlan || 'LITE',
+        pipeline_loan_count: body.pipelineLoanCount || 0,
+        calculator_saves_count: body.calculatorSavesCount || {},
+        account_created: new Date().toISOString(),
+      },
+    });
+    const row = Array.isArray(created) ? created[0] : created;
     return jsonResponse({
       usage: {
-        currentPlan: createResult.fields['Current Plan'],
-        pipelineLoanCount: createResult.fields['Pipeline Loan Count'],
-        calculatorSavesCount: JSON.parse(createResult.fields['Calculator Saves Count'] || '{}'),
-        accountCreated: createResult.fields['Account Created']
+        currentPlan: row.current_plan,
+        pipelineLoanCount: row.pipeline_loan_count,
+        calculatorSavesCount: row.calculator_saves_count || {},
+        accountCreated: row.account_created,
       }
     }, 200, request);
   }
 
   // Update existing record
-  recordId = result.records[0].id;
+  const updateRow = {};
+  if (body.currentPlan) updateRow.current_plan = body.currentPlan;
+  if (body.pipelineLoanCount !== undefined) updateRow.pipeline_loan_count = body.pipelineLoanCount;
+  if (body.calculatorSavesCount) updateRow.calculator_saves_count = body.calculatorSavesCount;
 
-  const updateResult = await airtableRequest(
-    `${TABLES.USAGE}/${recordId}`,
-    apiKey,
-    'PATCH',
-    { fields: updateFields }
-  );
-
-  if (updateResult.error) {
-    return jsonResponse({ error: updateResult.error.message }, 500, request);
-  }
+  const result = await supabaseRequest('user_usage', env, 'PATCH', {
+    filters: `user_email=eq.${encodeURIComponent(userEmail)}`,
+    body: updateRow,
+  });
+  const row = Array.isArray(result) ? result[0] : result;
 
   return jsonResponse({
     usage: {
-      currentPlan: updateResult.fields['Current Plan'],
-      pipelineLoanCount: updateResult.fields['Pipeline Loan Count'],
-      calculatorSavesCount: JSON.parse(updateResult.fields['Calculator Saves Count'] || '{}'),
-      accountCreated: updateResult.fields['Account Created']
+      currentPlan: row.current_plan,
+      pipelineLoanCount: row.pipeline_loan_count,
+      calculatorSavesCount: row.calculator_saves_count || {},
+      accountCreated: row.account_created,
     }
   }, 200, request);
 }
@@ -1040,12 +970,12 @@ async function updateUsage(userEmail, apiKey, request) {
  *   - export-pipeline
  *   - print-calculator-pdf
  */
-async function checkPlanLimits(userEmail, apiKey, request) {
+async function checkPlanLimits(userEmail, env, request) {
   const url = new URL(request.url);
   const action = url.searchParams.get('action');
 
   // Get current usage to determine plan
-  const usageResponse = await getUsage(userEmail, apiKey, request);
+  const usageResponse = await getUsage(userEmail, env, request);
   const usageData = await usageResponse.json();
   const currentPlan = usageData.usage?.currentPlan || 'LITE';
 
@@ -11815,8 +11745,6 @@ export default {
     const path = url.pathname;
     const method = request.method;
 
-    const apiKey = env.AIRTABLE_API_KEY;
-
     // ============================================================
     // PUBLIC ROUTES (No authentication required)
     // ============================================================
@@ -11878,8 +11806,8 @@ export default {
       return jsonResponse({
         status: 'ok',
         service: 'mtg-broker-pipeline',
-        version: '8.0',
-        database: 'Supabase (loans + tasks), Airtable (usage)',
+        version: '8.1',
+        database: 'Supabase (loans, tasks, usage)',
         timestamp: new Date().toISOString(),
         endpoints: [
           'GET    /api/pipeline/loans              - List loans (cached)',
@@ -11969,15 +11897,15 @@ export default {
 
       // ---- PLAN LIMITS ----
       if (path === '/api/plan-limits' && method === 'GET') {
-        return await checkPlanLimits(userEmail, apiKey, request);
+        return await checkPlanLimits(userEmail, env, request);
       }
 
-      // ---- USAGE TRACKING ----
+      // ---- USAGE TRACKING (Supabase v8.1) ----
       if (path === '/api/usage' && method === 'GET') {
-        return await getUsage(userEmail, apiKey, request);
+        return await getUsage(userEmail, env, request);
       }
       if (path === '/api/usage' && method === 'PUT') {
-        return await updateUsage(userEmail, apiKey, request);
+        return await updateUsage(userEmail, env, request);
       }
 
       // ---- PURCHASE AGREEMENT PDF EXTRACTION ----
