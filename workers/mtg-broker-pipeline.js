@@ -5935,37 +5935,31 @@ async function getPipelineAssetsJS(request) {
   }
 
   /* ══════════════════════════════════════════════════════════════
-     ENSURE SUMMARY CARD EXISTS — full-width card below both columns
-     Shows: Total Account Balances − Total Assets Needed = Excess / Shortage
+     ASSET SUMMARY HTML — embedded inside the Accounts card
+     (moved from a separate full-width card to sit directly
+     under the Accounts total, eliminating extra scrolling)
      ══════════════════════════════════════════════════════════════ */
-  function ensureSummaryCard() {
-    var card = document.getElementById('section-assets-summary');
-    if (card) return card;
-    card = document.createElement('div');
-    card.className = 'card section-card section-hidden ast-summary-card';
-    card.id = 'section-assets-summary';
-    card.setAttribute('data-page', 'section-assets');
-    card.innerHTML = ''
-      + '<div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
-      + '<div class="ast-summary-grid">'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Account Balances</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">\\u2212</div>'
-      +   '<div class="ast-summary-item">'
-      +     '<div class="ast-summary-label">Total Assets Needed</div>'
-      +     '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
-      +   '</div>'
-      +   '<div class="ast-summary-op">=</div>'
-      +   '<div class="ast-summary-item ast-summary-result">'
-      +     '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
-      +     '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+  function getAssetSummaryHTML() {
+    return ''
+      + '<div class="ast-summary-section" style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">'
+      +   '<div class="ast-summary-title" style="font-size:14px;font-weight:600;color:#374151;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-scale-balanced"></i> Asset Summary</div>'
+      +   '<div class="ast-summary-grid">'
+      +     '<div class="ast-summary-item">'
+      +       '<div class="ast-summary-label">Total Account Balances</div>'
+      +       '<div class="ast-summary-value" id="ast-sum-accounts">\\u2014</div>'
+      +     '</div>'
+      +     '<div class="ast-summary-op">\\u2212</div>'
+      +     '<div class="ast-summary-item">'
+      +       '<div class="ast-summary-label">Total Assets Needed</div>'
+      +       '<div class="ast-summary-value" id="ast-sum-needed">\\u2014</div>'
+      +     '</div>'
+      +     '<div class="ast-summary-op">=</div>'
+      +     '<div class="ast-summary-item ast-summary-result">'
+      +       '<div class="ast-summary-label" id="ast-sum-result-label">Excess / Shortage</div>'
+      +       '<div class="ast-summary-value ast-summary-result-val" id="ast-sum-result">\\u2014</div>'
+      +     '</div>'
       +   '</div>'
       + '</div>';
-    var pages = document.getElementById('section-pages');
-    if (pages) pages.appendChild(card);
-    return card;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -6040,7 +6034,7 @@ async function getPipelineAssetsJS(request) {
       /* ── GRAND TOTAL ── */
       + '<div class="ast-grand-total"><span>Total Assets Needed</span><span class="ast-grand-val" id="ast-grand-total">\\u2014</span></div>';
 
-    /* ── RIGHT CARD: Accounts (separate section-card) ── */
+    /* ── RIGHT CARD: Accounts + Asset Summary (same card) ── */
     var acctCard = ensureAccountsCard();
     var r = document.getElementById('accounts-section-content');
     if (r) {
@@ -6049,11 +6043,9 @@ async function getPipelineAssetsJS(request) {
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
         +   '<button type="button" class="ast-add-btn" onclick="addAssetAccount()"><i class="fa-solid fa-plus"></i> Add Account</button>'
         + '</div>'
-        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>';
+        + '<div class="ast-acct-grand-total"><span>Total Account Balances</span><span class="ast-acct-grand-val" id="ast-accounts-total">\\u2014</span></div>'
+        + getAssetSummaryHTML();
     }
-
-    /* ── SUMMARY CARD: Excess / Shortage (spans full width below both columns) ── */
-    ensureSummaryCard();
 
     /* Wire currency formatting on all .ast-input fields */
     c.querySelectorAll('.ast-input').forEach(function(el) {
@@ -6301,7 +6293,7 @@ async function getPipelineAssetsJS(request) {
   /* Expose for external calls */
   window.recalcAssets = recalcAll;
 
-  console.log('\\u2705 Pipeline Assets module loaded (v1.3)');
+  console.log('\\u2705 Pipeline Assets module loaded (v1.4)');
 })();
 
 `;
