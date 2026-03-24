@@ -1337,19 +1337,19 @@ function formatCellValue(loan, col) {
   const val = col.field === 'Compensation Amount' ? getCompAmount(loan) : loan[col.field];
   switch (col.format) {
     case 'bold':
-      return \`<strong>\${val || '-'}</strong>\`;
+      return \`<strong>\${escapeHtml(String(val || '-'))}</strong>\`;
     case 'currency':
       return val ? fmtCW(val) : '-';
     case 'date':
       return val ? new Date(val + 'T00:00:00').toLocaleDateString() : '-';
     case 'stage':
-      return \`<span class="stage-badge \${getStageClass(val)}">\${val || '-'}</span>\`;
+      return \`<span class="stage-badge \${getStageClass(val)}">\${escapeHtml(String(val || '-'))}</span>\`;
     case 'lock':
       const ls = val || '-';
-      return \`<span class="lock-badge \${getLockBadgeClass(ls)}">\${ls}</span>\`;
+      return \`<span class="lock-badge \${getLockBadgeClass(ls)}">\${escapeHtml(String(ls))}</span>\`;
     case 'pay':
       const ps = val || '-';
-      return \`<span class="pay-badge \${getPayBadgeClass(ps)}">\${ps}</span>\`;
+      return \`<span class="pay-badge \${getPayBadgeClass(ps)}">\${escapeHtml(String(ps))}</span>\`;
     case 'percent':
       return val ? (val * 100).toFixed(1) + '%' : '-';
     case 'rate':
@@ -1359,7 +1359,7 @@ function formatCellValue(loan, col) {
     case 'comp':
       return val > 0 ? fmtCW(val) : '-';
     default:
-      return val || '-';
+      return escapeHtml(String(val || '-'));
   }
 }
 function buildTableRow(loan, orderedCols) {
@@ -2057,7 +2057,7 @@ function renderLoanCard(loan) {
   const cd = loan['Expected Close']; let cdc = '', cdt = '-';
   if (cd) { const d = new Date(cd+'T00:00:00'), diff = (d - new Date()) / 864e5; cdt = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); if (diff < 0) cdc = 'overdue'; else if (diff <= 7) cdc = 'soon'; }
   const addr = [loan['Property Street'], loan['Property City']].filter(Boolean).join(', ') || 'No address';
-  return \`<div class="loan-card" onclick="openLoanModal('\${loan.id}')"><div class="loan-card-header"><h4 class="loan-borrower">\${loan['Borrower Name']||'Unnamed'}</h4><span class="loan-amount">\${fmtM(loan['Loan Amount'])}</span></div><div class="loan-property">\${addr}</div><div class="loan-meta"><span class="loan-type">\${loan['Loan Type']||'-'}</span><span class="loan-close-date \${cdc}">\${cdt}</span></div></div>\`;
+  return \`<div class="loan-card" onclick="openLoanModal('\${loan.id}')"><div class="loan-card-header"><h4 class="loan-borrower">\${escapeHtml(loan['Borrower Name']||'Unnamed')}</h4><span class="loan-amount">\${fmtM(loan['Loan Amount'])}</span></div><div class="loan-property">\${escapeHtml(addr)}</div><div class="loan-meta"><span class="loan-type">\${escapeHtml(loan['Loan Type']||'-')}</span><span class="loan-close-date \${cdc}">\${cdt}</span></div></div>\`;
 }
 function renderTable() { filterTable(); }
 function filterTable() {
@@ -2418,7 +2418,7 @@ async function loadTasks(loanId) {
   catch (e) { console.error('Error loading tasks:', e); }
 }
 function renderTasks() {
-  document.getElementById('task-list').innerHTML = tasks.map(t => \`<div class="task-item \${t.Completed?'completed':''}"><input type="checkbox" \${t.Completed?'checked':''} onchange="toggleTask('\${t.id}',this.checked)"><span class="task-name">\${t['Task Name']}</span><span class="task-due">\${t['Due Date']?new Date(t['Due Date']).toLocaleDateString():''}</span><button class="btn btn-sm" style="padding:4px 8px;color:#DC2626;" onclick="deleteTask('\${t.id}')">&times;</button></div>\`).join('');
+  document.getElementById('task-list').innerHTML = tasks.map(t => \`<div class="task-item \${t.Completed?'completed':''}"><input type="checkbox" \${t.Completed?'checked':''} onchange="toggleTask('\${t.id}',this.checked)"><span class="task-name">\${escapeHtml(t['Task Name'])}</span><span class="task-due">\${t['Due Date']?new Date(t['Due Date']).toLocaleDateString():''}</span><button class="btn btn-sm" style="padding:4px 8px;color:#DC2626;" onclick="deleteTask('\${t.id}')">&times;</button></div>\`).join('');
 }
 async function toggleTask(id, done) {
   try { await apiCall(\`/api/pipeline/tasks/\${id}\`,'PUT',{Completed:done}); const t = tasks.find(x=>x.id===id); if(t)t.Completed=done; renderTasks(); }
@@ -6396,7 +6396,7 @@ async function getPipelineAssetsJS(request) {
       + '<div class="ast-acct-fields">'
       +   '<div class="ff" style="flex:2;min-width:160px;"><label>Account Type</label><select class="fc ast-acct-type" onchange="toggleAssetDesc(\\'' + id + '\\')">' + opts + '</select></div>'
       +   '<div class="ff" style="flex:1.2;min-width:120px;"><label>Balance ($)</label><input type="text" class="fc currency-input ast-acct-bal" placeholder="0" value="' + (acct.balance ? Number(acct.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
-      +   '<div class="ff" style="flex:1;min-width:100px;"><label>Account #</label><input type="text" class="fc ast-acct-num" placeholder="Last 4" maxlength="20" value="' + (acct.accountNum || '') + '"></div>'
+      +   '<div class="ff" style="flex:1;min-width:100px;"><label>Account #</label><input type="text" class="fc ast-acct-num" placeholder="Last 4" maxlength="20" value="' + escapeHtml(acct.accountNum || '') + '"></div>'
       +   '<div class="ff" style="flex:1;min-width:130px;"><label>Statement Date</label><input type="date" class="fc ast-acct-stmt-date" value="' + (acct.statementDate || '') + '"></div>'
       +   '<button type="button" class="ast-remove-btn" onclick="removeAssetAccount(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
       + '</div>'
@@ -11067,6 +11067,8 @@ async function getPipelineBootstrapHTML(request) {
 <script>
 (function() {
   'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   var style = document.createElement('style');
   style.textContent = '.address-autocomplete-wrap{position:relative}.address-dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:100000;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-top:-1px}.address-dropdown.open{display:block}.address-dropdown-item{padding:10px 12px;cursor:pointer;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:8px}.address-dropdown-item:last-child{border-bottom:none}.address-dropdown-item:hover,.address-dropdown-item.active{background:#eff6ff}.address-dropdown-item .addr-icon{color:#9ca3af;font-size:13px;margin-top:2px;flex-shrink:0}.address-dropdown-item .addr-main{font-weight:500}.address-dropdown-item .addr-secondary{color:#6b7280;font-size:13px}.address-dropdown-loading{padding:10px 12px;color:#9ca3af;font-size:13px;text-align:center}.address-dropdown-attr{padding:4px 12px;text-align:right;font-size:10px;color:#9ca3af;background:#f9fafb;border-top:1px solid #f3f4f6}';
   document.head.appendChild(style);
@@ -11115,8 +11117,8 @@ async function getPipelineBootstrapHTML(request) {
       var secondary = item.secondaryText || '';
       html += '<div class="address-dropdown-item" data-index="' + i + '">'
         + '<span class="addr-icon"><i class="fa-solid fa-location-dot"></i></span>'
-        + '<div><div class="addr-main">' + main + '</div>'
-        + (secondary ? '<div class="addr-secondary">' + secondary + '</div>' : '')
+        + '<div><div class="addr-main">' + escapeHtml(main) + '</div>'
+        + (secondary ? '<div class="addr-secondary">' + escapeHtml(secondary) + '</div>' : '')
         + '</div></div>';
     });
     html += '<div class="address-dropdown-attr">Powered by Google</div>';
@@ -11286,6 +11288,8 @@ function zillowLookup() {
 <script>
 (function() {
   'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   /* ══════════════════════════════════════════════
      CSS — injected at runtime (embed at 50K limit)
@@ -11498,10 +11502,10 @@ function zillowLookup() {
       var display = val;
       if (valId === 'ltv' && val) display = val + '%';
       if (valId === 'loan-interest-rate' && val) display = val + '%';
-      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+label+'">'
-        +'<span class="ldb-label">'+label+'</span>'
+      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+escapeHtml(label)+'">'
+        +'<span class="ldb-label">'+escapeHtml(label)+'</span>'
         +'<span class="ldb-dot"></span>'
-        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display||'\\u2014')+'</span>'
+        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display?escapeHtml(display):'\\u2014')+'</span>'
         +'</div>';
     }
 
@@ -11814,6 +11818,8 @@ function zillowLookup() {
 <script>
 (function() {
   'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   var WORKER_BASE = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
   var allLenders = [];    /* array of {name, website_url, tpo_portal_url, ...} */
@@ -11841,12 +11847,12 @@ function zillowLookup() {
 
   /* Highlight matching text in lender name */
   function highlightMatch(name, query) {
-    if (!query) return name;
+    if (!query) return escapeHtml(name);
     var idx = name.toLowerCase().indexOf(query.toLowerCase());
-    if (idx === -1) return name;
-    return name.substring(0, idx)
-      + '<span class="lender-match">' + name.substring(idx, idx + query.length) + '</span>'
-      + name.substring(idx + query.length);
+    if (idx === -1) return escapeHtml(name);
+    return escapeHtml(name.substring(0, idx))
+      + '<span class="lender-match">' + escapeHtml(name.substring(idx, idx + query.length)) + '</span>'
+      + escapeHtml(name.substring(idx + query.length));
   }
 
   /* Render dropdown items */
@@ -11900,16 +11906,16 @@ function zillowLookup() {
     if (lender.website_url) {
       var url = lender.website_url;
       if (url.indexOf('://') === -1) url = 'https://' + url;
-      links.push('<a href="' + url + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Website</a>');
+      links.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Website</a>');
     }
     if (lender.tpo_portal_url) {
-      links.push('<a href="' + lender.tpo_portal_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-key"></i> TPO Portal</a>');
+      links.push('<a href="' + escapeHtml(lender.tpo_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-key"></i> TPO Portal</a>');
     }
     if (lender.correspondent_portal_url) {
-      links.push('<a href="' + lender.correspondent_portal_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-building-columns"></i> Correspondent</a>');
+      links.push('<a href="' + escapeHtml(lender.correspondent_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-building-columns"></i> Correspondent</a>');
     }
     if (lender.turn_times_url) {
-      links.push('<a href="' + lender.turn_times_url + '" target="_blank" rel="noopener"><i class="fa-solid fa-clock"></i> Turn Times</a>');
+      links.push('<a href="' + escapeHtml(lender.turn_times_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-clock"></i> Turn Times</a>');
     }
 
     if (links.length > 0) {
