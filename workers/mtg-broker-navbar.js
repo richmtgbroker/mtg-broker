@@ -293,7 +293,7 @@ const NAVBAR_HTML = `
       </a>
 
       <a href="/app/vendors" class="mb-mLink">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"></path><path d="M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"></path><path d="M9 21V13h6v8"></path><path d="M3 9h18"></path><path d="M6 9v3a3 3 0 0 0 6 0V9"></path><path d="M12 9v3a3 3 0 0 0 6 0V9"></path></svg>
         <span>Vendors</span>
       </a>
 
@@ -703,8 +703,12 @@ const NAVBAR_JS = `
   async function initNavbar() {
     showPlanAndAdminTags();
 
+    /* Wait for Outseta SDK AND the global cache function (from Site Settings footer).
+       Previously only waited for Outseta.getUser, so the navbar would call Outseta
+       directly before the global cache was ready — missing profile image data on
+       pages other than Dashboard. */
     var attempts = 0;
-    while (attempts < 30 && (!window.Outseta || !window.Outseta.getUser)) {
+    while (attempts < 50 && (!window.Outseta || !window.Outseta.getUser || typeof window.getCachedOutsetaUser !== 'function')) {
       await new Promise(function(resolve) { setTimeout(resolve, 100); });
       attempts++;
     }
@@ -716,6 +720,11 @@ const NAVBAR_JS = `
       setAuthUI(true);
       checkNexaFromUser(user);
 
+      /* Apply avatar from user object immediately, then check for Outseta-native
+         images as a fallback after a short delay */
+      var userImg = getUserProfileImg(user);
+      if (userImg) applyAvatar(userImg);
+
       setTimeout(function() {
         var imgs = document.querySelectorAll('img[data-o-member="ProfileImageS3Url"]');
         var hasNativeImage = false;
@@ -726,9 +735,8 @@ const NAVBAR_JS = `
             hasNativeImage = true;
           }
         });
-        if (!hasNativeImage) {
-          var userImg = getUserProfileImg(user);
-          if (userImg) applyAvatar(userImg);
+        if (!hasNativeImage && userImg) {
+          applyAvatar(userImg);
         }
       }, 500);
     } else {
