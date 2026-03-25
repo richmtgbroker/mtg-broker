@@ -661,7 +661,7 @@ function renderInline(text) {
 }
 
 // Converts Claude's markdown response into structured JSX.
-// Handles: # h1, ## h2, ### h3, - bullets, **bold**, plain paragraphs.
+// Handles: # h1, ## h2, ### h3, - / • / * / numbered bullets, **bold**, plain paragraphs.
 function GuidelineMarkdown({ text }) {
   const lines = text.split('\n')
   const elements = []
@@ -674,6 +674,12 @@ function GuidelineMarkdown({ text }) {
     }
   }
 
+  // Match bullet lines: - , * , • , or numbered like "1. ", "2) "
+  const bulletMatch = (line) => {
+    const m = line.match(/^(?:[-*•]\s+|\d+[.)]\s+)(.*)/)
+    return m ? m[1] : null
+  }
+
   lines.forEach((line, i) => {
     if (line.startsWith('# ')) {
       flushList(i)
@@ -684,8 +690,8 @@ function GuidelineMarkdown({ text }) {
     } else if (line.startsWith('### ')) {
       flushList(i)
       elements.push(<h5 key={i} className="gs-md-h3">{renderInline(line.slice(4))}</h5>)
-    } else if (line.match(/^[-*] /)) {
-      listItems.push(<li key={i}>{renderInline(line.slice(2))}</li>)
+    } else if (bulletMatch(line) !== null) {
+      listItems.push(<li key={i}>{renderInline(bulletMatch(line))}</li>)
     } else if (line.trim() === '') {
       flushList(i)
     } else {
@@ -749,7 +755,7 @@ function GuidelineResults({ data, onOpenProduct }) {
         </div>
         <p className="gs-answer-disclaimer">
           <i className="fas fa-circle-info"></i>{' '}
-          Answer synthesized from lender PDF guidelines. Always verify directly with the lender before presenting to borrowers.
+          Answer synthesized from lender matrices and guidelines. Always verify directly with the lender before presenting to borrowers.
         </p>
       </div>
 
@@ -924,7 +930,7 @@ function App() {
         <p className="hero-tagline">
           {activeMode === 'find'
             ? 'Describe a borrower scenario to instantly find matching wholesale loan products.'
-            : 'Ask any question about lender guidelines — answers sourced from lender PDFs.'
+            : 'Ask any question about lender guidelines — answers sourced from lender matrices and guidelines.'
           }
           <span className="hero-disclaimer">Always verify with the lender before presenting to borrowers.</span>
         </p>
