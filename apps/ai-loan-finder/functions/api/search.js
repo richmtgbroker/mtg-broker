@@ -191,12 +191,32 @@ function parseScenarioForFilters(scenario) {
     }
   }
 
-  // Extract loan amount
-  const amountMatch = scenario.match(/\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:k|K|loan|mortgage)?/);
-  if (amountMatch) {
-    let amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-    if (amount < 1000) amount *= 1000; // "500k" → 500000
-    if (amount >= 50000) filters.loanAmount = amount;
+  // Extract loan amount — must have a dollar sign, "k/K" suffix, or keyword like "loan amount"
+  // to avoid false positives from FICO scores (e.g. "720 credit score" != $720K loan)
+  const loanAmountPatterns = [
+    // "$500,000" or "$500000" or "$500K" — dollar sign is unambiguous
+    /\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:k|K)?/,
+    // "500k loan" or "500K mortgage" — k/K suffix with optional keyword
+    /(\d{1,3}(?:,\d{3})*)\s*(?:k|K)\b/,
+    // "loan amount 500000" or "loan amount: $500,000"
+    /(?:loan\s*(?:amount|size|balance)|mortgage\s*(?:amount|size|balance))[:\s]*\$?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)\s*(?:k|K)?/i,
+    // "500,000 loan" or "300000 mortgage" — comma-formatted or 6+ digit numbers before keyword
+    /(\d{1,3},\d{3}(?:,\d{3})*|\d{6,})\s*(?:loan|mortgage)/i,
+  ];
+  for (const pattern of loanAmountPatterns) {
+    const match = scenario.match(pattern);
+    if (match) {
+      // Find the first capturing group that matched
+      const rawAmount = match[1] || match[2] || match[3];
+      if (rawAmount) {
+        let amount = parseFloat(rawAmount.replace(/,/g, ''));
+        if (amount < 1000) amount *= 1000; // "500k" → 500000
+        if (amount >= 50000) {
+          filters.loanAmount = amount;
+          break;
+        }
+      }
+    }
   }
 
   // Detect occupancy type
@@ -251,7 +271,7 @@ function parseScenarioForFilters(scenario) {
     filters.purpose = 'Cash-Out';
   } else if (lower.includes('refinance') || lower.includes('refi') || lower.includes('rate-term') || lower.includes('rate term')) {
     filters.purpose = 'Refinance';
-  } else if (lower.includes('purchase') || lower.includes('buying') || lower.includes('buy')) {
+  } else if (lower.includes('purchase') || lower.includes('buying') || lower.includes('buy') || lower.includes('homebuyer') || lower.includes('home buyer') || lower.includes('down payment') || lower.match(/\d+%?\s*down/)) {
     filters.purpose = 'Purchase';
   }
 
@@ -266,8 +286,41 @@ function parseScenarioForFilters(scenario) {
   if (lower.includes('llc')) filters.llc = true;
 
   // Extract state (2-letter abbreviation or full name)
+  // Map common full state names to abbreviations
+  const stateNames = {
+    'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+    'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+    'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+    'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+    'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+    'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+    'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+    'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+    'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+    'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+    'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+    'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+    'wisconsin': 'WI', 'wyoming': 'WY',
+  };
+  // Try 2-letter abbreviation first (but skip "VA" if it's part of "VA loan")
   const stateMatch = scenario.match(/\b(AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/);
-  if (stateMatch) filters.state = stateMatch[1];
+  if (stateMatch) {
+    // Avoid "VA" false positive when it means "VA loan" not Virginia
+    if (stateMatch[1] === 'VA' && lower.match(/\bva\s*(loan|mortgage|irrrl|streamline|eligible)\b/)) {
+      // Don't set state — "VA" here means Veterans Affairs, not Virginia
+    } else {
+      filters.state = stateMatch[1];
+    }
+  }
+  // Try full state names if no abbreviation matched
+  if (!filters.state) {
+    for (const [name, abbr] of Object.entries(stateNames)) {
+      if (lower.includes(name)) {
+        filters.state = abbr;
+        break;
+      }
+    }
+  }
 
   return filters;
 }
@@ -288,15 +341,29 @@ async function querySupabase(env, filters) {
   // Only active products
   params.append('product_status', 'ilike.*Active*');
 
-  // FICO: only products where min_fico <= borrower's score
+  // FICO and loan amount filters need to handle null values gracefully.
+  // Products with null min_fico or null min_loan_amount should still be included
+  // (null = not specified = no restriction). We use PostgREST "or" syntax.
+  // Since only one "or" param is supported per query, we build a combined "and"
+  // with nested "or" conditions when both filters are present.
+  const orConditions = [];
   if (filters.fico) {
-    params.append('min_fico', `lte.${filters.fico}`);
+    orConditions.push(`min_fico.lte.${filters.fico},min_fico.is.null`);
+  }
+  if (filters.loanAmount) {
+    // Only filter min_loan_amount — skip max_loan_amount since most agency
+    // products have null max (they follow county loan limits instead).
+    // Claude handles max loan amount relevance in the ranking step.
+    orConditions.push(`min_loan_amount.lte.${filters.loanAmount},min_loan_amount.is.null`);
   }
 
-  // Loan amount range: product min <= loan amount <= product max
-  if (filters.loanAmount) {
-    params.append('min_loan_amount', `lte.${filters.loanAmount}`);
-    params.append('max_loan_amount', `gte.${filters.loanAmount}`);
+  if (orConditions.length === 1) {
+    // Single "or" condition — use directly
+    params.append('or', `(${orConditions[0]})`);
+  } else if (orConditions.length > 1) {
+    // Multiple "or" conditions — wrap each in "or()" inside an "and()" block
+    const andParts = orConditions.map(c => `or(${c})`).join(',');
+    params.append('and', `(${andParts})`);
   }
 
   // Occupancy, loan type, property type, purpose (partial match)
