@@ -22,27 +22,47 @@ export function getTemplate() {
 <!-- Search Controls -->
 <div class="loan-search-controls">
   <div class="search-row">
-    <div class="search-left">
-      <div class="search-input-wrapper">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Search loans...">
+    <div class="search-input-wrapper">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" class="search-input" placeholder="Search loans...">
+    </div>
+    <!-- Quick-access filters (inline with search) -->
+    <div class="quick-filters">
+      <div class="quick-filter" id="qf-min-fico">
+        <label class="quick-filter-label">Min FICO</label>
+        <input type="number" class="quick-filter-input" id="qf-fico-input" inputmode="numeric" placeholder="e.g. 620">
       </div>
-      <div class="search-actions">
-        <button class="filters-button">
-          <i class="fas fa-filter"></i>
-          <span>Filters</span>
-          <span class="filter-count" style="display:none;">0</span>
-        </button>
-        <button class="reset-button">
-          <i class="fas fa-undo"></i>
-          <span>Clear</span>
-        </button>
+      <div class="quick-filter" id="qf-loan-amount">
+        <label class="quick-filter-label">Loan Amount</label>
+        <input type="text" class="quick-filter-input" id="qf-amount-input" inputmode="numeric" placeholder="e.g. 350000">
+      </div>
+      <div class="quick-filter" id="qf-purpose">
+        <label class="quick-filter-label">Purpose</label>
+        <select class="quick-filter-select" id="qf-purpose-select">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="quick-filter" id="qf-occupancy">
+        <label class="quick-filter-label">Occupancy</label>
+        <select class="quick-filter-select" id="qf-occupancy-select">
+          <option value="">All</option>
+        </select>
       </div>
     </div>
+    <!-- Buttons: Filters, Columns, Clear -->
     <div class="control-buttons">
+      <button class="filters-button">
+        <i class="fas fa-filter"></i>
+        <span>Filters</span>
+        <span class="filter-count" style="display:none;">0</span>
+      </button>
       <button class="columns-button">
         <i class="fas fa-columns"></i>
         <span>Columns</span>
+      </button>
+      <button class="reset-button">
+        <i class="fas fa-undo"></i>
+        <span>Clear</span>
       </button>
     </div>
   </div>

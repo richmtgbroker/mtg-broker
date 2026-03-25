@@ -1469,6 +1469,17 @@ export function initLoanSearch() {
     filterState = { single: {}, multi: {}, numeric: {}, range: {} };
     activeCategory = 'all';
     visibleColumns = coreColumns.slice();
+
+    // Reset quick-access filters
+    const qfFico = document.getElementById('qf-fico-input');
+    if (qfFico) { qfFico.value = ''; qfFico.classList.remove('has-value'); }
+    const qfAmount = document.getElementById('qf-amount-input');
+    if (qfAmount) { qfAmount.value = ''; qfAmount.classList.remove('has-value'); }
+    const qfPurpose = document.getElementById('qf-purpose-select');
+    if (qfPurpose) { qfPurpose.value = ''; qfPurpose.classList.remove('has-value'); }
+    const qfOccupancy = document.getElementById('qf-occupancy-select');
+    if (qfOccupancy) { qfOccupancy.value = ''; qfOccupancy.classList.remove('has-value'); }
+
     renderCategoryBar();
     buildFilterControls();
     buildHeader();
@@ -1629,6 +1640,124 @@ export function initLoanSearch() {
   }
 
   // ---------------------------
+  // Quick-access filters (inline in search bar)
+  // These mirror the filter panel controls but are always visible.
+  // ---------------------------
+  function initQuickFilters() {
+    // Min FICO quick filter
+    const ficoInput = document.getElementById('qf-fico-input');
+    if (ficoInput) {
+      ficoInput.addEventListener('input', () => {
+        const n = parseNumber(ficoInput.value);
+        // Find the actual FICO field key
+        const ficoKey = allFields.find(k => isNumericThresholdKey(k)) || resolveFieldKey('min_fico');
+        if (ficoKey) {
+          if (Number.isFinite(n)) filterState.numeric[ficoKey] = n;
+          else delete filterState.numeric[ficoKey];
+          ficoInput.classList.toggle('has-value', Number.isFinite(n));
+          setFilterCountBadge();
+          updateActiveChips();
+          debounce('qf_fico', () => applyFilters(), 300);
+        }
+      });
+    }
+
+    // Loan Amount quick filter
+    const amountInput = document.getElementById('qf-amount-input');
+    if (amountInput) {
+      amountInput.addEventListener('input', () => {
+        const n = parseNumber(amountInput.value);
+        if (Number.isFinite(n) && n > 0) filterState.range['loan_amount'] = n;
+        else delete filterState.range['loan_amount'];
+        amountInput.classList.toggle('has-value', Number.isFinite(n) && n > 0);
+        setFilterCountBadge();
+        updateActiveChips();
+        debounce('qf_amount', () => applyFilters(), 300);
+      });
+      amountInput.addEventListener('blur', () => {
+        const n = parseNumber(amountInput.value);
+        if (Number.isFinite(n) && n > 0) amountInput.value = '$' + n.toLocaleString();
+      });
+      amountInput.addEventListener('focus', () => {
+        const n = parseNumber(amountInput.value);
+        if (Number.isFinite(n)) amountInput.value = String(n);
+      });
+    }
+
+    // Purpose quick filter
+    const purposeSelect = document.getElementById('qf-purpose-select');
+    if (purposeSelect) {
+      purposeSelect.addEventListener('change', () => {
+        const purposeKey = resolveFieldKey('purpose') || resolveFieldKey('Purpose');
+        if (purposeKey) {
+          const val = purposeSelect.value;
+          if (val) {
+            if (!filterState.multi[purposeKey]) filterState.multi[purposeKey] = new Set();
+            filterState.multi[purposeKey].clear();
+            filterState.multi[purposeKey].add(val);
+          } else {
+            if (filterState.multi[purposeKey]) filterState.multi[purposeKey].clear();
+          }
+          purposeSelect.classList.toggle('has-value', !!val);
+          setFilterCountBadge();
+          updateActiveChips();
+          applyFilters();
+        }
+      });
+    }
+
+    // Occupancy quick filter
+    const occupancySelect = document.getElementById('qf-occupancy-select');
+    if (occupancySelect) {
+      occupancySelect.addEventListener('change', () => {
+        const occKey = resolveFieldKey('occupancy') || resolveFieldKey('Occupancy');
+        if (occKey) {
+          const val = occupancySelect.value;
+          if (val) {
+            if (!filterState.multi[occKey]) filterState.multi[occKey] = new Set();
+            filterState.multi[occKey].clear();
+            filterState.multi[occKey].add(val);
+          } else {
+            if (filterState.multi[occKey]) filterState.multi[occKey].clear();
+          }
+          occupancySelect.classList.toggle('has-value', !!val);
+          setFilterCountBadge();
+          updateActiveChips();
+          applyFilters();
+        }
+      });
+    }
+  }
+
+  function populateQuickFilterDropdowns() {
+    // Purpose dropdown
+    const purposeKey = resolveFieldKey('purpose') || resolveFieldKey('Purpose');
+    const purposeSelect = document.getElementById('qf-purpose-select');
+    if (purposeKey && purposeSelect) {
+      const opts = buildUniqueOptions(purposeKey);
+      opts.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = v;
+        purposeSelect.appendChild(o);
+      });
+    }
+
+    // Occupancy dropdown
+    const occKey = resolveFieldKey('occupancy') || resolveFieldKey('Occupancy');
+    const occupancySelect = document.getElementById('qf-occupancy-select');
+    if (occKey && occupancySelect) {
+      const opts = buildUniqueOptions(occKey);
+      opts.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v;
+        o.textContent = v;
+        occupancySelect.appendChild(o);
+      });
+    }
+  }
+
+  // ---------------------------
   // Init
   // ---------------------------
   async function init() {
@@ -1661,7 +1790,13 @@ export function initLoanSearch() {
       const search = $('.search-input');
       if (search) search.addEventListener('input', () => debounce('search', () => applyFilters(), 300));
 
+      // Wire up quick-access filters
+      initQuickFilters();
+
       await fetchData();
+
+      // Populate quick-filter dropdowns after data loads
+      populateQuickFilterDropdowns();
 
       renderCategoryBar();
       buildHeader();
