@@ -1,0 +1,2 @@
+/index.js
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
