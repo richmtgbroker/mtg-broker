@@ -4,7 +4,13 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 24, 2026 - v8.0 — Supabase migration for Pipeline Loans + Tasks:
+ * UPDATED: March 24, 2026 - v8.2 — Lender searchable dropdown:
+ *   Replaced text input with searchable combobox pulling 294 lenders from Supabase.
+ *   "Other" option with manual text input for unlisted lenders.
+ *   New public endpoint: GET /api/lenders (cached 30min).
+ *   New Supabase table: public.lenders (294 rows).
+ *
+ * PREVIOUS: March 24, 2026 - v8.0 — Supabase migration for Pipeline Loans + Tasks:
  *   Loans + Tasks CRUD now reads/writes Supabase instead of Airtable.
  *   Server-side field mapping layer converts Airtable field names ↔ Supabase snake_case columns.
  *   Client-side JS is unchanged — still sends/receives Airtable-format field names.
@@ -428,7 +434,7 @@ const PLAN_LIMITS = {
     calculatorSaves: 0,
     canAccessAdvancedCalcs: false,
     canClickLoanSearchDetails: false,
-    canClickDirectoryLinks: false,
+    canClickDirectoryLinks: true,
     canAddFavorites: false,
     canExportPipeline: false,
     canPrintCalculatorPDF: false
@@ -626,6 +632,45 @@ function jsonResponse(data, status = 200, request) {
 
 /**
  * GET /api/pipeline/loans
+ * Fetches lender names from Supabase for the searchable dropdown.
+ * Public endpoint — no auth required. Cached in-memory for 30 minutes.
+ */
+let lenderListCache = null;
+let lenderListCacheTime = 0;
+const LENDER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+async function getLenderList(env, request) {
+  const now = Date.now();
+  if (lenderListCache && (now - lenderListCacheTime) < LENDER_CACHE_TTL) {
+    return new Response(JSON.stringify(lenderListCache), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800', ...getCorsHeaders(request) }
+    });
+  }
+  try {
+    const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/lenders?select=name,website_url,tpo_portal_url,correspondent_portal_url,turn_times_url&order=name.asc`, {
+      headers: { 'apikey': env.SUPABASE_KEY, 'Authorization': `Bearer ${env.SUPABASE_KEY}` }
+    });
+    const rows = await resp.json();
+    /* Return array of lender objects with name + URLs */
+    const lenders = rows.map(r => {
+      const obj = { name: r.name };
+      if (r.website_url) obj.website_url = r.website_url;
+      if (r.tpo_portal_url) obj.tpo_portal_url = r.tpo_portal_url;
+      if (r.correspondent_portal_url) obj.correspondent_portal_url = r.correspondent_portal_url;
+      if (r.turn_times_url) obj.turn_times_url = r.turn_times_url;
+      return obj;
+    });
+    lenderListCache = lenders;
+    lenderListCacheTime = now;
+    return new Response(JSON.stringify(lenders), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800', ...getCorsHeaders(request) }
+    });
+  } catch (err) {
+    return jsonResponse({ error: 'Failed to fetch lenders', detail: err.message }, 500, request);
+  }
+}
+
+/**
  * Fetches all loans for a user from Supabase with 10-minute caching.
  * Returns Airtable-format records: [{id, fields: {...}}, ...]
  */
@@ -1292,19 +1337,19 @@ function formatCellValue(loan, col) {
   const val = col.field === 'Compensation Amount' ? getCompAmount(loan) : loan[col.field];
   switch (col.format) {
     case 'bold':
-      return \`<strong>\${val || '-'}</strong>\`;
+      return \`<strong>\${escapeHtml(String(val || '-'))}</strong>\`;
     case 'currency':
       return val ? fmtCW(val) : '-';
     case 'date':
       return val ? new Date(val + 'T00:00:00').toLocaleDateString() : '-';
     case 'stage':
-      return \`<span class="stage-badge \${getStageClass(val)}">\${val || '-'}</span>\`;
+      return \`<span class="stage-badge \${getStageClass(val)}">\${escapeHtml(String(val || '-'))}</span>\`;
     case 'lock':
       const ls = val || '-';
-      return \`<span class="lock-badge \${getLockBadgeClass(ls)}">\${ls}</span>\`;
+      return \`<span class="lock-badge \${getLockBadgeClass(ls)}">\${escapeHtml(String(ls))}</span>\`;
     case 'pay':
       const ps = val || '-';
-      return \`<span class="pay-badge \${getPayBadgeClass(ps)}">\${ps}</span>\`;
+      return \`<span class="pay-badge \${getPayBadgeClass(ps)}">\${escapeHtml(String(ps))}</span>\`;
     case 'percent':
       return val ? (val * 100).toFixed(1) + '%' : '-';
     case 'rate':
@@ -1314,7 +1359,7 @@ function formatCellValue(loan, col) {
     case 'comp':
       return val > 0 ? fmtCW(val) : '-';
     default:
-      return val || '-';
+      return escapeHtml(String(val || '-'));
   }
 }
 function buildTableRow(loan, orderedCols) {
@@ -2029,7 +2074,7 @@ function renderLoanCard(loan) {
   const cd = loan['Expected Close']; let cdc = '', cdt = '-';
   if (cd) { const d = new Date(cd+'T00:00:00'), diff = (d - new Date()) / 864e5; cdt = d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); if (diff < 0) cdc = 'overdue'; else if (diff <= 7) cdc = 'soon'; }
   const addr = [loan['Property Street'], loan['Property City']].filter(Boolean).join(', ') || 'No address';
-  return \`<div class="loan-card" onclick="openLoanModal('\${loan.id}')"><div class="loan-card-header"><h4 class="loan-borrower">\${loan['Borrower Name']||'Unnamed'}</h4><span class="loan-amount">\${fmtM(loan['Loan Amount'])}</span></div><div class="loan-property">\${addr}</div><div class="loan-meta"><span class="loan-type">\${loan['Loan Type']||'-'}</span><span class="loan-close-date \${cdc}">\${cdt}</span></div></div>\`;
+  return \`<div class="loan-card" onclick="openLoanModal('\${loan.id}')"><div class="loan-card-header"><h4 class="loan-borrower">\${escapeHtml(loan['Borrower Name']||'Unnamed')}</h4><span class="loan-amount">\${fmtM(loan['Loan Amount'])}</span></div><div class="loan-property">\${escapeHtml(addr)}</div><div class="loan-meta"><span class="loan-type">\${escapeHtml(loan['Loan Type']||'-')}</span><span class="loan-close-date \${cdc}">\${cdt}</span></div></div>\`;
 }
 function renderTable() { filterTable(); }
 function filterTable() {
@@ -2171,6 +2216,8 @@ function openNewLoanModal() {
   document.getElementById('eq-max-debt').textContent = '\u2014';
   document.getElementById('eq-max-loan').textContent = '\u2014';
   document.getElementById('eq-actual-cltv').textContent = '\u2014';
+  /* Reset lender searchable dropdown */
+  if (window.setLenderValue) window.setLenderValue('');
   document.getElementById('deal-status-bar').classList.add('hidden');
   document.getElementById('lock-status').value = '-';
   document.getElementById('lock-date').value = '';
@@ -2273,7 +2320,9 @@ async function openLoanModal(id) {
   setVal('borrower-ssn4', loan['Borrower SSN Last 4']);
   setVal('co-borrower-dob', loan['Co-Borrower DOB']);
   setVal('co-borrower-ssn4', loan['Co-Borrower SSN Last 4']);
+  /* Lender searchable dropdown — set hidden value + display input */
   setVal('loan-lender', loan['Lender']);
+  if (window.setLenderValue) window.setLenderValue(loan['Lender'] || '');
   setVal('credit-pull-type', loan['Credit Pull Type']); setVal('credit-score', loan['Credit Score']);
   setVal('date-credit-pulled', loan['Date Credit Pulled']); setVal('scores-pulled', loan['Scores Pulled']);
   setVal('credit-vendor', loan['Credit Vendor']); setVal('credit-report-number', loan['Credit Report Number']);
@@ -2386,7 +2435,7 @@ async function loadTasks(loanId) {
   catch (e) { console.error('Error loading tasks:', e); }
 }
 function renderTasks() {
-  document.getElementById('task-list').innerHTML = tasks.map(t => \`<div class="task-item \${t.Completed?'completed':''}"><input type="checkbox" \${t.Completed?'checked':''} onchange="toggleTask('\${t.id}',this.checked)"><span class="task-name">\${t['Task Name']}</span><span class="task-due">\${t['Due Date']?new Date(t['Due Date']).toLocaleDateString():''}</span><button class="btn btn-sm" style="padding:4px 8px;color:#DC2626;" onclick="deleteTask('\${t.id}')">&times;</button></div>\`).join('');
+  document.getElementById('task-list').innerHTML = tasks.map(t => \`<div class="task-item \${t.Completed?'completed':''}"><input type="checkbox" \${t.Completed?'checked':''} onchange="toggleTask('\${t.id}',this.checked)"><span class="task-name">\${escapeHtml(t['Task Name'])}</span><span class="task-due">\${t['Due Date']?new Date(t['Due Date']).toLocaleDateString():''}</span><button class="btn btn-sm" style="padding:4px 8px;color:#DC2626;" onclick="deleteTask('\${t.id}')">&times;</button></div>\`).join('');
 }
 async function toggleTask(id, done) {
   try { await apiCall(\`/api/pipeline/tasks/\${id}\`,'PUT',{Completed:done}); const t = tasks.find(x=>x.id===id); if(t)t.Completed=done; renderTasks(); }
@@ -6364,7 +6413,7 @@ async function getPipelineAssetsJS(request) {
       + '<div class="ast-acct-fields">'
       +   '<div class="ff" style="flex:2;min-width:160px;"><label>Account Type</label><select class="fc ast-acct-type" onchange="toggleAssetDesc(\\'' + id + '\\')">' + opts + '</select></div>'
       +   '<div class="ff" style="flex:1.2;min-width:120px;"><label>Balance ($)</label><input type="text" class="fc currency-input ast-acct-bal" placeholder="0" value="' + (acct.balance ? Number(acct.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
-      +   '<div class="ff" style="flex:1;min-width:100px;"><label>Account #</label><input type="text" class="fc ast-acct-num" placeholder="Last 4" maxlength="20" value="' + (acct.accountNum || '') + '"></div>'
+      +   '<div class="ff" style="flex:1;min-width:100px;"><label>Account #</label><input type="text" class="fc ast-acct-num" placeholder="Last 4" maxlength="20" value="' + escapeHtml(acct.accountNum || '') + '"></div>'
       +   '<div class="ff" style="flex:1;min-width:130px;"><label>Statement Date</label><input type="date" class="fc ast-acct-stmt-date" value="' + (acct.statementDate || '') + '"></div>'
       +   '<button type="button" class="ast-remove-btn" onclick="removeAssetAccount(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
       + '</div>'
@@ -10251,7 +10300,42 @@ textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-fa
   .equity-calc-strip {
     grid-template-columns: repeat(2, 1fr);
   }
-}`;
+}
+
+/* ========== Lender Searchable Dropdown ========== */
+.lender-search-wrap { position: relative; }
+.lender-dropdown {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100000;
+  background: #fff; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12); max-height: 240px; overflow-y: auto; margin-top: -1px;
+}
+.lender-dropdown.open { display: block; }
+.lender-dropdown-item {
+  padding: 9px 12px; cursor: pointer; font-size: 14px; color: #1f2937; border-bottom: 1px solid #f3f4f6;
+}
+.lender-dropdown-item:last-child { border-bottom: none; }
+.lender-dropdown-item:hover, .lender-dropdown-item.active { background: #eff6ff; }
+.lender-dropdown-item.lender-other-item { font-weight: 600; color: #1a56db; border-bottom: 2px solid #e5e7eb; }
+.lender-dropdown-item .lender-match { font-weight: 600; }
+.lender-clear-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none;
+  cursor: pointer; color: #9ca3af; font-size: 16px; padding: 2px 6px; line-height: 1; border-radius: 4px;
+}
+.lender-clear-btn:hover { color: #ef4444; background: #fef2f2; }
+.lender-other-wrap { margin-top: 8px; }
+.lender-other-wrap.hidden { display: none; }
+
+/* Lender Quick Links */
+.lender-links { display: none; margin-top: 8px; padding: 0; gap: 6px; }
+.lender-links.visible { display: grid; grid-template-columns: 1fr 1fr; }
+.lender-links a {
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  font-size: 11.5px; color: #1a56db; text-decoration: none; font-weight: 500;
+  padding: 6px 8px; border-radius: 5px; background: #f0f5ff; border: 1px solid #dbeafe;
+  transition: background .15s, border-color .15s; white-space: nowrap;
+}
+.lender-links a:hover { background: #dbeafe; border-color: #93c5fd; }
+.lender-links a i { font-size: 11px; }`;
   return new Response(cssContent, {
     status: 200,
     headers: {
@@ -10453,7 +10537,7 @@ async function getPipelineTemplateHTML(request) {
                 <div class="ff"><label>Lead Source</label>
                   <select class="fc" id="lead-source"><option value="">Select...</option><option value="Self-Generated">Self-Generated</option><option value="Past Client">Past Client</option><option value="Referral - Realtor">Referral - Realtor</option><option value="Referral - Client">Referral - Client</option><option value="Referral - Financial Planner">Referral - Financial Planner</option><option value="Referral - Builder">Referral - Builder</option><option value="Referral - Other">Referral - Other</option><option value="Website">Website</option><option value="Social Media">Social Media</option><option value="Cold Call">Cold Call</option><option value="Direct Mail">Direct Mail</option><option value="Lead Service">Lead Service</option><option value="Walk-In">Walk-In</option><option value="Other">Other</option></select>
                 </div>
-                <div class="ff"><label>Lender</label><input type="text" class="fc" id="loan-lender"></div>
+                <div class="ff"><label>Lender</label><div class="lender-search-wrap" id="lender-search-wrap"><input type="text" class="fc" id="loan-lender-search" placeholder="Search lenders..." autocomplete="off"><input type="hidden" id="loan-lender"><div class="lender-dropdown" id="lender-dropdown"></div></div><div class="lender-links" id="lender-links"></div><div class="ff lender-other-wrap hidden" id="lender-other-wrap"><label>Other Lender Name</label><input type="text" class="fc" id="loan-lender-other" placeholder="Type lender name..."></div></div>
               </div>
               <div class="cg">
                 <div class="ff sp2"><label>Deal Notes</label><textarea class="fc" id="deal-notes" placeholder="Quick notes about the deal..." style="min-height:60px;"></textarea></div>
@@ -11000,6 +11084,8 @@ async function getPipelineBootstrapHTML(request) {
 <script>
 (function() {
   'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   var style = document.createElement('style');
   style.textContent = '.address-autocomplete-wrap{position:relative}.address-dropdown{display:none;position:absolute;top:100%;left:0;right:0;z-index:100000;background:#fff;border:1px solid #d1d5db;border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:240px;overflow-y:auto;margin-top:-1px}.address-dropdown.open{display:block}.address-dropdown-item{padding:10px 12px;cursor:pointer;font-size:14px;color:#1f2937;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:8px}.address-dropdown-item:last-child{border-bottom:none}.address-dropdown-item:hover,.address-dropdown-item.active{background:#eff6ff}.address-dropdown-item .addr-icon{color:#9ca3af;font-size:13px;margin-top:2px;flex-shrink:0}.address-dropdown-item .addr-main{font-weight:500}.address-dropdown-item .addr-secondary{color:#6b7280;font-size:13px}.address-dropdown-loading{padding:10px 12px;color:#9ca3af;font-size:13px;text-align:center}.address-dropdown-attr{padding:4px 12px;text-align:right;font-size:10px;color:#9ca3af;background:#f9fafb;border-top:1px solid #f3f4f6}';
   document.head.appendChild(style);
@@ -11048,8 +11134,8 @@ async function getPipelineBootstrapHTML(request) {
       var secondary = item.secondaryText || '';
       html += '<div class="address-dropdown-item" data-index="' + i + '">'
         + '<span class="addr-icon"><i class="fa-solid fa-location-dot"></i></span>'
-        + '<div><div class="addr-main">' + main + '</div>'
-        + (secondary ? '<div class="addr-secondary">' + secondary + '</div>' : '')
+        + '<div><div class="addr-main">' + escapeHtml(main) + '</div>'
+        + (secondary ? '<div class="addr-secondary">' + escapeHtml(secondary) + '</div>' : '')
         + '</div></div>';
     });
     html += '<div class="address-dropdown-attr">Powered by Google</div>';
@@ -11219,6 +11305,8 @@ function zillowLookup() {
 <script>
 (function() {
   'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   /* ══════════════════════════════════════════════
      CSS — injected at runtime (embed at 50K limit)
@@ -11431,10 +11519,10 @@ function zillowLookup() {
       var display = val;
       if (valId === 'ltv' && val) display = val + '%';
       if (valId === 'loan-interest-rate' && val) display = val + '%';
-      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+label+'">'
-        +'<span class="ldb-label">'+label+'</span>'
+      return '<div class="ldb-chip" onclick="'+navTarget+'" title="Go to '+escapeHtml(label)+'">'
+        +'<span class="ldb-label">'+escapeHtml(label)+'</span>'
         +'<span class="ldb-dot"></span>'
-        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display||'\\u2014')+'</span>'
+        +'<span class="ldb-val'+(isEmpty?' ldb-empty':'')+'">'+(display?escapeHtml(display):'\\u2014')+'</span>'
         +'</div>';
     }
 
@@ -11737,6 +11825,304 @@ function zillowLookup() {
     }, 100);
   }
 })();
+</script>
+
+<!-- ============================================================
+     Lender Searchable Dropdown (v1.0)
+     Fetches lender names from /api/lenders, builds a filterable
+     dropdown with "Other" option + manual entry fallback.
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+  /* Local escapeHtml for XSS safety (mirrors the one in pipeline-app.js) */
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  var WORKER_BASE = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
+  var allLenders = [];    /* array of {name, website_url, tpo_portal_url, ...} */
+  var lenderMap = {};     /* name → lender object for quick lookup */
+  var dropdownOpen = false;
+  var activeIndex = -1;
+
+  /* DOM references (set in init) */
+  var searchInput, hiddenInput, dropdown, otherWrap, otherInput, clearBtn, linksDiv;
+
+  /* Fetch lender list from API (now returns objects with URLs) */
+  function fetchLenders() {
+    fetch(WORKER_BASE + '/api/lenders')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        allLenders = data || [];
+        /* Build lookup map: name → lender object */
+        lenderMap = {};
+        for (var i = 0; i < allLenders.length; i++) {
+          lenderMap[allLenders[i].name] = allLenders[i];
+        }
+      })
+      .catch(function(err) { console.warn('Failed to load lenders:', err); });
+  }
+
+  /* Highlight matching text in lender name */
+  function highlightMatch(name, query) {
+    if (!query) return escapeHtml(name);
+    var idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return escapeHtml(name);
+    return escapeHtml(name.substring(0, idx))
+      + '<span class="lender-match">' + escapeHtml(name.substring(idx, idx + query.length)) + '</span>'
+      + escapeHtml(name.substring(idx + query.length));
+  }
+
+  /* Render dropdown items */
+  function renderDropdown(query) {
+    var filtered;
+    if (!query) {
+      filtered = allLenders.slice();
+    } else {
+      var q = query.toLowerCase();
+      filtered = allLenders.filter(function(l) { return l.name.toLowerCase().indexOf(q) !== -1; });
+    }
+
+    var html = '';
+    html += '<div class="lender-dropdown-item lender-other-item" data-value="__OTHER__">Other (not in list)</div>';
+
+    for (var i = 0; i < filtered.length; i++) {
+      html += '<div class="lender-dropdown-item" data-value="' + filtered[i].name.replace(/"/g, '&quot;') + '">'
+        + highlightMatch(filtered[i].name, query) + '</div>';
+    }
+
+    if (filtered.length === 0 && query) {
+      html += '<div class="lender-dropdown-item" style="color:#9ca3af;cursor:default;">No matches found</div>';
+    }
+
+    dropdown.innerHTML = html;
+    activeIndex = -1;
+  }
+
+  /* Open / close dropdown */
+  function openDropdown() {
+    dropdown.classList.add('open');
+    dropdownOpen = true;
+  }
+  function closeDropdown() {
+    dropdown.classList.remove('open');
+    dropdownOpen = false;
+    activeIndex = -1;
+  }
+
+  /* Show lender quick links for the selected lender */
+  function showLenderLinks(lenderName) {
+    if (!linksDiv) return;
+    var lender = lenderMap[lenderName];
+    if (!lender) {
+      linksDiv.classList.remove('visible');
+      linksDiv.innerHTML = '';
+      return;
+    }
+
+    var links = [];
+    if (lender.website_url) {
+      var url = lender.website_url;
+      if (url.indexOf('://') === -1) url = 'https://' + url;
+      links.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Website</a>');
+    }
+    if (lender.tpo_portal_url) {
+      links.push('<a href="' + escapeHtml(lender.tpo_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-key"></i> TPO Portal</a>');
+    }
+    if (lender.correspondent_portal_url) {
+      links.push('<a href="' + escapeHtml(lender.correspondent_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-building-columns"></i> Correspondent</a>');
+    }
+    if (lender.turn_times_url) {
+      links.push('<a href="' + escapeHtml(lender.turn_times_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-clock"></i> Turn Times</a>');
+    }
+
+    if (links.length > 0) {
+      linksDiv.innerHTML = links.join('');
+      linksDiv.classList.add('visible');
+    } else {
+      linksDiv.classList.remove('visible');
+      linksDiv.innerHTML = '';
+    }
+  }
+
+  /* Select a lender value */
+  function selectLender(value) {
+    if (value === '__OTHER__') {
+      hiddenInput.value = '';
+      searchInput.value = 'Other (not in list)';
+      searchInput.disabled = true;
+      otherWrap.classList.remove('hidden');
+      otherInput.focus();
+      updateClearBtn();
+      closeDropdown();
+      showLenderLinks('');
+      triggerUpdates();
+      return;
+    }
+    hiddenInput.value = value;
+    searchInput.value = value;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn();
+    closeDropdown();
+    showLenderLinks(value);
+    triggerUpdates();
+  }
+
+  /* Clear selection */
+  function clearSelection() {
+    hiddenInput.value = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn();
+    showLenderLinks('');
+    searchInput.focus();
+    triggerUpdates();
+  }
+
+  /* Show/hide clear button */
+  function updateClearBtn() {
+    if (!clearBtn) return;
+    clearBtn.style.display = (hiddenInput.value || searchInput.disabled) ? 'block' : 'none';
+  }
+
+  /* Trigger deal string + loan detail bar updates */
+  function triggerUpdates() {
+    if (typeof updateDealString === 'function') setTimeout(updateDealString, 50);
+    if (typeof updateLoanDetailBar === 'function') setTimeout(updateLoanDetailBar, 50);
+  }
+
+  /* Keyboard navigation */
+  function handleKeydown(e) {
+    if (!dropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        renderDropdown(searchInput.value);
+        openDropdown();
+        e.preventDefault();
+      }
+      return;
+    }
+    var items = dropdown.querySelectorAll('.lender-dropdown-item[data-value]');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      updateActiveItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      updateActiveItem(items);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && items[activeIndex]) {
+        selectLender(items[activeIndex].getAttribute('data-value'));
+      }
+    } else if (e.key === 'Escape') {
+      closeDropdown();
+    }
+  }
+
+  function updateActiveItem(items) {
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle('active', i === activeIndex);
+    }
+    if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  /* Set lender value programmatically (called from editLoan) */
+  window.setLenderValue = function(val) {
+    if (!searchInput || !hiddenInput) return;
+    if (!val) {
+      clearSelection();
+      return;
+    }
+    /* Check if value is in the lender list */
+    var found = !!lenderMap[val];
+    if (found) {
+      hiddenInput.value = val;
+      searchInput.value = val;
+      searchInput.disabled = false;
+      otherWrap.classList.add('hidden');
+      otherInput.value = '';
+      showLenderLinks(val);
+    } else {
+      /* Value not in list — treat as "Other" */
+      hiddenInput.value = val;
+      searchInput.value = 'Other (not in list)';
+      searchInput.disabled = true;
+      otherWrap.classList.remove('hidden');
+      otherInput.value = val;
+      showLenderLinks('');
+    }
+    updateClearBtn();
+  };
+
+  /* Initialize */
+  function init() {
+    searchInput = document.getElementById('loan-lender-search');
+    hiddenInput = document.getElementById('loan-lender');
+    dropdown = document.getElementById('lender-dropdown');
+    otherWrap = document.getElementById('lender-other-wrap');
+    otherInput = document.getElementById('loan-lender-other');
+    linksDiv = document.getElementById('lender-links');
+    if (!searchInput || !hiddenInput || !dropdown) return;
+
+    /* Add clear button */
+    clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'lender-clear-btn';
+    clearBtn.innerHTML = '&times;';
+    clearBtn.title = 'Clear lender';
+    clearBtn.style.display = 'none';
+    clearBtn.addEventListener('click', function(e) { e.stopPropagation(); clearSelection(); });
+    searchInput.parentNode.appendChild(clearBtn);
+
+    /* Search input events */
+    searchInput.addEventListener('input', function() {
+      renderDropdown(searchInput.value);
+      openDropdown();
+    });
+    searchInput.addEventListener('focus', function() {
+      renderDropdown(searchInput.value);
+      openDropdown();
+    });
+    searchInput.addEventListener('keydown', handleKeydown);
+
+    /* Dropdown click delegation */
+    dropdown.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var item = e.target.closest('.lender-dropdown-item[data-value]');
+      if (item) selectLender(item.getAttribute('data-value'));
+    });
+
+    /* Close dropdown on outside click */
+    document.addEventListener('mousedown', function(e) {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        closeDropdown();
+        if (!hiddenInput.value && searchInput.value && !searchInput.disabled) {
+          searchInput.value = '';
+        }
+      }
+    });
+
+    /* "Other" text input syncs to hidden lender field */
+    if (otherInput) {
+      otherInput.addEventListener('input', function() {
+        hiddenInput.value = otherInput.value;
+        triggerUpdates();
+      });
+    }
+
+    fetchLenders();
+    updateClearBtn();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 300); });
+  } else {
+    setTimeout(init, 300);
+  }
+})();
 </script>`;
   return new Response(htmlContent, {
     status: 200,
@@ -11824,12 +12210,17 @@ export default {
       return await getPipelineBootstrapHTML(request);
     }
 
+    // Lender directory names for searchable dropdown (public, no auth)
+    if (path === '/api/lenders' && method === 'GET') {
+      return await getLenderList(env, request);
+    }
+
     // Health check
     if (path === '/health' || path === '/') {
       return jsonResponse({
         status: 'ok',
         service: 'mtg-broker-pipeline',
-        version: '8.1',
+        version: '8.2',
         database: 'Supabase (loans, tasks, usage)',
         timestamp: new Date().toISOString(),
         endpoints: [
@@ -11856,6 +12247,7 @@ export default {
           'GET    /static/pipeline-documents.js   - Documents tab JS module',
           'GET    /static/pipeline-purchase-agreement.js - Purchase Agreement tab JS module',
           'POST   /api/pipeline/extract-purchase-agreement - Extract PA fields from PDF via Claude AI',
+          'GET    /api/lenders                      - Lender directory names (public)',
           'GET    /health                          - This health check'
         ]
       }, 200, request);

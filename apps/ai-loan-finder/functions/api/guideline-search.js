@@ -111,7 +111,7 @@ async function searchChunks(embedding, env) {
     },
     body: JSON.stringify({
       query_embedding: embedding,
-      match_count: 20,
+      match_count: 35,
     }),
   })
 
