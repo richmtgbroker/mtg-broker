@@ -330,6 +330,7 @@ const DASHBOARD_HTML = `
   const ITEMS_PER_PAGE = 5;
 
   let allLeads = [];
+  let allLoans = []; // Cached pipeline loans for task cross-referencing
   let userEmail = null;
   let userToken = null; // Raw JWT for authenticated API calls
   let calendarMonth = new Date().getMonth();
@@ -645,6 +646,7 @@ const DASHBOARD_HTML = `
         if (Date.now() - parsed.timestamp < PIPELINE_CACHE_TTL) {
           var loans = Array.isArray(parsed.data) ? parsed.data.map(function(r) { return Object.assign({ id: r.id }, r.fields); }) : [];
           if (loans.length > 0) {
+            allLoans = loans;
             updatePipelineUI(calculatePipelineStats(loans));
             updateLeadsUI(loans.filter(function(l) { return isLeadLoan(l); }));
             extractUpcomingClosings(loans);
@@ -678,6 +680,7 @@ const DASHBOARD_HTML = `
       var loans2 = Array.isArray(rawData) ? rawData.map(function(r) { return Object.assign({ id: r.id }, r.fields); }) : [];
 
       if (loans2.length > 0) {
+        allLoans = loans2;
         var stats = calculatePipelineStats(loans2);
         var leadLoans = loans2.filter(function(l) { return isLeadLoan(l); });
         extractUpcomingClosings(loans2);
@@ -894,9 +897,20 @@ const DASHBOARD_HTML = `
         return da.localeCompare(db);
       });
 
+      // Build loan ID → borrower name lookup from cached pipeline data
+      var loanNames = {};
+      allLoans.forEach(function(l) {
+        if (l.id) loanNames[l.id] = l['Borrower Name'] || 'Unknown';
+      });
+
       listEl.innerHTML = pending.slice(0, 8).map(function(r) {
         var name = r.fields['Task Name'] || 'Untitled task';
         var dueDate = r.fields['Due Date'];
+        var loanIds = r.fields['Loan'] || [];
+        var loanId = loanIds[0] || '';
+        var borrower = loanId ? (loanNames[loanId] || '') : '';
+
+        // Format due date
         var dueMeta = '';
         if (dueDate) {
           var d = parseLocalDate(dueDate);
@@ -909,8 +923,17 @@ const DASHBOARD_HTML = `
             else dueMeta = 'Due ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           }
         }
+
+        // Build subtitle: "Borrower Name · Due Mar 15" or just one
+        var metaParts = [];
+        if (borrower) metaParts.push(escapeHtml(borrower));
+        if (dueMeta) metaParts.push(dueMeta);
+        var metaHtml = metaParts.length > 0 ? '<span class="task-meta">' + metaParts.join(' &bull; ') + '</span>' : '';
+
         var overdue = dueMeta === 'Overdue' ? ' task-overdue' : '';
-        return '<a href="/app/pipeline" class="task-item' + overdue + '"><div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div><div class="task-details"><span class="task-label">' + escapeHtml(name) + '</span>' + (dueMeta ? '<span class="task-meta">' + dueMeta + '</span>' : '') + '</div></a>';
+        // Deep-link to the specific loan if we have a loan ID
+        var link = loanId ? '/app/pipeline?openLoan=' + loanId : '/app/pipeline';
+        return '<a href="' + link + '" class="task-item' + overdue + '"><div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div><div class="task-details"><span class="task-label">' + escapeHtml(name) + '</span>' + metaHtml + '</div></a>';
       }).join('');
     } catch (e) {
       listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';

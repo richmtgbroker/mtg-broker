@@ -1605,7 +1605,16 @@ async function initPipeline() {
     if (sel && !sel.contains(e.target)) dd.classList.remove('open');
   });
   await loadLoans();
-  console.log(\`Pipeline v12.1 loaded in \${(performance.now() - startTime).toFixed(0)}ms\`);
+
+  // Deep-link: auto-open a loan if ?openLoan=<uuid> is in the URL
+  var openLoanParam = new URLSearchParams(window.location.search).get('openLoan');
+  if (openLoanParam && typeof openLoanModal === 'function') {
+    openLoanModal(openLoanParam);
+    // Clean up the URL so refreshing doesn't re-open the modal
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
+  console.log(\`Pipeline v12.2 loaded in \${(performance.now() - startTime).toFixed(0)}ms\`);
 }
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initPipeline);
