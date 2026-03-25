@@ -248,25 +248,33 @@ function findRawProduct(match, rawProducts) {
   const matchName = (match.product_name || '').toLowerCase().trim()
   const matchLender = (match.lender || '').toLowerCase().trim()
 
-  // 1. Exact match on product_name
+  // 1. Best: exact match on BOTH product_name + lender (most specific)
   let found = rawProducts.find(p =>
-    (p.product_name || '').toLowerCase().trim() === matchName
+    (p.product_name || '').toLowerCase().trim() === matchName &&
+    (p.lender_name || '').toLowerCase().trim() === matchLender
   )
 
-  // 2. Exact match on product_name + lender
+  // 2. Exact match on product_name only
   if (!found) {
     found = rawProducts.find(p =>
-      (p.product_name || '').toLowerCase().trim() === matchName &&
-      (p.lender_name || '').toLowerCase().trim() === matchLender
+      (p.product_name || '').toLowerCase().trim() === matchName
     )
   }
 
-  // 3. Partial match
+  // 3. Partial name match — prefer results that also match the lender
   if (!found && matchName.length > 10) {
-    found = rawProducts.find(p =>
-      (p.product_name || '').toLowerCase().includes(matchName) ||
-      matchName.includes((p.product_name || '').toLowerCase().trim())
-    )
+    const partialMatches = rawProducts.filter(p => {
+      const rawName = (p.product_name || '').toLowerCase().trim()
+      return rawName.includes(matchName) || matchName.includes(rawName)
+    })
+    // If multiple partial matches, prefer the one matching the lender
+    if (partialMatches.length > 1 && matchLender) {
+      found = partialMatches.find(p =>
+        (p.lender_name || '').toLowerCase().trim() === matchLender
+      ) || partialMatches[0]
+    } else {
+      found = partialMatches[0] || null
+    }
   }
 
   // 4. Match by lender name only as last resort
