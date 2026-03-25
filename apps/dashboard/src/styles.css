@@ -326,7 +326,7 @@
 
 /* 3-column top row for Quick Actions + Favorites + Rates */
 .dash-grid-3col {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
 }
 
 /* ===== SECTION CARD ===== */
@@ -870,122 +870,6 @@
 }
 
 .empty-leads a:hover { text-decoration: underline; }
-
-/* ===== FAVORITES SECTION ===== */
-.favorites-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 200px;
-}
-
-.fav-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fav-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #94A3B8;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.fav-group-label svg {
-  width: 12px;
-  height: 12px;
-}
-
-.fav-group-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-}
-
-.fav-card {
-  display: block;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fav-card.fav-icon-blue {
-  background: #EFF6FF;
-  color: #1D4ED8;
-  border: 1px solid #BFDBFE;
-}
-
-.fav-card.fav-icon-blue:hover {
-  background: #2563EB;
-  color: #fff;
-  border-color: #2563EB;
-}
-
-.fav-card.fav-icon-purple {
-  background: #F5F3FF;
-  color: #6D28D9;
-  border: 1px solid #DDD6FE;
-}
-
-.fav-card.fav-icon-purple:hover {
-  background: #7C3AED;
-  color: #fff;
-  border-color: #7C3AED;
-}
-
-.fav-card.fav-icon-green {
-  background: #F0FDF4;
-  color: #059669;
-  border: 1px solid #BBF7D0;
-}
-
-.fav-card.fav-icon-green:hover {
-  background: #10B981;
-  color: #fff;
-  border-color: #10B981;
-}
-
-.empty-favorites {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-  color: #64748B;
-  min-height: 200px;
-}
-
-.empty-favorites svg {
-  width: 40px;
-  height: 40px;
-  color: #CBD5E1;
-  margin-bottom: 12px;
-}
-
-.empty-favorites p {
-  margin: 0 0 12px;
-  font-size: 14px;
-}
-
-.empty-favorites a {
-  color: #2563EB;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.empty-favorites a:hover { text-decoration: underline; }
 
 /* ===== TASKS SECTION ===== */
 .tasks-list {
