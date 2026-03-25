@@ -894,29 +894,21 @@ function App() {
 
   return (
     <main className="main-content">
-      <div className="hero">
-        <h1>
-          AI Loan Finder
-          <span className="beta-badge">
-            <i className="fas fa-wand-magic-sparkles"></i>
-            BETA
-          </span>
-        </h1>
-        <p className="hero-subtitle">
+      <div className="hero-compact">
+        <div className="hero-top-row">
+          <h1>
+            AI Loan Finder
+            <span className="beta-badge">BETA</span>
+          </h1>
+          <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} />
+        </div>
+        <p className="hero-tagline">
           {activeMode === 'find'
-            ? 'Describe your borrower scenario in plain English and instantly find matching wholesale loan products.'
-            : 'Ask any question about lender guidelines and get AI-synthesized answers sourced directly from lender PDFs.'
+            ? 'Describe a borrower scenario to instantly find matching wholesale loan products.'
+            : 'Ask any question about lender guidelines — answers sourced from lender PDFs.'
           }
+          <span className="hero-disclaimer">Always verify with the lender before presenting to borrowers.</span>
         </p>
-        <p className="beta-disclaimer">
-          <i className="fas fa-circle-info"></i>{' '}
-          AI-generated suggestions — always verify current guidelines directly with the lender before presenting options to borrowers.
-        </p>
-      </div>
-
-      {/* Mode tabs */}
-      <div className="mode-tabs-container">
-        <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} />
       </div>
 
       {/* ── Find a Loan Mode ── */}
