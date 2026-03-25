@@ -3,7 +3,12 @@
    Combines CSS + HTML + JS into a single deployable file.
    Loaded via <script> tag in a Webflow HtmlEmbed.
 
-   Version: 1.0.0 (migrated from Webflow embeds v13 CSS / v13 HTML / v15 JS)
+   Version: 1.1.0
+   - Pricing engine buttons restyled as horizontal pills
+   - LoanSifter logo fixed (favicon with SVG fallback)
+   - Added Favorites section (Lenders, Vendors, Contacts)
+   - Replaced Recent Scenarios with Pipeline Tasks
+   - Layout: 3-column top row (Quick Actions, Favorites, Rates)
    ============================================================ */
 
 // Import CSS as string — Vite inlines this into the JS bundle via ?inline
@@ -57,20 +62,19 @@ const DASHBOARD_HTML = `
     </div>
   </header>
 
-  <!-- Main Grid -->
-  <div class="dash-grid">
+  <!-- Main Grid: 3-column top row -->
+  <div class="dash-grid dash-grid-3col">
 
-    <!-- TOP LEFT: QUICK ACTIONS -->
+    <!-- COL 1: QUICK ACTIONS -->
     <div class="dash-section">
       <div class="section-header">
         <h3 class="section-title">Quick Actions</h3>
       </div>
-      <div class="actions-grid">
+      <div class="actions-grid actions-grid-compact">
 
-        <!-- Loan Search - Highlighted -->
         <a href="/app/loan-search" class="action-card highlight-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
           <div class="action-text">
             <strong>Loan Search</strong>
@@ -78,10 +82,9 @@ const DASHBOARD_HTML = `
           </div>
         </a>
 
-        <!-- Lenders -->
         <a href="/app/lenders" class="action-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path></svg>
           </div>
           <div class="action-text">
             <strong>Lenders</strong>
@@ -89,34 +92,30 @@ const DASHBOARD_HTML = `
           </div>
         </a>
 
-        <!-- Calculators -->
         <a href="/app/calculators" class="action-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" x2="16" y1="6" y2="6"></line><path d="M16 10h.01M12 10h.01M8 10h.01M16 14h.01M12 14h.01M8 14h.01M16 18h.01M12 18h.01M8 18h.01"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" x2="16" y1="6" y2="6"></line><path d="M16 10h.01M12 10h.01M8 10h.01M16 14h.01M12 14h.01M8 14h.01M16 18h.01M12 18h.01M8 18h.01"></path></svg>
           </div>
           <div class="action-text"><strong>Calculators</strong><span>Mortgage tools</span></div>
         </a>
 
-        <!-- Vendors -->
         <a href="/app/vendors" class="action-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
           </div>
           <div class="action-text"><strong>Vendors</strong><span>Service providers</span></div>
         </a>
 
-        <!-- Contacts -->
         <a href="/app/contacts" class="action-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </div>
           <div class="action-text"><strong>Contacts</strong><span>Your network</span></div>
         </a>
 
-        <!-- Products -->
         <a href="/app/products" class="action-card">
           <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
               <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
               <line x1="12" y1="22.08" x2="12" y2="12"></line>
@@ -128,15 +127,31 @@ const DASHBOARD_HTML = `
       </div>
     </div>
 
-    <!-- TOP RIGHT: TODAY'S RATES -->
+    <!-- COL 2: FAVORITES -->
+    <div class="dash-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          Favorites
+        </h3>
+      </div>
+      <div class="favorites-list" id="favorites-list">
+        <div class="empty-favorites">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <p>Loading favorites...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- COL 3: TODAY'S RATES -->
     <div class="dash-section rates-section">
       <div class="section-header">
         <h3 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
           Today's Avg Rates
         </h3>
       </div>
-      <div class="rates-grid">
+      <div class="rates-grid rates-grid-compact">
         <div class="rate-card">
           <span class="rate-label">30yr Fixed</span>
           <div class="rate-value-row">
@@ -181,35 +196,14 @@ const DASHBOARD_HTML = `
         </div>
       </div>
 
-      <!-- Pricing Engine Quick Links -->
+      <!-- Pricing Engine Pills -->
       <div class="pricing-engines-strip">
         <div class="pricing-engines-label">Pricing Engines</div>
-        <div class="pricing-engines-row">
-
-          <a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ppe-btn">
-            <img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ppe-btn-logo">
-            <span class="ppe-btn-name">LenderPrice</span>
-            <svg class="ppe-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
-          </a>
-
-          <a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ppe-btn">
-            <img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ppe-btn-logo">
-            <span class="ppe-btn-name">LoanNEX</span>
-            <svg class="ppe-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
-          </a>
-
-          <a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ppe-btn">
-            <img src="data:image/jpeg;base64,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" alt="" class="ppe-btn-logo">
-            <span class="ppe-btn-name">LoanSifter</span>
-            <svg class="ppe-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
-          </a>
-
-          <a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ppe-btn">
-            <img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ppe-btn-logo">
-            <span class="ppe-btn-name">Polly</span>
-            <svg class="ppe-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
-          </a>
-
+        <div class="pricing-engines-pills">
+          <a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ppe-pill">LenderPrice <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
+          <a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ppe-pill">LoanNEX <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
+          <a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ppe-pill">LoanSifter <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
+          <a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ppe-pill">Polly <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
         </div>
       </div>
 
@@ -218,24 +212,21 @@ const DASHBOARD_HTML = `
     <!-- BOTTOM ROW: 3 COLUMNS -->
     <div class="bottom-row">
 
-      <!-- Recent Scenarios -->
+      <!-- Pipeline Tasks (replaced Recent Scenarios) -->
       <div class="dash-section">
         <div class="section-header">
-          <h3 class="section-title">Recent Scenarios</h3>
-          <a href="/app/calculators" class="section-link">
+          <h3 class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            Tasks
+          </h3>
+          <a href="/app/pipeline" class="section-link">
             View All <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </a>
         </div>
-        <div class="scenarios-container">
-          <div class="scenarios-list" id="scenarios-list"></div>
-          <div class="scenarios-pagination" id="scenarios-pagination" style="display: none;">
-            <button class="pagination-btn" id="prev-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <span class="pagination-info" id="pagination-info">1 of 1</span>
-            <button class="pagination-btn" id="next-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
+        <div class="tasks-list" id="tasks-list">
+          <div class="empty-tasks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            <p>Loading tasks...</p>
           </div>
         </div>
       </div>
@@ -321,8 +312,6 @@ const DASHBOARD_HTML = `
   const RATES_CACHE_TTL = 30 * 60 * 1000;
   const ITEMS_PER_PAGE = 5;
 
-  let allScenarios = [];
-  let currentPage = 0;
   let allLeads = [];
   let userEmail = null;
   let calendarMonth = new Date().getMonth();
@@ -396,20 +385,7 @@ const DASHBOARD_HTML = `
       });
     }
 
-    // Pagination buttons
-    var prevPageBtn = document.getElementById('prev-btn');
-    var nextPageBtn = document.getElementById('next-btn');
-    if (prevPageBtn) {
-      prevPageBtn.addEventListener('click', function() {
-        if (currentPage > 0) { currentPage--; renderScenarios(); }
-      });
-    }
-    if (nextPageBtn) {
-      nextPageBtn.addEventListener('click', function() {
-        var totalPages = Math.ceil(allScenarios.length / ITEMS_PER_PAGE);
-        if (currentPage < totalPages - 1) { currentPage++; renderScenarios(); }
-      });
-    }
+    // (pagination removed — tasks section has no pagination)
   }
 
   function closeCalendarOnClickOutside(event) {
@@ -506,7 +482,7 @@ const DASHBOARD_HTML = `
   // INIT
   // ============================================================
   async function init() {
-    console.log('⚡ Dashboard v1.0 (Cloudflare Pages): Starting...');
+    console.log('⚡ Dashboard v1.1 (Cloudflare Pages): Starting...');
     updateDate();
     renderCalendar();
 
@@ -516,7 +492,7 @@ const DASHBOARD_HTML = `
     await Promise.allSettled([
       loadMortgageRates(),
       loadLenderCount(),
-      loadSavedScenarios(),
+      loadFavorites(),
       loadPipelineData(),
       loadUserName()
     ]);
@@ -632,6 +608,7 @@ const DASHBOARD_HTML = `
     if (!userEmail) {
       updatePipelineUI({ loans: 0, volume: 0, closings: 0 });
       updateLeadsUI([]);
+      updateTasksUI([]);
       return;
     }
 
@@ -647,6 +624,7 @@ const DASHBOARD_HTML = `
             updatePipelineUI(calculatePipelineStats(loans));
             updateLeadsUI(loans.filter(function(l) { return isLeadLoan(l); }));
             extractUpcomingClosings(loans);
+            updateTasksUI(extractPipelineTasks(loans));
             return;
           }
         }
@@ -661,6 +639,7 @@ const DASHBOARD_HTML = `
         if (Date.now() - parsed2.timestamp < PIPELINE_CACHE_TTL) {
           updatePipelineUI(parsed2.data);
           updateLeadsUI(parsed2.leads || []);
+          updateTasksUI(parsed2.tasks || []);
           if (parsed2.closingsData) { upcomingClosings = parsed2.closingsData; renderCalendar(); }
           return;
         }
@@ -680,17 +659,21 @@ const DASHBOARD_HTML = `
         var stats = calculatePipelineStats(loans2);
         var leadLoans = loans2.filter(function(l) { return isLeadLoan(l); });
         extractUpcomingClosings(loans2);
+        var tasks = extractPipelineTasks(loans2);
 
-        sessionStorage.setItem(dashCacheKey, JSON.stringify({ data: stats, leads: leadLoans, closingsData: upcomingClosings, timestamp: Date.now() }));
+        sessionStorage.setItem(dashCacheKey, JSON.stringify({ data: stats, leads: leadLoans, closingsData: upcomingClosings, tasks: tasks, timestamp: Date.now() }));
         updatePipelineUI(stats);
         updateLeadsUI(leadLoans);
+        updateTasksUI(tasks);
       } else {
         updatePipelineUI({ loans: 0, volume: 0, closings: 0 });
         updateLeadsUI([]);
+        updateTasksUI([]);
       }
     } catch (e) {
       updatePipelineUI({ loans: 0, volume: 0, closings: 0 });
       updateLeadsUI([]);
+      updateTasksUI([]);
     }
   }
 
@@ -855,99 +838,98 @@ const DASHBOARD_HTML = `
   }
 
   // ============================================================
-  // SAVED SCENARIOS
+  // PIPELINE TASKS — extract next uncompleted checklist items
   // ============================================================
-  function loadSavedScenarios() {
-    var sources = [
-      { key: 'mtg_rentvsbuy', label: 'Rent vs Buy', link: '/app/rent-vs-buy' },
-      { key: 'mtg_calc_basic', label: 'Mortgage Calc', link: '/app/calc-mortgage' },
-      { key: 'mtg_affordability', label: 'Affordability', link: '/app/affordability' },
-      { key: 'lender_pricing_saves', label: 'Loan Comparison', link: '/app/lender-pricing-comparison' },
-      { key: 'mtg_compare_save', label: 'Compare', link: '/app/calc-compare' },
-      { key: 'mtg_compare_library', label: 'Compare Library', link: '/app/calc-compare' }
-    ];
-
-    var items = [];
-    sources.forEach(function(source) {
+  function extractPipelineTasks(loans) {
+    var tasks = [];
+    loans.filter(function(l) { return isActiveLoan(l); }).forEach(function(loan) {
+      var borrower = loan['Borrower Name'] || 'Unknown';
+      var checklistRaw = loan['Checklist JSON'];
+      if (!checklistRaw) return;
       try {
-        var raw = localStorage.getItem(source.key);
-        if (!raw) return;
-        var data = JSON.parse(raw);
-        if (Array.isArray(data)) {
-          data.forEach(function(item, index) {
-            items.push({
-              name: item.scenName || item.name || item.title || item['global-name'] || source.label + ' ' + (index + 1),
-              type: source.label,
-              date: item.scenDate || item.timestamp || item.date || item.createdAt || item['global-date'] || '',
-              link: source.link
-            });
-          });
-        } else if (typeof data === 'object') {
-          Object.keys(data).forEach(function(itemKey) {
-            var item = data[itemKey];
-            if (typeof item === 'object' && item !== null) {
-              items.push({
-                name: item.scenName || item.name || item.title || item['global-name'] || itemKey,
-                type: source.label,
-                date: item.scenDate || item.timestamp || item.date || item.createdAt || item['global-date'] || '',
-                link: source.link
-              });
-            }
+        var checklist = JSON.parse(checklistRaw);
+        if (!Array.isArray(checklist)) return;
+        // Find first uncompleted, non-NA item
+        var nextTask = checklist.find(function(item) {
+          return !item.checked && !item.na;
+        });
+        if (nextTask) {
+          tasks.push({
+            borrower: borrower,
+            task: nextTask.label,
+            group: nextTask.group || '',
+            stage: loan['Stage'] || ''
           });
         }
       } catch (e) {}
     });
-
-    var seen = new Set();
-    items = items.filter(function(item) { if (seen.has(item.name)) return false; seen.add(item.name); return true; });
-    items.sort(function(a, b) {
-      var parseDate = function(str) {
-        if (!str) return 0;
-        var d = new Date(str);
-        if (!isNaN(d.getTime())) return d.getTime();
-        var parts = str.split('/');
-        if (parts.length === 3) { d = new Date(parts[2], parts[0] - 1, parts[1]); if (!isNaN(d.getTime())) return d.getTime(); }
-        return 0;
-      };
-      return parseDate(b.date) - parseDate(a.date);
-    });
-
-    allScenarios = items;
-    currentPage = 0;
-    renderScenarios();
+    return tasks.slice(0, 8); // Show up to 8 tasks
   }
 
-  function renderScenarios() {
-    var list = document.getElementById('scenarios-list');
-    var pagination = document.getElementById('scenarios-pagination');
+  function updateTasksUI(tasks) {
+    var listEl = document.getElementById('tasks-list');
+    if (!listEl) return;
 
-    if (allScenarios.length === 0) {
-      list.innerHTML = '<div class="empty-scenarios"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg><p>No saved scenarios yet.</p><a href="/app/calculators">Create your first one &rarr;</a></div>';
-      pagination.style.display = 'none';
+    if (tasks.length === 0) {
+      listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';
       return;
     }
 
-    var totalPages = Math.ceil(allScenarios.length / ITEMS_PER_PAGE);
-    var start = currentPage * ITEMS_PER_PAGE;
-    var pageItems = allScenarios.slice(start, start + ITEMS_PER_PAGE);
-
-    list.innerHTML = pageItems.map(function(item) {
-      var initials = item.type.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
-      var displayDate = '';
-      if (item.date) {
-        var d = new Date(item.date);
-        displayDate = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : (item.date.split(',')[0] || item.date);
-      }
-      return '<a href="' + item.link + '" class="scenario-item"><div class="scenario-icon">' + initials + '</div><div class="scenario-details"><span class="scenario-name">' + item.name + '</span><span class="scenario-meta">' + item.type + (displayDate ? ' &bull; ' + displayDate : '') + '</span></div><svg class="scenario-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></a>';
+    listEl.innerHTML = tasks.map(function(t) {
+      return '<a href="/app/pipeline" class="task-item"><div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div><div class="task-details"><span class="task-label">' + escapeHtml(t.task) + '</span><span class="task-meta">' + escapeHtml(t.borrower) + (t.group ? ' &bull; ' + escapeHtml(t.group) : '') + '</span></div></a>';
     }).join('');
+  }
 
-    if (totalPages > 1) {
-      pagination.style.display = 'flex';
-      document.getElementById('pagination-info').textContent = (currentPage + 1) + ' of ' + totalPages;
-      document.getElementById('prev-btn').disabled = currentPage === 0;
-      document.getElementById('next-btn').disabled = currentPage >= totalPages - 1;
-    } else {
-      pagination.style.display = 'none';
+  // ============================================================
+  // FAVORITES — load from API
+  // ============================================================
+  async function loadFavorites() {
+    var listEl = document.getElementById('favorites-list');
+    if (!listEl) return;
+
+    if (!userEmail) {
+      listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
+      return;
+    }
+
+    try {
+      var response = await fetch(API_BASE + '/api/favorites', {
+        headers: { 'Authorization': 'Bearer ' + userEmail }
+      });
+      if (!response.ok) throw new Error('API error');
+      var data = await response.json();
+      var favorites = data.favorites || [];
+
+      if (favorites.length === 0) {
+        listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
+        return;
+      }
+
+      // Group by type
+      var typeIcons = {
+        'Lender': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path></svg>',
+        'Vendor': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>',
+        'Contact': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
+      };
+      var typeLinks = {
+        'Lender': '/app/lenders',
+        'Vendor': '/app/vendors',
+        'Contact': '/app/contacts'
+      };
+      var typeColors = {
+        'Lender': 'fav-icon-blue',
+        'Vendor': 'fav-icon-purple',
+        'Contact': 'fav-icon-green'
+      };
+
+      listEl.innerHTML = favorites.slice(0, 8).map(function(fav) {
+        var icon = typeIcons[fav.itemType] || typeIcons['Contact'];
+        var link = typeLinks[fav.itemType] || '/app/lenders';
+        var colorClass = typeColors[fav.itemType] || 'fav-icon-blue';
+        return '<a href="' + link + '" class="fav-item"><div class="fav-icon ' + colorClass + '">' + icon + '</div><div class="fav-details"><span class="fav-name">' + escapeHtml(fav.itemName) + '</span><span class="fav-type">' + escapeHtml(fav.itemType) + '</span></div></a>';
+      }).join('');
+    } catch (e) {
+      listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
     }
   }
 
