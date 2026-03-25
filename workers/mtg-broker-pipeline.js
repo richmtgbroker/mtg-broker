@@ -11168,7 +11168,7 @@ async function getPipelineBootstrapHTML(request) {
      v13.3: Cache-bust to v15.15 for PA PDF extraction (v7.23 worker)
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js?v=15.15';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js?v=15.16';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- ============================================================
