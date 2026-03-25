@@ -238,6 +238,8 @@ export default function App() {
   var [logoUrl, setLogoUrl] = useState('')
   var [avatarUploading, setAvatarUploading] = useState(false)
   var [logoUploading, setLogoUploading] = useState(false)
+  var [logoLoadError, setLogoLoadError] = useState(false)
+  var [avatarLoadError, setAvatarLoadError] = useState(false)
 
   // --- Profile record ID (Airtable) ---
   var profileRecordIdRef = useRef(null)
@@ -467,6 +469,7 @@ export default function App() {
       var fd = new FormData()
       fd.append('avatar', file)
       var result = await apiCall('/api/broker-profile/avatar', 'POST', fd)
+      setAvatarLoadError(false)
       setAvatarUrl(result.avatarUrl)
       setStatus('saved', 'Photo uploaded! Click Save to keep it.')
     } catch (err) {
@@ -507,6 +510,7 @@ export default function App() {
       var fd = new FormData()
       fd.append('logo', file)
       var result = await apiCall('/api/broker-profile/logo', 'POST', fd)
+      setLogoLoadError(false)
       setLogoUrl(result.logoUrl)
       setStatus('saved', 'Logo uploaded! Click Save to keep it.')
     } catch (err) {
@@ -578,10 +582,16 @@ export default function App() {
 
           {/* Avatar + Name/Email inline row */}
           <div className="profile-header-row">
-            <div className={'avatar-preview-box' + (avatarUrl ? ' has-image' : '')}>
-              {!avatarUrl && <i className="fas fa-user avatar-placeholder"></i>}
+            <div className={'avatar-preview-box' + (avatarUrl && !avatarLoadError ? ' has-image' : '')}>
+              {(!avatarUrl || avatarLoadError) && <i className="fas fa-user avatar-placeholder"></i>}
               {avatarUrl && (
-                <img src={avatarUrl} alt="Profile picture" />
+                <img
+                  src={avatarUrl}
+                  alt="Profile picture"
+                  style={avatarLoadError ? { display: 'none' } : {}}
+                  onLoad={function () { setAvatarLoadError(false) }}
+                  onError={function () { setAvatarLoadError(true) }}
+                />
               )}
             </div>
             <div className="profile-header-info">
@@ -799,8 +809,16 @@ export default function App() {
 
           <div className="logo-upload-area">
             <div className="logo-preview-box">
-              {!logoUrl && <i className="fas fa-camera logo-placeholder"></i>}
-              {logoUrl && <img src={logoUrl} alt="Company logo" />}
+              {(!logoUrl || logoLoadError) && <i className="fas fa-camera logo-placeholder"></i>}
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt="Company logo"
+                  style={logoLoadError ? { display: 'none' } : {}}
+                  onLoad={function () { setLogoLoadError(false) }}
+                  onError={function () { setLogoLoadError(true) }}
+                />
+              )}
             </div>
             <div className="logo-upload-controls">
               <button
@@ -818,7 +836,7 @@ export default function App() {
                   </>
                 )}
               </button>
-              {logoUrl && (
+              {logoUrl && !logoLoadError && (
                 <button type="button" className="logo-remove-btn" onClick={handleRemoveLogo}>
                   <i className="fas fa-trash-alt"></i> Remove
                 </button>
