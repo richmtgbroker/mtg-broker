@@ -886,9 +886,9 @@
 }
 
 .fav-group-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  color: #64748B;
+  color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: flex;
@@ -897,53 +897,60 @@
 }
 
 .fav-group-label svg {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
-.fav-chip {
-  display: inline-block;
-  padding: 5px 12px;
+.fav-group-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.fav-card {
+  display: block;
+  padding: 6px 10px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.15s ease;
-  margin-right: 4px;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.fav-chip.fav-icon-blue {
+.fav-card.fav-icon-blue {
   background: #EFF6FF;
   color: #1D4ED8;
   border: 1px solid #BFDBFE;
 }
 
-.fav-chip.fav-icon-blue:hover {
+.fav-card.fav-icon-blue:hover {
   background: #2563EB;
   color: #fff;
   border-color: #2563EB;
 }
 
-.fav-chip.fav-icon-purple {
+.fav-card.fav-icon-purple {
   background: #F5F3FF;
   color: #6D28D9;
   border: 1px solid #DDD6FE;
 }
 
-.fav-chip.fav-icon-purple:hover {
+.fav-card.fav-icon-purple:hover {
   background: #7C3AED;
   color: #fff;
   border-color: #7C3AED;
 }
 
-.fav-chip.fav-icon-green {
+.fav-card.fav-icon-green {
   background: #F0FDF4;
   color: #059669;
   border: 1px solid #BBF7D0;
 }
 
-.fav-chip.fav-icon-green:hover {
+.fav-card.fav-icon-green:hover {
   background: #10B981;
   color: #fff;
   border-color: #10B981;
