@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const API_URL           = 'https://mtg-loan-finder.pages.dev/api/search'
-const GUIDELINE_API_URL = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
+const API_URL              = 'https://mtg-loan-finder.pages.dev/api/search'
+const GUIDELINE_API_URL    = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
+const PRODUCT_LOOKUP_URL   = 'https://mtg-loan-finder.pages.dev/api/product-lookup'
 
 // Get Outseta JWT from localStorage (set by Outseta auth on the Webflow page)
 function getOutsetaToken() {
@@ -697,10 +698,14 @@ function GuidelineMarkdown({ text }) {
   return <>{elements}</>
 }
 
-// A single source citation card shown below the synthesized answer
-function GuidelineSourceCard({ source, rank }) {
+// A single source citation card — clickable to open the product detail modal
+function GuidelineSourceCard({ source, rank, onOpenProduct }) {
   return (
-    <div className="gs-source-card">
+    <div
+      className="gs-source-card gs-source-clickable"
+      onClick={() => onOpenProduct(source.product_name, source.lender_name)}
+      title="Click to view full product details"
+    >
       <div className="gs-source-rank">{rank}</div>
       <div className="gs-source-body">
         <div className="gs-source-header">
@@ -718,16 +723,16 @@ function GuidelineSourceCard({ source, rank }) {
             </span>
           )}
         </div>
-        {source.excerpt && (
-          <p className="gs-source-excerpt">{source.excerpt}</p>
-        )}
+        <span className="gs-source-view-link">
+          View Full Details <i className="fas fa-arrow-right"></i>
+        </span>
       </div>
     </div>
   )
 }
 
 // The full guidelines search results: synthesized answer + source citations
-function GuidelineResults({ data }) {
+function GuidelineResults({ data, onOpenProduct }) {
   if (!data) return null
 
   return (
@@ -760,7 +765,7 @@ function GuidelineResults({ data }) {
           </div>
           <div className="gs-source-list">
             {data.sources.map((source, i) => (
-              <GuidelineSourceCard key={i} source={source} rank={i + 1} />
+              <GuidelineSourceCard key={i} source={source} rank={i + 1} onOpenProduct={onOpenProduct} />
             ))}
           </div>
         </div>
@@ -888,6 +893,22 @@ function App() {
     }
   }
 
+  // ── Look up a product by name (used by guideline source cards) ──
+  const handleOpenProduct = async (productName, lenderName) => {
+    try {
+      const response = await fetch(PRODUCT_LOOKUP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_name: productName, lender_name: lenderName }),
+      })
+      if (!response.ok) return
+      const data = await response.json()
+      if (data.product) setSelectedProduct(data.product)
+    } catch (err) {
+      console.error('Product lookup error:', err)
+    }
+  }
+
   const isAnyLoading = loanLoading || guidelineLoading
 
   return (
@@ -979,7 +1000,7 @@ function App() {
             {guidelineLoading && <LoadingState message={guidelineProgress} />}
             {guidelineError && <ErrorMessage error={guidelineError} onRetry={handleGuidelineSearch} />}
             {guidelineResults && !guidelineLoading && (
-              <GuidelineResults data={guidelineResults} />
+              <GuidelineResults data={guidelineResults} onOpenProduct={handleOpenProduct} />
             )}
           </div>
         </>
