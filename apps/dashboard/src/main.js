@@ -196,14 +196,30 @@ const DASHBOARD_HTML = `
         </div>
       </div>
 
-      <!-- Pricing Engine Pills -->
+      <!-- Pricing Engine Links -->
       <div class="pricing-engines-strip">
         <div class="pricing-engines-label">Pricing Engines</div>
-        <div class="pricing-engines-pills">
-          <a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ppe-pill">LenderPrice <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
-          <a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ppe-pill">LoanNEX <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
-          <a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ppe-pill">LoanSifter <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
-          <a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ppe-pill">Polly <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg></a>
+        <div class="pricing-engines-row">
+          <a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ppe-chip">
+            <img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ppe-chip-logo">
+            <span class="ppe-chip-name">LenderPrice</span>
+            <svg class="ppe-chip-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
+          </a>
+          <a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ppe-chip">
+            <img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ppe-chip-logo">
+            <span class="ppe-chip-name">LoanNEX</span>
+            <svg class="ppe-chip-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
+          </a>
+          <a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ppe-chip">
+            <svg class="ppe-chip-logo-svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" rx="6" fill="#0066CC"/><text x="16" y="21" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="#fff">LS</text></svg>
+            <span class="ppe-chip-name">LoanSifter</span>
+            <svg class="ppe-chip-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
+          </a>
+          <a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ppe-chip">
+            <img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ppe-chip-logo">
+            <span class="ppe-chip-name">Polly</span>
+            <svg class="ppe-chip-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7"></path><path d="M7 7h10v10"></path></svg>
+          </a>
         </div>
       </div>
 
@@ -306,6 +322,7 @@ const DASHBOARD_HTML = `
   'use strict';
 
   const API_BASE = 'https://mtg-broker-api.rich-e00.workers.dev';
+  const PIPELINE_API = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
   const LENDERS_API = 'https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders';
   const LENDER_COUNT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
   const PIPELINE_CACHE_TTL = 5 * 60 * 1000;
@@ -494,6 +511,7 @@ const DASHBOARD_HTML = `
       loadLenderCount(),
       loadFavorites(),
       loadPipelineData(),
+      loadPipelineTasks(),
       loadUserName()
     ]);
   }
@@ -608,7 +626,6 @@ const DASHBOARD_HTML = `
     if (!userEmail) {
       updatePipelineUI({ loans: 0, volume: 0, closings: 0 });
       updateLeadsUI([]);
-      updateTasksUI([]);
       return;
     }
 
@@ -624,7 +641,6 @@ const DASHBOARD_HTML = `
             updatePipelineUI(calculatePipelineStats(loans));
             updateLeadsUI(loans.filter(function(l) { return isLeadLoan(l); }));
             extractUpcomingClosings(loans);
-            updateTasksUI(extractPipelineTasks(loans));
             return;
           }
         }
@@ -639,7 +655,6 @@ const DASHBOARD_HTML = `
         if (Date.now() - parsed2.timestamp < PIPELINE_CACHE_TTL) {
           updatePipelineUI(parsed2.data);
           updateLeadsUI(parsed2.leads || []);
-          updateTasksUI(parsed2.tasks || []);
           if (parsed2.closingsData) { upcomingClosings = parsed2.closingsData; renderCalendar(); }
           return;
         }
@@ -659,12 +674,10 @@ const DASHBOARD_HTML = `
         var stats = calculatePipelineStats(loans2);
         var leadLoans = loans2.filter(function(l) { return isLeadLoan(l); });
         extractUpcomingClosings(loans2);
-        var tasks = extractPipelineTasks(loans2);
 
-        sessionStorage.setItem(dashCacheKey, JSON.stringify({ data: stats, leads: leadLoans, closingsData: upcomingClosings, tasks: tasks, timestamp: Date.now() }));
+        sessionStorage.setItem(dashCacheKey, JSON.stringify({ data: stats, leads: leadLoans, closingsData: upcomingClosings, timestamp: Date.now() }));
         updatePipelineUI(stats);
         updateLeadsUI(leadLoans);
-        updateTasksUI(tasks);
       } else {
         updatePipelineUI({ loans: 0, volume: 0, closings: 0 });
         updateLeadsUI([]);
@@ -746,8 +759,8 @@ const DASHBOARD_HTML = `
       var name = lead['Borrower Name'] || 'Unknown';
       var amount = lead['Loan Amount'] ? formatCurrency(lead['Loan Amount']) : '';
       var type = lead['Loan Type'] || '';
-      var meta = [type, amount].filter(Boolean).join(' &bull; ');
-      return '<a href="/app/pipeline" class="lead-item"><div class="lead-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><div class="lead-details"><span class="lead-name">' + escapeHtml(name) + '</span><span class="lead-meta">' + (escapeHtml(meta) || 'Lead') + '</span></div><svg class="lead-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></a>';
+      var meta = [escapeHtml(type), escapeHtml(amount)].filter(Boolean).join(' &bull; ');
+      return '<a href="/app/pipeline" class="lead-item"><div class="lead-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div><div class="lead-details"><span class="lead-name">' + escapeHtml(name) + '</span><span class="lead-meta">' + (meta || 'Lead') + '</span></div><svg class="lead-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg></a>';
     }).join('');
   }
 
@@ -838,46 +851,63 @@ const DASHBOARD_HTML = `
   }
 
   // ============================================================
-  // PIPELINE TASKS — extract next uncompleted checklist items
+  // PIPELINE TASKS — fetch from dedicated tasks API
   // ============================================================
-  function extractPipelineTasks(loans) {
-    var tasks = [];
-    loans.filter(function(l) { return isActiveLoan(l); }).forEach(function(loan) {
-      var borrower = loan['Borrower Name'] || 'Unknown';
-      var checklistRaw = loan['Checklist JSON'];
-      if (!checklistRaw) return;
-      try {
-        var checklist = JSON.parse(checklistRaw);
-        if (!Array.isArray(checklist)) return;
-        // Find first uncompleted, non-NA item
-        var nextTask = checklist.find(function(item) {
-          return !item.checked && !item.na;
-        });
-        if (nextTask) {
-          tasks.push({
-            borrower: borrower,
-            task: nextTask.label,
-            group: nextTask.group || '',
-            stage: loan['Stage'] || ''
-          });
-        }
-      } catch (e) {}
-    });
-    return tasks.slice(0, 8); // Show up to 8 tasks
-  }
-
-  function updateTasksUI(tasks) {
+  async function loadPipelineTasks() {
     var listEl = document.getElementById('tasks-list');
-    if (!listEl) return;
-
-    if (tasks.length === 0) {
-      listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';
+    if (!listEl || !userEmail) {
+      if (listEl) listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';
       return;
     }
 
-    listEl.innerHTML = tasks.map(function(t) {
-      return '<a href="/app/pipeline" class="task-item"><div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div><div class="task-details"><span class="task-label">' + escapeHtml(t.task) + '</span><span class="task-meta">' + escapeHtml(t.borrower) + (t.group ? ' &bull; ' + escapeHtml(t.group) : '') + '</span></div></a>';
-    }).join('');
+    try {
+      var response = await fetch(PIPELINE_API + '/api/pipeline/tasks', {
+        headers: { 'Authorization': 'Bearer ' + userEmail }
+      });
+      if (!response.ok) throw new Error('API error');
+      var records = await response.json();
+
+      // Filter to incomplete tasks only
+      var pending = (Array.isArray(records) ? records : []).filter(function(r) {
+        return !r.fields['Completed'];
+      });
+
+      if (pending.length === 0) {
+        listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';
+        return;
+      }
+
+      // Sort by due date (soonest first), no-date items at end
+      pending.sort(function(a, b) {
+        var da = a.fields['Due Date'] || '';
+        var db = b.fields['Due Date'] || '';
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da.localeCompare(db);
+      });
+
+      listEl.innerHTML = pending.slice(0, 8).map(function(r) {
+        var name = r.fields['Task Name'] || 'Untitled task';
+        var dueDate = r.fields['Due Date'];
+        var dueMeta = '';
+        if (dueDate) {
+          var d = parseLocalDate(dueDate);
+          if (d) {
+            var now = new Date(); now.setHours(0,0,0,0);
+            var diff = Math.round((d - now) / (1000 * 60 * 60 * 24));
+            if (diff < 0) dueMeta = 'Overdue';
+            else if (diff === 0) dueMeta = 'Due today';
+            else if (diff === 1) dueMeta = 'Due tomorrow';
+            else dueMeta = 'Due ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }
+        }
+        var overdue = dueMeta === 'Overdue' ? ' task-overdue' : '';
+        return '<a href="/app/pipeline" class="task-item' + overdue + '"><div class="task-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg></div><div class="task-details"><span class="task-label">' + escapeHtml(name) + '</span>' + (dueMeta ? '<span class="task-meta">' + dueMeta + '</span>' : '') + '</div></a>';
+      }).join('');
+    } catch (e) {
+      listEl.innerHTML = '<div class="empty-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><p>No pending tasks.</p><a href="/app/pipeline">Go to Pipeline &rarr;</a></div>';
+    }
   }
 
   // ============================================================
@@ -922,12 +952,29 @@ const DASHBOARD_HTML = `
         'Contact': 'fav-icon-green'
       };
 
-      listEl.innerHTML = favorites.slice(0, 8).map(function(fav) {
-        var icon = typeIcons[fav.itemType] || typeIcons['Contact'];
-        var link = typeLinks[fav.itemType] || '/app/lenders';
-        var colorClass = typeColors[fav.itemType] || 'fav-icon-blue';
-        return '<a href="' + link + '" class="fav-item"><div class="fav-icon ' + colorClass + '">' + icon + '</div><div class="fav-details"><span class="fav-name">' + escapeHtml(fav.itemName) + '</span><span class="fav-type">' + escapeHtml(fav.itemType) + '</span></div></a>';
-      }).join('');
+      // Group by type
+      var groups = {};
+      favorites.forEach(function(fav) {
+        var t = fav.itemType || 'Other';
+        if (!groups[t]) groups[t] = [];
+        groups[t].push(fav);
+      });
+
+      var html = '';
+      ['Lender', 'Vendor', 'Contact'].forEach(function(type) {
+        var items = groups[type];
+        if (!items || items.length === 0) return;
+        var icon = typeIcons[type];
+        var link = typeLinks[type];
+        var colorClass = typeColors[type];
+        html += '<div class="fav-group"><div class="fav-group-label">' + icon + ' ' + type + 's</div>';
+        html += items.slice(0, 4).map(function(fav) {
+          return '<a href="' + link + '" class="fav-chip ' + colorClass + '">' + escapeHtml(fav.itemName) + '</a>';
+        }).join('');
+        html += '</div>';
+      });
+
+      listEl.innerHTML = html;
     } catch (e) {
       listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
     }

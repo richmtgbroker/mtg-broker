@@ -542,7 +542,7 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* ===== PRICING ENGINE PILLS ===== */
+/* ===== PRICING ENGINE CHIPS ===== */
 .pricing-engines-strip {
   margin-top: 16px;
   padding-top: 14px;
@@ -558,42 +558,66 @@
   margin-bottom: 10px;
 }
 
-.pricing-engines-pills {
-  display: flex;
-  flex-wrap: wrap;
+.pricing-engines-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
-.ppe-pill {
-  display: inline-flex;
+.ppe-chip {
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  background: #F1F5F9;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
   border: 1px solid #E2E8F0;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #475569;
+  border-radius: 10px;
   text-decoration: none;
   transition: all 0.2s ease;
-  white-space: nowrap;
 }
 
-.ppe-pill:hover {
-  background: #2563EB;
+.ppe-chip:hover {
   border-color: #2563EB;
-  color: #fff;
+  background: #F0F7FF;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
 }
 
-.ppe-pill svg {
-  opacity: 0.5;
+.ppe-chip-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
-.ppe-pill:hover svg {
-  opacity: 1;
+.ppe-chip-logo-svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.ppe-chip-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  flex: 1;
+}
+
+.ppe-chip:hover .ppe-chip-name {
+  color: #1D4ED8;
+}
+
+.ppe-chip-arrow {
+  opacity: 0.3;
+  color: #64748B;
+  flex-shrink: 0;
+}
+
+.ppe-chip:hover .ppe-chip-arrow {
+  opacity: 0.8;
+  color: #2563EB;
 }
 
 /* ===== BOTTOM ROW: 3-COLUMN LAYOUT ===== */
@@ -851,68 +875,78 @@
 .favorites-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 16px;
   min-height: 200px;
 }
 
-.fav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.fav-item:hover {
-  background: #fff;
-  border-color: #CBD5E1;
-  transform: translateX(3px);
-}
-
-.fav-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #fff;
-}
-
-.fav-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.fav-icon-blue { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); }
-.fav-icon-purple { background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); }
-.fav-icon-green { background: linear-gradient(135deg, #10B981 0%, #059669 100%); }
-
-.fav-details {
-  flex: 1;
-  min-width: 0;
+.fav-group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 6px;
 }
 
-.fav-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0F172A;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.fav-type {
+.fav-group-label {
   font-size: 11px;
-  color: #94A3B8;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fav-group-label svg {
+  width: 14px;
+  height: 14px;
+}
+
+.fav-chip {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+
+.fav-chip.fav-icon-blue {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #BFDBFE;
+}
+
+.fav-chip.fav-icon-blue:hover {
+  background: #2563EB;
+  color: #fff;
+  border-color: #2563EB;
+}
+
+.fav-chip.fav-icon-purple {
+  background: #F5F3FF;
+  color: #6D28D9;
+  border: 1px solid #DDD6FE;
+}
+
+.fav-chip.fav-icon-purple:hover {
+  background: #7C3AED;
+  color: #fff;
+  border-color: #7C3AED;
+}
+
+.fav-chip.fav-icon-green {
+  background: #F0FDF4;
+  color: #059669;
+  border: 1px solid #BBF7D0;
+}
+
+.fav-chip.fav-icon-green:hover {
+  background: #10B981;
+  color: #fff;
+  border-color: #10B981;
 }
 
 .empty-favorites {
@@ -1011,6 +1045,15 @@
 .task-meta {
   font-size: 11px;
   color: #94A3B8;
+}
+
+.task-item.task-overdue .task-meta {
+  color: #DC2626;
+  font-weight: 600;
+}
+
+.task-item.task-overdue .task-check {
+  color: #DC2626;
 }
 
 .empty-tasks {
