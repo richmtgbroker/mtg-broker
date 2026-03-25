@@ -133,8 +133,11 @@ function formatDetailValue(value, key) {
     return '<div class="detail-tags">' + value.map(function(v) { return '<span class="detail-tag">' + escapeHtml(String(v)) + '</span>'; }).join('') + '</div>';
   }
   if (typeof value === 'string' && value.startsWith('http')) {
-    var linkText = key.toLowerCase().includes('matrix') ? 'View Matrix' : 'Open Link';
-    return '<a href="' + escapeHtml(value) + '" target="_blank" rel="noopener">' + linkText + ' \u2197</a>';
+    var isMatrix = key.toLowerCase().includes('matrix');
+    if (isMatrix) {
+      return '<a href="' + escapeHtml(value) + '" target="_blank" rel="noopener" class="matrix-btn">View Matrix \u2197</a>';
+    }
+    return '<a href="' + escapeHtml(value) + '" target="_blank" rel="noopener">Open Link \u2197</a>';
   }
   if (typeof value === 'boolean') return value ? '\u2713 Yes' : '\u2717 No';
   var str = String(value);
@@ -203,8 +206,10 @@ function openProductModal(productData, fieldMetadata) {
     var nonEmptyFields = groupData.fields.filter(function(field) { return !isFieldEmpty(field.value); });
     if (nonEmptyFields.length === 0) return;
     var isNexaGroup = groupName.toLowerCase().indexOf('nexa') !== -1;
+    var isHowToGroup = groupName.toLowerCase().indexOf('how to') !== -1;
     var sectionClasses = 'detail-section';
     if (isNexaGroup) sectionClasses += ' nexa-detail-card nexa-only';
+    if (isHowToGroup) sectionClasses += ' howto-section';
     html += '<div class="' + sectionClasses + '">';
     var iconClass = getDetailGroupIcon(groupName);
     html += '<h3 class="detail-section-title"><i class="section-icon fas ' + iconClass + '"></i>' + escapeHtml(groupName);

@@ -314,6 +314,17 @@ body > .ms-panel { z-index: 10001 !important; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .detail-tag { display: inline-block; padding: 5px 12px; background: #FFFFFF; color: #1E3A5F; border: 1px solid #BFDBFE; border-radius: 6px; font-size: 12px; font-weight: 600; }
 
+/* View Matrix button */
+.detail-value .matrix-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; background: #1a56db; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; }
+.detail-value .matrix-btn:hover { background: #1e40af; text-decoration: none; color: #fff; }
+
+/* How To's stacked layout */
+.detail-section.howto-section .detail-grid { grid-template-columns: 1fr; gap: 0; }
+.detail-section.howto-section .detail-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; }
+.detail-section.howto-section .detail-item + .detail-item { margin-top: 12px; }
+.detail-section.howto-section .detail-label { font-size: 12px; font-weight: 700; color: #1a56db; margin-bottom: 6px; }
+.detail-section.howto-section .detail-value { font-size: 14px; line-height: 1.7; color: #1e293b; }
+
 /* ====== MULTI-SELECT DROPDOWN (from worker injectStyles) ====== */
 .ms-wrap { position: relative; width: 100%; }
 .ms-btn {
