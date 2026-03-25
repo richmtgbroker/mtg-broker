@@ -4,7 +4,16 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 24, 2026 - v8.2 — Lender searchable dropdown:
+ * UPDATED: March 25, 2026 - v8.3 — Liabilities tab + Pricing tab:
+ *   New Liabilities tab (after Assets): dynamic liability rows with name, type,
+ *   balance, monthly payment, exclude checkbox, totals. Stored as JSON.
+ *   New Pricing tab (above Loan Details): moved Pricing Summary card from
+ *   Loan Details. Added Pricing Notes + Loan Details Notes cards.
+ *   New static endpoint: /static/pipeline-liabilities.js
+ *   New Supabase columns: liabilities_json (jsonb), liabilities_notes (text),
+ *   loan_details_notes (text).
+ *
+ * PREVIOUS: March 24, 2026 - v8.2 — Lender searchable dropdown:
  *   Replaced text input with searchable combobox pulling 294 lenders from Supabase.
  *   "Other" option with manual text input for unlisted lenders.
  *   New public endpoint: GET /api/lenders (cached 30min).
@@ -296,6 +305,9 @@ const FIELD_TO_COLUMN = {
   'Checklist JSON': 'checklist_json',
   'Documents JSON': 'documents_json',
   'Asset Accounts': 'asset_accounts',
+  'Liabilities JSON': 'liabilities_json',
+  'Liabilities Notes': 'liabilities_notes',
+  'Loan Details Notes': 'loan_details_notes',
   'Purchase Agreement JSON': 'purchase_agreement_json',
 };
 
@@ -307,12 +319,12 @@ for (const [field, col] of Object.entries(FIELD_TO_COLUMN)) {
 }
 
 // JSON blob columns that need parse/stringify when going to/from Supabase
-const JSON_COLUMNS = new Set(['checklist_json', 'documents_json', 'asset_accounts', 'purchase_agreement_json']);
+const JSON_COLUMNS = new Set(['checklist_json', 'documents_json', 'asset_accounts', 'liabilities_json', 'purchase_agreement_json']);
 
 // Columns that store JSON strings in Airtable but are jsonb in Supabase
 // Client sends them as strings; we parse to objects for Supabase storage
 // and stringify back when returning to client
-const JSON_STRING_FIELDS = new Set(['Checklist JSON', 'Documents JSON', 'Asset Accounts', 'Purchase Agreement JSON',
+const JSON_STRING_FIELDS = new Set(['Checklist JSON', 'Documents JSON', 'Asset Accounts', 'Liabilities JSON', 'Purchase Agreement JSON',
   'Borrower Income Details', 'Co-Borrower Income Details']);
 
 /**
@@ -2275,6 +2287,8 @@ function openNewLoanModal() {
   buildIncomeSection();
   /* v7.17: Build/reset Assets section */
   if (typeof buildAssetsSection === 'function') buildAssetsSection();
+  /* v8.3: Build/reset Liabilities section */
+  if (typeof buildLiabilitiesSection === 'function') buildLiabilitiesSection();
   /* v7.22: Build/reset Purchase Agreement section */
   if (typeof buildPurchaseAgreementSection === 'function') buildPurchaseAgreementSection();
   updateBorrowerNameBar();
@@ -2372,6 +2386,8 @@ async function openLoanModal(id) {
   /* v7.11: Deal Notes + Pricing Notes + Payroll Notes */
   if (document.getElementById('deal-notes')) setVal('deal-notes', loan['Deal Notes']);
   if (document.getElementById('pricing-notes')) setVal('pricing-notes', loan['Pricing Notes']);
+  if (document.getElementById('loan-details-notes')) setVal('loan-details-notes', loan['Loan Details Notes']);
+  if (document.getElementById('liabilities-notes')) setVal('liabilities-notes', loan['Liabilities Notes']);
   if (document.getElementById('payroll-notes')) setVal('payroll-notes', loan['Payroll Notes']);
   setTimeout(() => { isUpdatingLTV = false; isUpdatingComp = false; }, 50);
   document.getElementById('deal-status-bar').classList.remove('hidden');
@@ -2421,6 +2437,8 @@ async function openLoanModal(id) {
   buildIncomeSection(loan);
   /* v7.17: Build Assets section and populate from loan data */
   if (typeof buildAssetsSection === 'function') buildAssetsSection(loan);
+  /* v8.3: Build Liabilities section and populate from loan data */
+  if (typeof buildLiabilitiesSection === 'function') buildLiabilitiesSection(loan);
   /* v7.22: Build Purchase Agreement section and populate from loan data */
   if (typeof buildPurchaseAgreementSection === 'function') buildPurchaseAgreementSection(loan);
   updatePICalc();
@@ -2670,6 +2688,11 @@ async function saveLoan() {
     'Other Reserves Monthly Amount': parseCurrency(document.getElementById('asset-other-monthly-amt') ? document.getElementById('asset-other-monthly-amt').value : '') || null,
     'Other Reserves Total': parseCurrency(document.getElementById('asset-other-total') ? document.getElementById('asset-other-total').value : '') || null,
     'Asset Accounts': (typeof getAssetAccountsJSON === 'function') ? getAssetAccountsJSON() : '',
+    /* v8.3: Liabilities tab — stored as JSON like Asset Accounts */
+    'Liabilities JSON': (typeof getLiabilitiesJSON === 'function') ? getLiabilitiesJSON() : '',
+    'Liabilities Notes': document.getElementById('liabilities-notes') ? document.getElementById('liabilities-notes').value : '',
+    /* v8.3: Loan Details Notes (renamed from Pricing Notes position) */
+    'Loan Details Notes': document.getElementById('loan-details-notes') ? document.getElementById('loan-details-notes').value : '',
     /* v7.22: Purchase Agreement tab — all fields stored as single JSON blob */
     'Purchase Agreement JSON': (typeof getPurchaseAgreementJSON === 'function') ? getPurchaseAgreementJSON() : ''
   };
@@ -6577,6 +6600,271 @@ async function getPipelineAssetsJS(request) {
 }
 
 // ============================================================
+// PIPELINE LIABILITIES JS MODULE (served from /static/pipeline-liabilities.js)
+// Builds the Liabilities tab UI: dynamic liability rows with
+// name, type, balance, monthly payment, exclude checkbox, totals, notes
+// ============================================================
+async function getPipelineLiabilitiesJS(request) {
+  const jsContent = `
+
+(function() {
+  'use strict';
+
+  /* ══════════════════════════════════════════════════════════════
+     LIABILITY TYPE OPTIONS
+     ══════════════════════════════════════════════════════════════ */
+  var LIABILITY_TYPES = [
+    'Auto Loan',
+    'Business Debt',
+    'Child Care',
+    'Child Support',
+    'Collections',
+    'Credit Card',
+    'HELOC',
+    'Installment Loan',
+    'Lease Payment',
+    'Medical Debt',
+    'Mortgage',
+    'Other',
+    'Personal Loan',
+    'Student Loan',
+    'Tax Lien'
+  ];
+
+  /* In-memory liability rows */
+  var liabilities = [];
+  var liabCounter = 0;
+
+  /* ══════════════════════════════════════════════════════════════
+     HELPERS
+     ══════════════════════════════════════════════════════════════ */
+  function pc(val) {
+    if (!val) return 0;
+    var n = parseFloat(String(val).replace(/[^0-9.\\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+  function fmt(num) {
+    if (!num && num !== 0) return '\\u2014';
+    return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     INJECT STYLES
+     ══════════════════════════════════════════════════════════════ */
+  var css = document.createElement('style');
+  css.textContent = ''
+    +'.liab-row{margin-bottom:8px;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;transition:background .1s}'
+    +'.liab-row:hover{background:#F8FAFC}'
+    +'.liab-row.liab-excluded{opacity:.5;background:#F8FAFC}'
+    +'.liab-fields{display:flex;align-items:flex-end;gap:8px;flex:1;min-width:0;flex-wrap:wrap}'
+    +'.liab-fields .ff{margin-bottom:0}'
+    +'.liab-fields .ff label{font-size:11px;font-weight:600;color:#64748B;margin-bottom:3px}'
+    +'.liab-fields .ff select,.liab-fields .ff input{font-size:13px;padding:7px 10px}'
+    +'.liab-remove-btn{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:6px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0;align-self:flex-end;margin-bottom:2px}'
+    +'.liab-remove-btn:hover{color:#EF4444;background:#FEF2F2}'
+    +'.liab-exclude-wrap{display:flex;align-items:center;gap:6px;align-self:flex-end;margin-bottom:4px;flex-shrink:0}'
+    +'.liab-exclude-wrap label{font-size:11px;font-weight:600;color:#64748B;cursor:pointer;white-space:nowrap}'
+    +'.liab-exclude-wrap input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:#3B82F6}'
+    +'.liab-add-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #CBD5E1;border-radius:6px;background:#FAFBFE;color:#64748B;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}'
+    +'.liab-add-btn:hover{border-color:#93C5FD;color:#3B82F6;background:#EFF6FF}'
+    +'.liab-add-btn i{font-size:11px}'
+    +'.liab-total-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%);border:1px solid #FECACA}'
+    +'.liab-total-row span:first-child{font-size:13px;font-weight:700;color:#991B1B}'
+    +'.liab-total-val{font-size:16px;font-weight:800;color:#DC2626}'
+    +'.liab-totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}'
+    +'.liab-total-card{padding:10px 14px;border-radius:8px;border:1px solid #E2E8F0;background:#F8FAFC}'
+    +'.liab-total-card-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
+    +'.liab-total-card-value{font-size:16px;font-weight:700;color:#1E293B}'
+    +'.liab-total-card.highlight{background:linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%);border-color:#FECACA}'
+    +'.liab-total-card.highlight .liab-total-card-label{color:#991B1B}'
+    +'.liab-total-card.highlight .liab-total-card-value{color:#DC2626}'
+    +'.liab-notes-card{margin-top:16px}'
+    +'@media(max-width:600px){.liab-fields{flex-direction:column}.liab-fields .ff{min-width:100%!important}}';
+  document.head.appendChild(css);
+
+  /* ══════════════════════════════════════════════════════════════
+     BUILD LIABILITIES SECTION — called by openLoanModal / openNewLoanModal
+     ══════════════════════════════════════════════════════════════ */
+  window.buildLiabilitiesSection = function(loan) {
+    var c = document.getElementById('liabilities-section-content');
+    if (!c) return;
+    liabilities = [];
+    liabCounter = 0;
+
+    c.innerHTML = ''
+      + '<div id="liab-list"></div>'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
+      +   '<button type="button" class="liab-add-btn" onclick="addLiability()"><i class="fa-solid fa-plus"></i> Add Liability</button>'
+      + '</div>'
+      + '<div class="liab-totals-grid">'
+      +   '<div class="liab-total-card">'
+      +     '<div class="liab-total-card-label">Total Balance</div>'
+      +     '<div class="liab-total-card-value" id="liab-total-balance">\\u2014</div>'
+      +   '</div>'
+      +   '<div class="liab-total-card highlight">'
+      +     '<div class="liab-total-card-label">Total Monthly Payment</div>'
+      +     '<div class="liab-total-card-value" id="liab-total-payment">\\u2014</div>'
+      +   '</div>'
+      + '</div>';
+
+    /* Ensure Liabilities Notes card exists */
+    ensureLiabilitiesNotesCard();
+
+    /* Populate from loan data */
+    if (loan && loan['Liabilities JSON']) {
+      try {
+        var saved = JSON.parse(loan['Liabilities JSON']);
+        if (Array.isArray(saved)) {
+          saved.forEach(function(item) { addLiability(item); });
+        }
+      } catch(e) { console.warn('Could not parse Liabilities JSON'); }
+    }
+
+    recalcLiabilities();
+    console.log('\\u2705 Liabilities section built');
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     ENSURE NOTES CARD — dynamically create the liabilities notes card
+     ══════════════════════════════════════════════════════════════ */
+  function ensureLiabilitiesNotesCard() {
+    if (document.getElementById('liabilities-notes-card')) return;
+    var pages = document.getElementById('section-pages');
+    if (!pages) return;
+    var card = document.createElement('div');
+    card.className = 'card section-card section-hidden liab-notes-card';
+    card.id = 'liabilities-notes-card';
+    card.setAttribute('data-page', 'section-liabilities');
+    card.innerHTML = '<div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>'
+      + '<div class="ff"><textarea class="ps-notes-textarea" id="liabilities-notes" placeholder="Liability details, payoff plans, disputes..."></textarea></div>';
+    pages.appendChild(card);
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     LIABILITY ROW MANAGEMENT
+     ══════════════════════════════════════════════════════════════ */
+  window.addLiability = function(data) {
+    liabCounter++;
+    var id = 'liab-' + liabCounter;
+    var item = data || { name: '', type: '', balance: '', payment: '', excluded: false };
+
+    /* Build type options */
+    var opts = '<option value="">Select type...</option>';
+    LIABILITY_TYPES.forEach(function(t) {
+      opts += '<option value="' + t + '"' + (t === item.type ? ' selected' : '') + '>' + t + '</option>';
+    });
+
+    var row = document.createElement('div');
+    row.className = 'liab-row' + (item.excluded ? ' liab-excluded' : '');
+    row.id = id;
+    row.innerHTML = ''
+      + '<div class="liab-fields">'
+      +   '<div class="ff" style="flex:1.5;min-width:150px;"><label>Liability Name</label><input type="text" class="fc liab-name" placeholder="e.g. Chase Visa" value="' + escapeHtml(item.name || '') + '"></div>'
+      +   '<div class="ff" style="flex:1.5;min-width:140px;"><label>Type</label><select class="fc liab-type">' + opts + '</select></div>'
+      +   '<div class="ff" style="flex:1;min-width:110px;"><label>Balance ($)</label><input type="text" class="fc currency-input liab-balance" placeholder="0" value="' + (item.balance ? Number(item.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
+      +   '<div class="ff" style="flex:1;min-width:110px;"><label>Monthly Payment ($)</label><input type="text" class="fc currency-input liab-payment" placeholder="0" value="' + (item.payment ? Number(item.payment).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
+      +   '<div class="liab-exclude-wrap"><input type="checkbox" class="liab-exclude" id="' + id + '-excl"' + (item.excluded ? ' checked' : '') + ' onchange="toggleLiabExclude(\\'' + id + '\\')"><label for="' + id + '-excl">Exclude</label></div>'
+      +   '<button type="button" class="liab-remove-btn" onclick="removeLiability(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
+      + '</div>';
+
+    document.getElementById('liab-list').appendChild(row);
+
+    /* Wire balance + payment changes to recalc */
+    var balInput = row.querySelector('.liab-balance');
+    var pmtInput = row.querySelector('.liab-payment');
+    if (balInput) { balInput.addEventListener('input', recalcLiabilities); balInput.addEventListener('change', recalcLiabilities); }
+    if (pmtInput) { pmtInput.addEventListener('input', recalcLiabilities); pmtInput.addEventListener('change', recalcLiabilities); }
+
+    recalcLiabilities();
+  };
+
+  window.removeLiability = function(id) {
+    var row = document.getElementById(id);
+    if (row) row.remove();
+    recalcLiabilities();
+  };
+
+  window.toggleLiabExclude = function(id) {
+    var row = document.getElementById(id);
+    if (!row) return;
+    var cb = row.querySelector('.liab-exclude');
+    if (cb && cb.checked) {
+      row.classList.add('liab-excluded');
+    } else {
+      row.classList.remove('liab-excluded');
+    }
+    recalcLiabilities();
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     SERIALIZE LIABILITIES TO JSON (called by saveLoan)
+     ══════════════════════════════════════════════════════════════ */
+  window.getLiabilitiesJSON = function() {
+    var rows = document.querySelectorAll('.liab-row');
+    if (!rows.length) return '';
+    var arr = [];
+    rows.forEach(function(row) {
+      var name = row.querySelector('.liab-name');
+      var type = row.querySelector('.liab-type');
+      var bal = row.querySelector('.liab-balance');
+      var pmt = row.querySelector('.liab-payment');
+      var excl = row.querySelector('.liab-exclude');
+      if ((name && name.value.trim()) || (type && type.value) || (bal && pc(bal.value)) || (pmt && pc(pmt.value))) {
+        arr.push({
+          name: name ? name.value.trim() : '',
+          type: type ? type.value : '',
+          balance: pc(bal ? bal.value : ''),
+          payment: pc(pmt ? pmt.value : ''),
+          excluded: excl ? excl.checked : false
+        });
+      }
+    });
+    return arr.length > 0 ? JSON.stringify(arr) : '';
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     RECALC TOTALS — runs on any input change or exclude toggle
+     Excluded rows are NOT counted in totals.
+     ══════════════════════════════════════════════════════════════ */
+  function recalcLiabilities() {
+    var totalBalance = 0;
+    var totalPayment = 0;
+    document.querySelectorAll('.liab-row').forEach(function(row) {
+      var excl = row.querySelector('.liab-exclude');
+      if (excl && excl.checked) return; /* skip excluded */
+      var bal = row.querySelector('.liab-balance');
+      var pmt = row.querySelector('.liab-payment');
+      totalBalance += pc(bal ? bal.value : '');
+      totalPayment += pc(pmt ? pmt.value : '');
+    });
+
+    var balEl = document.getElementById('liab-total-balance');
+    var pmtEl = document.getElementById('liab-total-payment');
+    if (balEl) balEl.textContent = totalBalance > 0 ? fmt(totalBalance) : '\\u2014';
+    if (pmtEl) pmtEl.textContent = totalPayment > 0 ? fmt(totalPayment) : '\\u2014';
+  }
+
+  /* Expose for external calls */
+  window.recalcLiabilities = recalcLiabilities;
+
+  console.log('\\u2705 Pipeline Liabilities module loaded (v1.0)');
+})();
+
+`;
+  return new Response(jsContent, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+      ...getCorsHeaders(request)
+    }
+  });
+}
+
+// ============================================================
 // POST /api/pipeline/extract-purchase-agreement
 // Receives one or more base64 PDFs, sends to Claude Sonnet 4 via
 // Anthropic API, returns structured JSON with extracted PA fields.
@@ -10448,6 +10736,8 @@ async function getPipelineTemplateHTML(request) {
         <a class="mnav-item" data-section="section-credit" onclick="showSection('section-credit')"><i class="fa-solid fa-chart-line"></i><span>Credit</span></a>
         <a class="mnav-item" data-section="section-income" onclick="showSection('section-income')"><i class="fa-solid fa-money-bill-trend-up"></i><span>Income</span></a>
         <a class="mnav-item" data-section="section-assets" onclick="showSection('section-assets')"><i class="fa-solid fa-vault"></i><span>Assets</span></a>
+        <a class="mnav-item" data-section="section-liabilities" onclick="showSection('section-liabilities')"><i class="fa-solid fa-credit-card"></i><span>Liabilities</span></a>
+        <a class="mnav-item" data-section="section-pricing" onclick="showSection('section-pricing')"><i class="fa-solid fa-tags"></i><span>Pricing</span></a>
         <a class="mnav-item" data-section="section-loan-details" onclick="showSection('section-loan-details')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Loan Details</span></a>
         <a class="mnav-item" data-section="section-payment" onclick="showSection('section-payment')"><i class="fa-solid fa-money-check-dollar"></i><span>Payment</span></a>
         <a class="mnav-item" data-section="section-property" onclick="showSection('section-property')"><i class="fa-solid fa-house"></i><span>Property</span></a>
@@ -10573,6 +10863,16 @@ async function getPipelineTemplateHTML(request) {
             <div class="card section-card section-hidden" id="section-assets" data-page="section-assets">
               <div class="card-title"><i class="fa-solid fa-vault"></i> Assets</div>
               <div id="assets-section-content"></div>
+            </div>
+            <!-- LIABILITIES v8.3 (own page - content built by pipeline-liabilities.js) -->
+            <div class="card section-card section-hidden" id="section-liabilities" data-page="section-liabilities">
+              <div class="card-title"><i class="fa-solid fa-credit-card"></i> Liabilities</div>
+              <div id="liabilities-section-content"></div>
+            </div>
+            <!-- PRICING v8.3 (own page - pricing card + notes injected by JS) -->
+            <div class="card section-card section-hidden" id="section-pricing" data-page="section-pricing">
+              <div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div>
+              <div id="pricing-section-content"></div>
             </div>
             <!-- LOAN DETAILS (own page) -->
             <div class="card section-card section-hidden" id="section-loan-details" data-page="section-loan-details">
@@ -11440,9 +11740,13 @@ function zillowLookup() {
   var arrow = '<svg class="ld-pe-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
   var lsLogo = 'data:image/jpeg;base64,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';
 
-  var pricingCardHtml = '<div class="card section-card section-hidden ld-col-right" id="pricing-summary-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
+  var pricingCardHtml = '<div class="card section-card section-hidden" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
 
-  var notesCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Pricing Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
+  /* v8.3: Renamed "Pricing Notes" → "Loan Details Notes" (stays in loan-details) */
+  var loanDetailsNotesHtml = '<div class="card section-card section-hidden" id="loan-details-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Loan Details Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="loan-details-notes" placeholder="Loan details notes, conditions, special requirements..."></textarea></div></div>';
+
+  /* v8.3: New Pricing Notes card for Pricing tab */
+  var pricingNotesHtml = '<div class="card section-card section-hidden" id="pricing-notes-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
 
 
   /* ══════════════════════════════════════════════
@@ -11713,8 +12017,10 @@ function zillowLookup() {
     var pages = document.getElementById('section-pages');
     if (!pages) return;
     if (document.getElementById('pricing-summary-card')) return;
+    /* v8.3: Pricing card + Pricing Notes → Pricing tab; Loan Details Notes → Loan Details tab */
     pages.insertAdjacentHTML('beforeend', pricingCardHtml);
-    pages.insertAdjacentHTML('beforeend', notesCardHtml);
+    pages.insertAdjacentHTML('beforeend', pricingNotesHtml);
+    pages.insertAdjacentHTML('beforeend', loanDetailsNotesHtml);
   }
 
   function setup() {
@@ -11765,11 +12071,16 @@ function zillowLookup() {
 (function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
+<!-- v8.3: Pipeline Liabilities JS Module Loader -->
+<script>
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-liabilities.js';s.defer=true;document.body.appendChild(s);})();
+</script>
+
 <!-- v13.1: showSection 2-column layout fix -->
 <script>
 (function() {
   'use strict';
-  var TWO_COL_PAGES = ['section-loan-details', 'section-assets', 'section-comp-pay', 'section-notes'];
+  var TWO_COL_PAGES = ['section-loan-details', 'section-assets', 'section-comp-pay', 'section-notes', 'section-pricing', 'section-liabilities'];
 
   function hookShowSection() {
     if (typeof window.showSection !== 'function') return false;
@@ -11799,6 +12110,14 @@ function zillowLookup() {
           if (card.id === 'section-assets-right') { if (!card.classList.contains('ast-col-right')) card.classList.add('ast-col-right'); }
           else { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
         });
+      }
+      /* ── PRICING v8.3 ── */
+      if (pageId === 'section-pricing') {
+        cards.forEach(function(card) { card.classList.remove('section-full'); });
+      }
+      /* ── LIABILITIES v8.3 ── */
+      if (pageId === 'section-liabilities') {
+        cards.forEach(function(card) { card.classList.remove('section-full'); });
       }
       /* ── COMP/PAY ── */
       if (pageId === 'section-comp-pay') { cards.forEach(function(card) { card.classList.remove('section-full'); }); }
@@ -12181,6 +12500,11 @@ export default {
     // Pipeline Assets external JS module (Assets tab builder)
     if (path === '/static/pipeline-assets.js' && method === 'GET') {
       return await getPipelineAssetsJS(request);
+    }
+
+    // Pipeline Liabilities external JS module (Liabilities tab builder)
+    if (path === '/static/pipeline-liabilities.js' && method === 'GET') {
+      return await getPipelineLiabilitiesJS(request);
     }
 
     // Pipeline Documents external JS module (document tracking checklist)

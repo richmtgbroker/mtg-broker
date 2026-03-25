@@ -1,4 +1,4 @@
-<!-- PIPELINE HTML v12.0 — Closing Costs calc button enabled (no longer Coming Soon) -->
+<!-- PIPELINE HTML v12.1 — Added Liabilities tab (after Assets), Pricing tab (above Loan Details) -->
 <div class="app-page-content">
 <div class="pipeline-container" id="pipeline-app">
   <div class="pipeline-header"><div class="header-left"><h1 class="pipeline-title">Pipeline</h1></div><div class="header-right"><div class="view-toggle"><button class="view-btn active" data-view="table" onclick="switchView('table')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"></path><path d="M3 9h18M3 15h18M9 3v18M15 3v18"></path></svg> Table</button><button class="view-btn" data-view="kanban" onclick="switchView('kanban')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="6" height="18" rx="1"></rect><rect x="9" y="3" width="6" height="13" rx="1"></rect><rect x="16" y="3" width="6" height="8" rx="1"></rect></svg> Board</button></div><button class="btn btn-primary" onclick="openNewLoanModal()">+ Add Loan</button><button class="btn btn-secondary btn-sm" onclick="exportPipeline()" title="Export to CSV" id="export-pipeline-btn"><i class="fa-solid fa-download"></i> Export</button><button class="btn btn-secondary btn-sm" onclick="refreshPipelineData()" title="Refresh data">&#8635;</button></div></div>
@@ -91,6 +91,8 @@
         <a class="mnav-item" data-section="section-credit" onclick="showSection('section-credit')"><i class="fa-solid fa-chart-line"></i><span>Credit</span></a>
         <a class="mnav-item" data-section="section-income" onclick="showSection('section-income')"><i class="fa-solid fa-money-bill-trend-up"></i><span>Income</span></a>
         <a class="mnav-item" data-section="section-assets" onclick="showSection('section-assets')"><i class="fa-solid fa-vault"></i><span>Assets</span></a>
+        <a class="mnav-item" data-section="section-liabilities" onclick="showSection('section-liabilities')"><i class="fa-solid fa-credit-card"></i><span>Liabilities</span></a>
+        <a class="mnav-item" data-section="section-pricing" onclick="showSection('section-pricing')"><i class="fa-solid fa-tags"></i><span>Pricing</span></a>
         <a class="mnav-item" data-section="section-loan-details" onclick="showSection('section-loan-details')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Loan Details</span></a>
         <a class="mnav-item" data-section="section-payment" onclick="showSection('section-payment')"><i class="fa-solid fa-money-check-dollar"></i><span>Payment</span></a>
         <a class="mnav-item" data-section="section-property" onclick="showSection('section-property')"><i class="fa-solid fa-house"></i><span>Property</span></a>
@@ -216,6 +218,16 @@
             <div class="card section-card section-hidden" id="section-assets" data-page="section-assets">
               <div class="card-title"><i class="fa-solid fa-vault"></i> Assets</div>
               <div id="assets-section-content"></div>
+            </div>
+            <!-- LIABILITIES v12.1 (own page - content built by pipeline-liabilities.js) -->
+            <div class="card section-card section-hidden" id="section-liabilities" data-page="section-liabilities">
+              <div class="card-title"><i class="fa-solid fa-credit-card"></i> Liabilities</div>
+              <div id="liabilities-section-content"></div>
+            </div>
+            <!-- PRICING v12.1 (own page - pricing card + notes injected by JS) -->
+            <div class="card section-card section-hidden" id="section-pricing" data-page="section-pricing">
+              <div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div>
+              <div id="pricing-section-content"></div>
             </div>
             <!-- LOAN DETAILS (own page) -->
             <div class="card section-card section-hidden" id="section-loan-details" data-page="section-loan-details">
