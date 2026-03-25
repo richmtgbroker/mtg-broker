@@ -6601,8 +6601,8 @@ async function getPipelineAssetsJS(request) {
 
 // ============================================================
 // PIPELINE LIABILITIES JS MODULE (served from /static/pipeline-liabilities.js)
-// Builds the Liabilities tab UI: dynamic liability rows with
-// name, type, balance, monthly payment, exclude checkbox, totals, notes
+// v1.1 — Table-style header row, left-side exclude checkbox,
+//         manual total override fields, notes card
 // ============================================================
 async function getPipelineLiabilitiesJS(request) {
   const jsContent = `
@@ -6614,25 +6614,11 @@ async function getPipelineLiabilitiesJS(request) {
      LIABILITY TYPE OPTIONS
      ══════════════════════════════════════════════════════════════ */
   var LIABILITY_TYPES = [
-    'Auto Loan',
-    'Business Debt',
-    'Child Care',
-    'Child Support',
-    'Collections',
-    'Credit Card',
-    'HELOC',
-    'Installment Loan',
-    'Lease Payment',
-    'Medical Debt',
-    'Mortgage',
-    'Other',
-    'Personal Loan',
-    'Student Loan',
-    'Tax Lien'
+    'Auto Loan','Business Debt','Child Care','Child Support','Collections',
+    'Credit Card','HELOC','Installment Loan','Lease Payment','Medical Debt',
+    'Mortgage','Other','Personal Loan','Student Loan','Tax Lien'
   ];
 
-  /* In-memory liability rows */
-  var liabilities = [];
   var liabCounter = 0;
 
   /* ══════════════════════════════════════════════════════════════
@@ -6656,49 +6642,77 @@ async function getPipelineLiabilitiesJS(request) {
      ══════════════════════════════════════════════════════════════ */
   var css = document.createElement('style');
   css.textContent = ''
-    +'.liab-row{margin-bottom:8px;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;background:#fff;transition:background .1s}'
+    /* Table header row */
+    +'.liab-header{display:flex;align-items:center;gap:8px;padding:0 12px 8px 12px;border-bottom:2px solid #DBEAFE;margin-bottom:8px}'
+    +'.liab-header span{font-size:11px;font-weight:700;color:#1E3A8A;text-transform:uppercase;letter-spacing:.5px}'
+    +'.liab-hdr-excl{width:24px;flex-shrink:0;text-align:center}'
+    +'.liab-hdr-name{flex:1.5;min-width:140px}'
+    +'.liab-hdr-type{flex:1.5;min-width:130px}'
+    +'.liab-hdr-bal{flex:1;min-width:100px}'
+    +'.liab-hdr-pmt{flex:1;min-width:100px}'
+    +'.liab-hdr-del{width:28px;flex-shrink:0}'
+    /* Row styles */
+    +'.liab-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;border:1px solid #E2E8F0;border-radius:8px;padding:8px 12px;background:#fff;transition:background .1s}'
     +'.liab-row:hover{background:#F8FAFC}'
-    +'.liab-row.liab-excluded{opacity:.5;background:#F8FAFC}'
-    +'.liab-fields{display:flex;align-items:flex-end;gap:8px;flex:1;min-width:0;flex-wrap:wrap}'
-    +'.liab-fields .ff{margin-bottom:0}'
-    +'.liab-fields .ff label{font-size:11px;font-weight:600;color:#64748B;margin-bottom:3px}'
-    +'.liab-fields .ff select,.liab-fields .ff input{font-size:13px;padding:7px 10px}'
-    +'.liab-remove-btn{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:6px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0;align-self:flex-end;margin-bottom:2px}'
+    +'.liab-row.liab-excluded{opacity:.45;background:#F8FAFC}'
+    +'.liab-row .liab-excl-cell{width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center}'
+    +'.liab-row .liab-excl-cell input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:#3B82F6}'
+    +'.liab-row .fc{font-size:13px;padding:7px 10px}'
+    +'.liab-row .ff{margin-bottom:0}'
+    +'.liab-row .ff-name{flex:1.5;min-width:140px}'
+    +'.liab-row .ff-type{flex:1.5;min-width:130px}'
+    +'.liab-row .ff-bal{flex:1;min-width:100px}'
+    +'.liab-row .ff-pmt{flex:1;min-width:100px}'
+    +'.liab-remove-btn{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:6px;border-radius:4px;transition:all .15s;line-height:1;flex-shrink:0;width:28px;text-align:center}'
     +'.liab-remove-btn:hover{color:#EF4444;background:#FEF2F2}'
-    +'.liab-exclude-wrap{display:flex;align-items:center;gap:6px;align-self:flex-end;margin-bottom:4px;flex-shrink:0}'
-    +'.liab-exclude-wrap label{font-size:11px;font-weight:600;color:#64748B;cursor:pointer;white-space:nowrap}'
-    +'.liab-exclude-wrap input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:#3B82F6}'
-    +'.liab-add-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #CBD5E1;border-radius:6px;background:#FAFBFE;color:#64748B;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}'
+    +'.liab-add-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px dashed #CBD5E1;border-radius:6px;background:#FAFBFE;color:#64748B;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:8px}'
     +'.liab-add-btn:hover{border-color:#93C5FD;color:#3B82F6;background:#EFF6FF}'
     +'.liab-add-btn i{font-size:11px}'
-    +'.liab-total-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;margin-top:12px;border-radius:8px;background:linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%);border:1px solid #FECACA}'
-    +'.liab-total-row span:first-child{font-size:13px;font-weight:700;color:#991B1B}'
-    +'.liab-total-val{font-size:16px;font-weight:800;color:#DC2626}'
-    +'.liab-totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}'
+    /* Totals area */
+    +'.liab-totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}'
     +'.liab-total-card{padding:10px 14px;border-radius:8px;border:1px solid #E2E8F0;background:#F8FAFC}'
     +'.liab-total-card-label{font-size:11px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}'
     +'.liab-total-card-value{font-size:16px;font-weight:700;color:#1E293B}'
     +'.liab-total-card.highlight{background:linear-gradient(135deg,#FEF2F2 0%,#FEE2E2 100%);border-color:#FECACA}'
     +'.liab-total-card.highlight .liab-total-card-label{color:#991B1B}'
     +'.liab-total-card.highlight .liab-total-card-value{color:#DC2626}'
+    +'.liab-override-row{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 14px;border-radius:8px;border:1px solid #E2E8F0;background:#FAFBFE}'
+    +'.liab-override-row .ff{margin-bottom:0;flex:1}'
+    +'.liab-override-row .ff label{font-size:11px;font-weight:600;color:#64748B;margin-bottom:3px}'
+    +'.liab-override-row .ff input{font-size:13px;padding:7px 10px}'
+    +'.liab-override-hint{font-size:10px;color:#94A3B8;margin-top:4px}'
     +'.liab-notes-card{margin-top:16px}'
-    +'@media(max-width:600px){.liab-fields{flex-direction:column}.liab-fields .ff{min-width:100%!important}}';
+    +'@media(max-width:700px){.liab-header{display:none}.liab-row{flex-wrap:wrap}.liab-row .ff-name,.liab-row .ff-type,.liab-row .ff-bal,.liab-row .ff-pmt{min-width:100%!important;flex:1 1 100%}}';
   document.head.appendChild(css);
 
   /* ══════════════════════════════════════════════════════════════
-     BUILD LIABILITIES SECTION — called by openLoanModal / openNewLoanModal
+     BUILD LIABILITIES SECTION
      ══════════════════════════════════════════════════════════════ */
   window.buildLiabilitiesSection = function(loan) {
     var c = document.getElementById('liabilities-section-content');
     if (!c) return;
-    liabilities = [];
     liabCounter = 0;
 
     c.innerHTML = ''
-      + '<div id="liab-list"></div>'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
-      +   '<button type="button" class="liab-add-btn" onclick="addLiability()"><i class="fa-solid fa-plus"></i> Add Liability</button>'
+      /* Table header */
+      + '<div class="liab-header">'
+      +   '<span class="liab-hdr-excl">Excl</span>'
+      +   '<span class="liab-hdr-name">Liability Name</span>'
+      +   '<span class="liab-hdr-type">Type</span>'
+      +   '<span class="liab-hdr-bal">Balance</span>'
+      +   '<span class="liab-hdr-pmt">Monthly Pmt</span>'
+      +   '<span class="liab-hdr-del"></span>'
       + '</div>'
+      /* Rows container */
+      + '<div id="liab-list"></div>'
+      + '<button type="button" class="liab-add-btn" onclick="addLiability()"><i class="fa-solid fa-plus"></i> Add Liability</button>'
+      /* Manual total override */
+      + '<div class="liab-override-row">'
+      +   '<div class="ff"><label>Total Balance Override ($)</label><input type="text" class="fc currency-input" id="liab-override-balance" placeholder="Auto from list"></div>'
+      +   '<div class="ff"><label>Total Monthly Payment Override ($)</label><input type="text" class="fc currency-input" id="liab-override-payment" placeholder="Auto from list"></div>'
+      + '</div>'
+      + '<div class="liab-override-hint">Enter totals manually to override the calculated sum from the list above.</div>'
+      /* Display totals */
       + '<div class="liab-totals-grid">'
       +   '<div class="liab-total-card">'
       +     '<div class="liab-total-card-label">Total Balance</div>'
@@ -6710,17 +6724,31 @@ async function getPipelineLiabilitiesJS(request) {
       +   '</div>'
       + '</div>';
 
+    /* Wire override fields to recalc */
+    var ovBal = document.getElementById('liab-override-balance');
+    var ovPmt = document.getElementById('liab-override-payment');
+    if (ovBal) { ovBal.addEventListener('input', recalcLiabilities); ovBal.addEventListener('change', recalcLiabilities); }
+    if (ovPmt) { ovPmt.addEventListener('input', recalcLiabilities); ovPmt.addEventListener('change', recalcLiabilities); }
+
     /* Ensure Liabilities Notes card exists */
     ensureLiabilitiesNotesCard();
 
     /* Populate from loan data */
-    if (loan && loan['Liabilities JSON']) {
-      try {
-        var saved = JSON.parse(loan['Liabilities JSON']);
-        if (Array.isArray(saved)) {
-          saved.forEach(function(item) { addLiability(item); });
-        }
-      } catch(e) { console.warn('Could not parse Liabilities JSON'); }
+    if (loan) {
+      if (loan['Liabilities JSON']) {
+        try {
+          var saved = JSON.parse(loan['Liabilities JSON']);
+          if (Array.isArray(saved)) {
+            /* Check if saved data has overrides stored */
+            var meta = saved.find(function(item) { return item._meta; });
+            if (meta && meta._meta) {
+              if (meta._meta.overrideBalance && ovBal) ovBal.value = Number(meta._meta.overrideBalance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+              if (meta._meta.overridePayment && ovPmt) ovPmt.value = Number(meta._meta.overridePayment).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+            }
+            saved.filter(function(item) { return !item._meta; }).forEach(function(item) { addLiability(item); });
+          }
+        } catch(e) { console.warn('Could not parse Liabilities JSON'); }
+      }
     }
 
     recalcLiabilities();
@@ -6728,7 +6756,7 @@ async function getPipelineLiabilitiesJS(request) {
   };
 
   /* ══════════════════════════════════════════════════════════════
-     ENSURE NOTES CARD — dynamically create the liabilities notes card
+     ENSURE NOTES CARD
      ══════════════════════════════════════════════════════════════ */
   function ensureLiabilitiesNotesCard() {
     if (document.getElementById('liabilities-notes-card')) return;
@@ -6744,15 +6772,14 @@ async function getPipelineLiabilitiesJS(request) {
   }
 
   /* ══════════════════════════════════════════════════════════════
-     LIABILITY ROW MANAGEMENT
+     ADD / REMOVE LIABILITY ROWS
      ══════════════════════════════════════════════════════════════ */
   window.addLiability = function(data) {
     liabCounter++;
     var id = 'liab-' + liabCounter;
     var item = data || { name: '', type: '', balance: '', payment: '', excluded: false };
 
-    /* Build type options */
-    var opts = '<option value="">Select type...</option>';
+    var opts = '<option value="">Select...</option>';
     LIABILITY_TYPES.forEach(function(t) {
       opts += '<option value="' + t + '"' + (t === item.type ? ' selected' : '') + '>' + t + '</option>';
     });
@@ -6761,18 +6788,15 @@ async function getPipelineLiabilitiesJS(request) {
     row.className = 'liab-row' + (item.excluded ? ' liab-excluded' : '');
     row.id = id;
     row.innerHTML = ''
-      + '<div class="liab-fields">'
-      +   '<div class="ff" style="flex:1.5;min-width:150px;"><label>Liability Name</label><input type="text" class="fc liab-name" placeholder="e.g. Chase Visa" value="' + escapeHtml(item.name || '') + '"></div>'
-      +   '<div class="ff" style="flex:1.5;min-width:140px;"><label>Type</label><select class="fc liab-type">' + opts + '</select></div>'
-      +   '<div class="ff" style="flex:1;min-width:110px;"><label>Balance ($)</label><input type="text" class="fc currency-input liab-balance" placeholder="0" value="' + (item.balance ? Number(item.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
-      +   '<div class="ff" style="flex:1;min-width:110px;"><label>Monthly Payment ($)</label><input type="text" class="fc currency-input liab-payment" placeholder="0" value="' + (item.payment ? Number(item.payment).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
-      +   '<div class="liab-exclude-wrap"><input type="checkbox" class="liab-exclude" id="' + id + '-excl"' + (item.excluded ? ' checked' : '') + ' onchange="toggleLiabExclude(\\'' + id + '\\')"><label for="' + id + '-excl">Exclude</label></div>'
-      +   '<button type="button" class="liab-remove-btn" onclick="removeLiability(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>'
-      + '</div>';
+      + '<div class="liab-excl-cell"><input type="checkbox" class="liab-exclude" id="' + id + '-excl"' + (item.excluded ? ' checked' : '') + ' onchange="toggleLiabExclude(\\'' + id + '\\')" title="Exclude from totals"></div>'
+      + '<div class="ff ff-name"><input type="text" class="fc liab-name" placeholder="e.g. Chase Visa" value="' + escapeHtml(item.name || '') + '"></div>'
+      + '<div class="ff ff-type"><select class="fc liab-type">' + opts + '</select></div>'
+      + '<div class="ff ff-bal"><input type="text" class="fc currency-input liab-balance" placeholder="0" value="' + (item.balance ? Number(item.balance).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
+      + '<div class="ff ff-pmt"><input type="text" class="fc currency-input liab-payment" placeholder="0" value="' + (item.payment ? Number(item.payment).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '') + '"></div>'
+      + '<button type="button" class="liab-remove-btn" onclick="removeLiability(\\'' + id + '\\')" title="Remove"><i class="fa-solid fa-xmark"></i></button>';
 
     document.getElementById('liab-list').appendChild(row);
 
-    /* Wire balance + payment changes to recalc */
     var balInput = row.querySelector('.liab-balance');
     var pmtInput = row.querySelector('.liab-payment');
     if (balInput) { balInput.addEventListener('input', recalcLiabilities); balInput.addEventListener('change', recalcLiabilities); }
@@ -6791,22 +6815,17 @@ async function getPipelineLiabilitiesJS(request) {
     var row = document.getElementById(id);
     if (!row) return;
     var cb = row.querySelector('.liab-exclude');
-    if (cb && cb.checked) {
-      row.classList.add('liab-excluded');
-    } else {
-      row.classList.remove('liab-excluded');
-    }
+    row.classList.toggle('liab-excluded', cb && cb.checked);
     recalcLiabilities();
   };
 
   /* ══════════════════════════════════════════════════════════════
-     SERIALIZE LIABILITIES TO JSON (called by saveLoan)
+     SERIALIZE TO JSON (called by saveLoan)
+     Includes _meta object with override values if set.
      ══════════════════════════════════════════════════════════════ */
   window.getLiabilitiesJSON = function() {
-    var rows = document.querySelectorAll('.liab-row');
-    if (!rows.length) return '';
     var arr = [];
-    rows.forEach(function(row) {
+    document.querySelectorAll('.liab-row').forEach(function(row) {
       var name = row.querySelector('.liab-name');
       var type = row.querySelector('.liab-type');
       var bal = row.querySelector('.liab-balance');
@@ -6822,24 +6841,34 @@ async function getPipelineLiabilitiesJS(request) {
         });
       }
     });
+    /* Store override values as _meta entry */
+    var ovBal = pc(document.getElementById('liab-override-balance') ? document.getElementById('liab-override-balance').value : '');
+    var ovPmt = pc(document.getElementById('liab-override-payment') ? document.getElementById('liab-override-payment').value : '');
+    if (ovBal > 0 || ovPmt > 0) {
+      arr.push({ _meta: { overrideBalance: ovBal, overridePayment: ovPmt } });
+    }
     return arr.length > 0 ? JSON.stringify(arr) : '';
   };
 
   /* ══════════════════════════════════════════════════════════════
-     RECALC TOTALS — runs on any input change or exclude toggle
-     Excluded rows are NOT counted in totals.
+     RECALC TOTALS
+     Override fields take precedence over calculated sums.
      ══════════════════════════════════════════════════════════════ */
   function recalcLiabilities() {
-    var totalBalance = 0;
-    var totalPayment = 0;
+    var calcBalance = 0;
+    var calcPayment = 0;
     document.querySelectorAll('.liab-row').forEach(function(row) {
       var excl = row.querySelector('.liab-exclude');
-      if (excl && excl.checked) return; /* skip excluded */
-      var bal = row.querySelector('.liab-balance');
-      var pmt = row.querySelector('.liab-payment');
-      totalBalance += pc(bal ? bal.value : '');
-      totalPayment += pc(pmt ? pmt.value : '');
+      if (excl && excl.checked) return;
+      calcBalance += pc(row.querySelector('.liab-balance') ? row.querySelector('.liab-balance').value : '');
+      calcPayment += pc(row.querySelector('.liab-payment') ? row.querySelector('.liab-payment').value : '');
     });
+
+    /* Override: if user typed a value in the override field, use that instead */
+    var ovBal = pc(document.getElementById('liab-override-balance') ? document.getElementById('liab-override-balance').value : '');
+    var ovPmt = pc(document.getElementById('liab-override-payment') ? document.getElementById('liab-override-payment').value : '');
+    var totalBalance = ovBal > 0 ? ovBal : calcBalance;
+    var totalPayment = ovPmt > 0 ? ovPmt : calcPayment;
 
     var balEl = document.getElementById('liab-total-balance');
     var pmtEl = document.getElementById('liab-total-payment');
@@ -6847,10 +6876,9 @@ async function getPipelineLiabilitiesJS(request) {
     if (pmtEl) pmtEl.textContent = totalPayment > 0 ? fmt(totalPayment) : '\\u2014';
   }
 
-  /* Expose for external calls */
   window.recalcLiabilities = recalcLiabilities;
 
-  console.log('\\u2705 Pipeline Liabilities module loaded (v1.0)');
+  console.log('\\u2705 Pipeline Liabilities module loaded (v1.1)');
 })();
 
 `;
@@ -10869,11 +10897,7 @@ async function getPipelineTemplateHTML(request) {
               <div class="card-title"><i class="fa-solid fa-credit-card"></i> Liabilities</div>
               <div id="liabilities-section-content"></div>
             </div>
-            <!-- PRICING v8.3 (own page - pricing card + notes injected by JS) -->
-            <div class="card section-card section-hidden" id="section-pricing" data-page="section-pricing">
-              <div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div>
-              <div id="pricing-section-content"></div>
-            </div>
+            <!-- PRICING v8.4 (cards injected dynamically by JS — no placeholder card needed) -->
             <!-- LOAN DETAILS (own page) -->
             <div class="card section-card section-hidden" id="section-loan-details" data-page="section-loan-details">
               <div class="card-title"><i class="fa-solid fa-file-invoice-dollar"></i> Loan Details</div>
@@ -11740,13 +11764,20 @@ function zillowLookup() {
   var arrow = '<svg class="ld-pe-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
   var lsLogo = 'data:image/jpeg;base64,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';
 
-  var pricingCardHtml = '<div class="card section-card section-hidden" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
+  /* v8.4: Pricing Summary card — LEFT column */
+  var pricingCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
 
-  /* v8.3: Renamed "Pricing Notes" → "Loan Details Notes" (stays in loan-details) */
+  /* v8.4: RIGHT column wrapper — Rate card + Notes card */
+  var pricingRightHtml = '<div class="section-card section-hidden ld-col-right" id="pricing-right-col" data-page="section-pricing" style="display:flex;flex-direction:column;gap:16px;background:none;padding:0;border:none;box-shadow:none;align-self:start;">'
+    + '<div class="card" id="pricing-rate-card"><div class="card-title"><i class="fa-solid fa-percent"></i> Rate</div>'
+    + '<div class="cg"><div class="ff"><label>Interest Rate (%)</label><input type="text" class="fc rate-input" id="pricing-interest-rate" placeholder="6.500" inputmode="decimal"></div>'
+    + '<div class="ff"><label>Qualifying Rate (%)</label><input type="text" class="fc rate-input" id="pricing-qualifying-rate" placeholder="7.500" inputmode="decimal"></div></div></div>'
+    + '<div class="card" id="pricing-notes-card"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>'
+    + '<div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>'
+    + '</div>';
+
+  /* v8.4: Loan Details Notes card (stays in loan-details) */
   var loanDetailsNotesHtml = '<div class="card section-card section-hidden" id="loan-details-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Loan Details Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="loan-details-notes" placeholder="Loan details notes, conditions, special requirements..."></textarea></div></div>';
-
-  /* v8.3: New Pricing Notes card for Pricing tab */
-  var pricingNotesHtml = '<div class="card section-card section-hidden" id="pricing-notes-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
 
 
   /* ══════════════════════════════════════════════
@@ -12017,10 +12048,27 @@ function zillowLookup() {
     var pages = document.getElementById('section-pages');
     if (!pages) return;
     if (document.getElementById('pricing-summary-card')) return;
-    /* v8.3: Pricing card + Pricing Notes → Pricing tab; Loan Details Notes → Loan Details tab */
+    /* v8.4: Pricing left col + right col (Rate + Notes) + Loan Details Notes */
     pages.insertAdjacentHTML('beforeend', pricingCardHtml);
-    pages.insertAdjacentHTML('beforeend', pricingNotesHtml);
+    pages.insertAdjacentHTML('beforeend', pricingRightHtml);
     pages.insertAdjacentHTML('beforeend', loanDetailsNotesHtml);
+    setupRateSync();
+  }
+
+  /* v8.4: Bidirectional sync between Pricing Rate fields and Loan Details Rate fields */
+  function setupRateSync() {
+    var pRate = document.getElementById('pricing-interest-rate');
+    var pQual = document.getElementById('pricing-qualifying-rate');
+    var ldRate = document.getElementById('loan-interest-rate');
+    var ldQual = document.getElementById('qualifying-interest-rate');
+    if (!pRate || !ldRate) return;
+    function syncToLD() { if (ldRate) ldRate.value = pRate.value; if (ldQual && pQual) ldQual.value = pQual.value; }
+    function syncToPricing() { if (pRate) pRate.value = ldRate.value; if (pQual && ldQual) pQual.value = ldQual.value; }
+    pRate.addEventListener('input', syncToLD); pRate.addEventListener('change', syncToLD);
+    if (pQual) { pQual.addEventListener('input', syncToLD); pQual.addEventListener('change', syncToLD); }
+    ldRate.addEventListener('input', syncToPricing); ldRate.addEventListener('change', syncToPricing);
+    if (ldQual) { ldQual.addEventListener('input', syncToPricing); ldQual.addEventListener('change', syncToPricing); }
+    syncToPricing();
   }
 
   function setup() {
@@ -12111,9 +12159,19 @@ function zillowLookup() {
           else { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
         });
       }
-      /* ── PRICING v8.3 ── */
+      /* ── PRICING v8.4 ── */
       if (pageId === 'section-pricing') {
-        cards.forEach(function(card) { card.classList.remove('section-full'); });
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (card.id === 'pricing-summary-card' && !card.classList.contains('ld-col-left')) card.classList.add('ld-col-left');
+          if (card.id === 'pricing-right-col' && !card.classList.contains('ld-col-right')) card.classList.add('ld-col-right');
+        });
+        var pRate = document.getElementById('pricing-interest-rate');
+        var ldRate = document.getElementById('loan-interest-rate');
+        if (pRate && ldRate) pRate.value = ldRate.value;
+        var pQual = document.getElementById('pricing-qualifying-rate');
+        var ldQual = document.getElementById('qualifying-interest-rate');
+        if (pQual && ldQual) pQual.value = ldQual.value;
       }
       /* ── LIABILITIES v8.3 ── */
       if (pageId === 'section-liabilities') {

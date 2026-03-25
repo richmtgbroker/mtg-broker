@@ -397,13 +397,20 @@ function zillowLookup() {
   var arrow = '<svg class="ld-pe-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>';
   var lsLogo = 'data:image/jpeg;base64,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';
 
-  var pricingCardHtml = '<div class="card section-card section-hidden" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\u2014</td></tr><tr><td>Address</td><td id="ps-address">\u2014</td></tr></tbody></table></div>';
+  /* v13.10: Pricing Summary card — LEFT column */
+  var pricingCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\u2014</td></tr><tr><td>Address</td><td id="ps-address">\u2014</td></tr></tbody></table></div>';
 
-  /* v13.9: Renamed "Pricing Notes" → "Loan Details Notes" (stays in loan-details) */
+  /* v13.10: RIGHT column wrapper — Rate card + Notes card (flexbox stack) */
+  var pricingRightHtml = '<div class="section-card section-hidden ld-col-right" id="pricing-right-col" data-page="section-pricing" style="display:flex;flex-direction:column;gap:16px;background:none;padding:0;border:none;box-shadow:none;align-self:start;">'
+    + '<div class="card" id="pricing-rate-card"><div class="card-title"><i class="fa-solid fa-percent"></i> Rate</div>'
+    + '<div class="cg"><div class="ff"><label>Interest Rate (%)</label><input type="text" class="fc rate-input" id="pricing-interest-rate" placeholder="6.500" inputmode="decimal"></div>'
+    + '<div class="ff"><label>Qualifying Rate (%)</label><input type="text" class="fc rate-input" id="pricing-qualifying-rate" placeholder="7.500" inputmode="decimal"></div></div></div>'
+    + '<div class="card" id="pricing-notes-card"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>'
+    + '<div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>'
+    + '</div>';
+
+  /* v13.10: Loan Details Notes card (stays in loan-details) */
   var loanDetailsNotesHtml = '<div class="card section-card section-hidden" id="loan-details-notes-card" data-page="section-loan-details"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Loan Details Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="loan-details-notes" placeholder="Loan details notes, conditions, special requirements..."></textarea></div></div>';
-
-  /* v13.9: New Pricing Notes card for Pricing tab */
-  var pricingNotesHtml = '<div class="card section-card section-hidden" id="pricing-notes-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div><div class="ff"><textarea class="ps-notes-textarea" id="pricing-notes" placeholder="Rate lock details, pricing adjustments, LLPAs, etc..."></textarea></div></div>';
 
 
   /* ══════════════════════════════════════════════
@@ -674,10 +681,39 @@ function zillowLookup() {
     var pages = document.getElementById('section-pages');
     if (!pages) return;
     if (document.getElementById('pricing-summary-card')) return;
-    /* v13.9: Pricing card + Pricing Notes → Pricing tab; Loan Details Notes → Loan Details tab */
+    /* v13.10: Pricing left col + right col (Rate + Notes) + Loan Details Notes */
     pages.insertAdjacentHTML('beforeend', pricingCardHtml);
-    pages.insertAdjacentHTML('beforeend', pricingNotesHtml);
+    pages.insertAdjacentHTML('beforeend', pricingRightHtml);
     pages.insertAdjacentHTML('beforeend', loanDetailsNotesHtml);
+    /* Wire Rate field syncing with Loan Details fields */
+    setupRateSync();
+  }
+
+  /* v13.10: Bidirectional sync between Pricing Rate fields and Loan Details Rate fields */
+  function setupRateSync() {
+    var pRate = document.getElementById('pricing-interest-rate');
+    var pQual = document.getElementById('pricing-qualifying-rate');
+    var ldRate = document.getElementById('loan-interest-rate');
+    var ldQual = document.getElementById('qualifying-interest-rate');
+    if (!pRate || !ldRate) return;
+    /* Pricing → Loan Details */
+    function syncToLD() {
+      if (ldRate) ldRate.value = pRate.value;
+      if (ldQual && pQual) ldQual.value = pQual.value;
+    }
+    /* Loan Details → Pricing */
+    function syncToPricing() {
+      if (pRate) pRate.value = ldRate.value;
+      if (pQual && ldQual) pQual.value = ldQual.value;
+    }
+    pRate.addEventListener('input', syncToLD);
+    pRate.addEventListener('change', syncToLD);
+    if (pQual) { pQual.addEventListener('input', syncToLD); pQual.addEventListener('change', syncToLD); }
+    ldRate.addEventListener('input', syncToPricing);
+    ldRate.addEventListener('change', syncToPricing);
+    if (ldQual) { ldQual.addEventListener('input', syncToPricing); ldQual.addEventListener('change', syncToPricing); }
+    /* Populate pricing fields from loan details on initial setup */
+    syncToPricing();
   }
 
   function setup() {
@@ -768,9 +804,20 @@ function zillowLookup() {
           else if (!card.classList.contains('ast-summary-card')) { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
         });
       }
-      /* ── PRICING v13.9 ── */
+      /* ── PRICING v13.10 ── */
       if (pageId === 'section-pricing') {
-        cards.forEach(function(card) { card.classList.remove('section-full'); });
+        cards.forEach(function(card) {
+          card.classList.remove('section-full');
+          if (card.id === 'pricing-summary-card' && !card.classList.contains('ld-col-left')) card.classList.add('ld-col-left');
+          if (card.id === 'pricing-right-col' && !card.classList.contains('ld-col-right')) card.classList.add('ld-col-right');
+        });
+        /* Sync rate fields when switching to pricing tab */
+        var pRate = document.getElementById('pricing-interest-rate');
+        var ldRate = document.getElementById('loan-interest-rate');
+        if (pRate && ldRate) pRate.value = ldRate.value;
+        var pQual = document.getElementById('pricing-qualifying-rate');
+        var ldQual = document.getElementById('qualifying-interest-rate');
+        if (pQual && ldQual) pQual.value = ldQual.value;
       }
       /* ── LIABILITIES v13.9 ── */
       if (pageId === 'section-liabilities') {
