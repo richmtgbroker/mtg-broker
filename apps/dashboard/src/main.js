@@ -72,7 +72,17 @@ const DASHBOARD_HTML = `
       </div>
       <div class="actions-grid actions-grid-compact">
 
-        <a href="/app/loan-search" class="action-card highlight-card">
+        <a href="/app/ai-search" class="action-card highlight-card">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22"></path><path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93"></path><path d="M16 16c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"></path><path d="M8 16c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"></path></svg>
+          </div>
+          <div class="action-text">
+            <strong>AI Loan Finder</strong>
+            <span>AI-powered search</span>
+          </div>
+        </a>
+
+        <a href="/app/loan-search" class="action-card">
           <div class="action-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
@@ -99,13 +109,6 @@ const DASHBOARD_HTML = `
           <div class="action-text"><strong>Calculators</strong><span>Mortgage tools</span></div>
         </a>
 
-        <a href="/app/vendors" class="action-card">
-          <div class="action-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
-          </div>
-          <div class="action-text"><strong>Vendors</strong><span>Service providers</span></div>
-        </a>
-
         <a href="/app/contacts" class="action-card">
           <div class="action-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -127,23 +130,7 @@ const DASHBOARD_HTML = `
       </div>
     </div>
 
-    <!-- COL 2: FAVORITES -->
-    <div class="dash-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          Favorites
-        </h3>
-      </div>
-      <div class="favorites-list" id="favorites-list">
-        <div class="empty-favorites">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          <p>Loading favorites...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- COL 3: TODAY'S RATES -->
+    <!-- COL 2: TODAY'S RATES -->
     <div class="dash-section rates-section">
       <div class="section-header">
         <h3 class="section-title">
@@ -517,7 +504,6 @@ const DASHBOARD_HTML = `
     await Promise.allSettled([
       loadMortgageRates(),
       loadLenderCount(),
-      loadFavorites(),
       loadPipelineData(),
       loadPipelineTasks(),
       loadUserName()
@@ -941,75 +927,6 @@ const DASHBOARD_HTML = `
   }
 
   // ============================================================
-  // FAVORITES — load from API
-  // ============================================================
-  async function loadFavorites() {
-    var listEl = document.getElementById('favorites-list');
-    if (!listEl) return;
-
-    if (!userEmail) {
-      listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
-      return;
-    }
-
-    try {
-      var response = await fetch(API_BASE + '/api/favorites', {
-        headers: { 'Authorization': 'Bearer ' + getAuthToken() }
-      });
-      if (!response.ok) throw new Error('API error');
-      var data = await response.json();
-      var favorites = data.favorites || [];
-
-      if (favorites.length === 0) {
-        listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
-        return;
-      }
-
-      // Group by type
-      var typeIcons = {
-        'Lender': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path></svg>',
-        'Vendor': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>',
-        'Contact': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>'
-      };
-      var typeLinks = {
-        'Lender': '/app/lenders',
-        'Vendor': '/app/vendors',
-        'Contact': '/app/contacts'
-      };
-      var typeColors = {
-        'Lender': 'fav-icon-blue',
-        'Vendor': 'fav-icon-purple',
-        'Contact': 'fav-icon-green'
-      };
-
-      // Group by type
-      var groups = {};
-      favorites.forEach(function(fav) {
-        var t = fav.itemType || 'Other';
-        if (!groups[t]) groups[t] = [];
-        groups[t].push(fav);
-      });
-
-      var html = '';
-      ['Lender', 'Vendor', 'Contact'].forEach(function(type) {
-        var items = groups[type];
-        if (!items || items.length === 0) return;
-        var icon = typeIcons[type];
-        var link = typeLinks[type];
-        var colorClass = typeColors[type];
-        html += '<div class="fav-group"><div class="fav-group-label">' + icon + ' ' + type + 's</div><div class="fav-group-grid">';
-        html += items.slice(0, 6).map(function(fav) {
-          return '<a href="' + link + '" class="fav-card ' + colorClass + '">' + escapeHtml(fav.itemName) + '</a>';
-        }).join('');
-        html += '</div></div>';
-      });
-
-      listEl.innerHTML = html;
-    } catch (e) {
-      listEl.innerHTML = '<div class="empty-favorites"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><p>No favorites yet.</p><a href="/app/lenders">Browse lenders &rarr;</a></div>';
-    }
-  }
-
   // ============================================================
   // MOUNT ON LOAD
   // ============================================================
