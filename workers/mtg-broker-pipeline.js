@@ -4,7 +4,12 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 25, 2026 - v8.3 — Liabilities tab + Pricing tab:
+ * UPDATED: March 25, 2026 - v8.5 — Pricing tab enhancements:
+ *   Added synced Lender searchable dropdown to Pricing Rate card (mirrors Deal card,
+ *   bidirectional sync). Pricing Engine buttons now dark blue brand color (#1a56db).
+ *   New Pricing Lender dropdown IIFE with full keyboard nav + Other option.
+ *
+ * PREVIOUS: March 25, 2026 - v8.3 — Liabilities tab + Pricing tab:
  *   New Liabilities tab (after Assets): dynamic liability rows with name, type,
  *   balance, monthly payment, exclude checkbox, totals. Stored as JSON.
  *   New Pricing tab (above Loan Details): moved Pricing Summary card from
@@ -11703,11 +11708,11 @@ function zillowLookup() {
     +'.ld-pe-strip{padding:8px 0;margin-bottom:10px;border-bottom:1px solid #F1F5F9}'
     +'.ld-pe-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'
     +'.ld-pe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}'
-    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #E2E8F0;border-radius:6px;background:#fff;text-decoration:none;transition:all .15s}'
-    +'.ld-pe-btn:hover{background:#EFF6FF;border-color:#93C5FD}'
-    +'.ld-pe-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0}'
-    +'.ld-pe-name{font-size:11px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-    +'.ld-pe-arrow{width:12px;height:12px;flex-shrink:0;color:#94A3B8;margin-left:auto}'
+    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #1a56db;border-radius:6px;background:#1a56db;text-decoration:none;transition:all .15s}'
+    +'.ld-pe-btn:hover{background:#1e40af;border-color:#1e40af}'
+    +'.ld-pe-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0;filter:brightness(0) invert(1)}'
+    +'.ld-pe-name{font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+    +'.ld-pe-arrow{width:12px;height:12px;flex-shrink:0;color:rgba(255,255,255,.7);margin-left:auto}'
     +'.ps-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
     +'.ps-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px}'
     +'.ps-refresh{font-size:10px;font-weight:600;color:#3B82F6;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .15s}'
@@ -11767,9 +11772,10 @@ function zillowLookup() {
   /* v8.4: Pricing Summary card — LEFT column */
   var pricingCardHtml = '<div class="card section-card section-hidden ld-col-left" id="pricing-summary-card" data-page="section-pricing"><div class="card-title"><i class="fa-solid fa-tags"></i> Pricing</div><div class="ld-pe-strip"><div class="ld-pe-label">Pricing Engines</div><div class="ld-pe-grid"><a href="https://marketplace.digitallending.com/#/login" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=lenderprice.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LenderPrice</span>'+arrow+'</a><a href="https://web.loannex.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=loannex.com&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanNEX</span>'+arrow+'</a><a href="https://loansifternow.optimalblue.com/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="'+lsLogo+'" alt="" class="ld-pe-logo"><span class="ld-pe-name">LoanSifter</span>'+arrow+'</a><a href="https://lx.pollyex.com/accounts/login/" target="_blank" rel="noopener noreferrer" class="ld-pe-btn"><img src="https://www.google.com/s2/favicons?domain=polly.io&sz=32" alt="" class="ld-pe-logo"><span class="ld-pe-name">Polly</span>'+arrow+'</a></div></div><div class="ps-hdr"><div class="ps-label">Pricing Summary</div><button type="button" class="ps-refresh" onclick="refreshPricingSummary()" title="Refresh from form fields"><i class="fa-solid fa-arrows-rotate" style="margin-right:4px;font-size:10px;"></i> Refresh</button></div><table class="ps-table" id="ps-table"><tbody><tr><td>Loan Type</td><td id="ps-loan-type">\\u2014</td></tr><tr><td>Loan Term (Years)</td><td id="ps-loan-term">\\u2014</td></tr><tr><td>Loan Purpose</td><td id="ps-loan-purpose">\\u2014</td></tr><tr><td>Property Value</td><td id="ps-property-value">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-purchase-price"><td>Purchase Price</td><td id="ps-purchase-price">\\u2014</td></tr><tr><td>Base Loan Amount</td><td id="ps-loan-amount">\\u2014</td></tr><tr><td>LTV</td><td id="ps-ltv">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-pct"><td>Down Payment %</td><td id="ps-down-pct">\\u2014</td></tr><tr class="ps-purchase-only" id="ps-row-down-amt"><td>Down Payment $</td><td id="ps-down-amt">\\u2014</td></tr><tr><td>Loan Level FICO</td><td id="ps-fico">\\u2014</td></tr><tr><td>Total Monthly Income</td><td id="ps-monthly-income">\\u2014</td></tr><tr><td>Occupancy</td><td id="ps-occupancy">\\u2014</td></tr><tr><td>Zip Code</td><td id="ps-zip">\\u2014</td></tr><tr><td>Address</td><td id="ps-address">\\u2014</td></tr></tbody></table></div>';
 
-  /* v8.4: RIGHT column wrapper — Rate card + Notes card */
+  /* v8.5: RIGHT column wrapper — Rate card (with Lender) + Notes card */
   var pricingRightHtml = '<div class="section-card section-hidden ld-col-right" id="pricing-right-col" data-page="section-pricing" style="display:flex;flex-direction:column;gap:16px;background:none;padding:0;border:none;box-shadow:none;align-self:start;">'
     + '<div class="card" id="pricing-rate-card"><div class="card-title"><i class="fa-solid fa-percent"></i> Rate</div>'
+    + '<div class="cg"><div class="ff"><label>Lender</label><div class="lender-search-wrap" id="pricing-lender-search-wrap"><input type="text" class="fc" id="pricing-lender-search" placeholder="Search lenders..." autocomplete="off"><input type="hidden" id="pricing-lender"><div class="lender-dropdown" id="pricing-lender-dropdown"></div></div><div class="lender-links" id="pricing-lender-links"></div><div class="ff lender-other-wrap hidden" id="pricing-lender-other-wrap"><label>Other Lender Name</label><input type="text" class="fc" id="pricing-lender-other" placeholder="Type lender name..."></div></div></div>'
     + '<div class="cg"><div class="ff"><label>Interest Rate (%)</label><input type="text" class="fc rate-input" id="pricing-interest-rate" placeholder="6.500" inputmode="decimal"></div>'
     + '<div class="ff"><label>Qualifying Rate (%)</label><input type="text" class="fc rate-input" id="pricing-qualifying-rate" placeholder="7.500" inputmode="decimal"></div></div></div>'
     + '<div class="card" id="pricing-notes-card"><div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>'
@@ -12159,19 +12165,25 @@ function zillowLookup() {
           else { if (!card.classList.contains('ast-col-left')) card.classList.add('ast-col-left'); }
         });
       }
-      /* ── PRICING v8.4 ── */
+      /* ── PRICING v8.5 ── */
       if (pageId === 'section-pricing') {
         cards.forEach(function(card) {
           card.classList.remove('section-full');
           if (card.id === 'pricing-summary-card' && !card.classList.contains('ld-col-left')) card.classList.add('ld-col-left');
           if (card.id === 'pricing-right-col' && !card.classList.contains('ld-col-right')) card.classList.add('ld-col-right');
         });
+        /* Sync rate fields from Loan Details → Pricing */
         var pRate = document.getElementById('pricing-interest-rate');
         var ldRate = document.getElementById('loan-interest-rate');
         if (pRate && ldRate) pRate.value = ldRate.value;
         var pQual = document.getElementById('pricing-qualifying-rate');
         var ldQual = document.getElementById('qualifying-interest-rate');
         if (pQual && ldQual) pQual.value = ldQual.value;
+        /* Sync lender from Deal card → Pricing lender dropdown */
+        var dealLender = document.getElementById('loan-lender');
+        if (dealLender && typeof window.setPricingLenderValue === 'function') {
+          window.setPricingLenderValue(dealLender.value || '');
+        }
       }
       /* ── LIABILITIES v8.3 ── */
       if (pageId === 'section-liabilities') {
@@ -12369,10 +12381,14 @@ function zillowLookup() {
     clearBtn.style.display = (hiddenInput.value || searchInput.disabled) ? 'block' : 'none';
   }
 
-  /* Trigger deal string + loan detail bar updates */
+  /* Trigger deal string + loan detail bar updates + sync to Pricing lender */
   function triggerUpdates() {
     if (typeof updateDealString === 'function') setTimeout(updateDealString, 50);
     if (typeof updateLoanDetailBar === 'function') setTimeout(updateLoanDetailBar, 50);
+    /* Sync Deal lender → Pricing lender dropdown */
+    if (typeof window.setPricingLenderValue === 'function') {
+      setTimeout(function() { window.setPricingLenderValue(hiddenInput ? hiddenInput.value : ''); }, 60);
+    }
   }
 
   /* Keyboard navigation */
@@ -12503,6 +12519,205 @@ function zillowLookup() {
     document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 300); });
   } else {
     setTimeout(init, 300);
+  }
+})();
+</script>
+
+<!-- ============================================================
+     Pricing Lender Searchable Dropdown (v1.0)
+     Mirrors the Deal-card lender dropdown. Syncs bidirectionally
+     with loan-lender (Deal card) so both always show the same value.
+     ============================================================ -->
+<script>
+(function() {
+  'use strict';
+  function escapeHtml(str) { if (!str) return ''; return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  var WORKER_BASE = 'https://mtg-broker-pipeline.rich-e00.workers.dev';
+  var allLenders = [];
+  var lenderMap = {};
+  var dropdownOpen = false;
+  var activeIndex = -1;
+
+  var searchInput, hiddenInput, dropdown, otherWrap, otherInput, clearBtn, linksDiv;
+
+  function fetchLenders() {
+    fetch(WORKER_BASE + '/api/lenders')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        allLenders = data || [];
+        lenderMap = {};
+        for (var i = 0; i < allLenders.length; i++) {
+          lenderMap[allLenders[i].name] = allLenders[i];
+        }
+      })
+      .catch(function(err) { console.warn('Failed to load pricing lenders:', err); });
+  }
+
+  function highlightMatch(name, query) {
+    if (!query) return escapeHtml(name);
+    var idx = name.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return escapeHtml(name);
+    return escapeHtml(name.substring(0, idx))
+      + '<span class="lender-match">' + escapeHtml(name.substring(idx, idx + query.length)) + '</span>'
+      + escapeHtml(name.substring(idx + query.length));
+  }
+
+  function renderDropdown(query) {
+    var filtered;
+    if (!query) { filtered = allLenders.slice(); }
+    else { var q = query.toLowerCase(); filtered = allLenders.filter(function(l) { return l.name.toLowerCase().indexOf(q) !== -1; }); }
+    var html = '<div class="lender-dropdown-item lender-other-item" data-value="__OTHER__">Other (not in list)</div>';
+    for (var i = 0; i < filtered.length; i++) {
+      html += '<div class="lender-dropdown-item" data-value="' + filtered[i].name.replace(/"/g, '&quot;') + '">'
+        + highlightMatch(filtered[i].name, query) + '</div>';
+    }
+    if (filtered.length === 0 && query) {
+      html += '<div class="lender-dropdown-item" style="color:#9ca3af;cursor:default;">No matches found</div>';
+    }
+    dropdown.innerHTML = html;
+    activeIndex = -1;
+  }
+
+  function openDropdown() { dropdown.classList.add('open'); dropdownOpen = true; }
+  function closeDropdown() { dropdown.classList.remove('open'); dropdownOpen = false; activeIndex = -1; }
+
+  function showLenderLinks(lenderName) {
+    if (!linksDiv) return;
+    var lender = lenderMap[lenderName];
+    if (!lender) { linksDiv.classList.remove('visible'); linksDiv.innerHTML = ''; return; }
+    var links = [];
+    if (lender.website_url) { var url = lender.website_url; if (url.indexOf('://') === -1) url = 'https://' + url; links.push('<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> Website</a>'); }
+    if (lender.tpo_portal_url) { links.push('<a href="' + escapeHtml(lender.tpo_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-key"></i> TPO Portal</a>'); }
+    if (lender.correspondent_portal_url) { links.push('<a href="' + escapeHtml(lender.correspondent_portal_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-building-columns"></i> Correspondent</a>'); }
+    if (lender.turn_times_url) { links.push('<a href="' + escapeHtml(lender.turn_times_url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-clock"></i> Turn Times</a>'); }
+    if (links.length > 0) { linksDiv.innerHTML = links.join(''); linksDiv.classList.add('visible'); }
+    else { linksDiv.classList.remove('visible'); linksDiv.innerHTML = ''; }
+  }
+
+  /* Select a lender — also syncs to the Deal card's loan-lender */
+  function selectLender(value) {
+    if (value === '__OTHER__') {
+      hiddenInput.value = '';
+      searchInput.value = 'Other (not in list)';
+      searchInput.disabled = true;
+      otherWrap.classList.remove('hidden');
+      otherInput.focus();
+      updateClearBtn(); closeDropdown(); showLenderLinks('');
+      syncToDealCard('');
+      return;
+    }
+    hiddenInput.value = value;
+    searchInput.value = value;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn(); closeDropdown(); showLenderLinks(value);
+    syncToDealCard(value);
+  }
+
+  function clearSelection() {
+    hiddenInput.value = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
+    otherWrap.classList.add('hidden');
+    otherInput.value = '';
+    updateClearBtn(); showLenderLinks('');
+    searchInput.focus();
+    syncToDealCard('');
+  }
+
+  function updateClearBtn() {
+    if (!clearBtn) return;
+    clearBtn.style.display = (hiddenInput.value || searchInput.disabled) ? 'block' : 'none';
+  }
+
+  /* Sync pricing lender → Deal card's loan-lender hidden input + display */
+  function syncToDealCard(value) {
+    var dealHidden = document.getElementById('loan-lender');
+    if (dealHidden) dealHidden.value = value;
+    if (typeof window.setLenderValue === 'function') window.setLenderValue(value);
+    if (typeof updateDealString === 'function') setTimeout(updateDealString, 50);
+    if (typeof updateLoanDetailBar === 'function') setTimeout(updateLoanDetailBar, 50);
+  }
+
+  function handleKeydown(e) {
+    if (!dropdownOpen) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') { renderDropdown(searchInput.value); openDropdown(); e.preventDefault(); }
+      return;
+    }
+    var items = dropdown.querySelectorAll('.lender-dropdown-item[data-value]');
+    if (e.key === 'ArrowDown') { e.preventDefault(); activeIndex = Math.min(activeIndex + 1, items.length - 1); updateActiveItem(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); updateActiveItem(items); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (activeIndex >= 0 && items[activeIndex]) selectLender(items[activeIndex].getAttribute('data-value')); }
+    else if (e.key === 'Escape') { closeDropdown(); }
+  }
+
+  function updateActiveItem(items) {
+    for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', i === activeIndex);
+    if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  /* Called from outside to set the Pricing lender (e.g. on tab switch or loan load) */
+  window.setPricingLenderValue = function(val) {
+    if (!searchInput || !hiddenInput) return;
+    if (!val) { hiddenInput.value = ''; searchInput.value = ''; searchInput.disabled = false; otherWrap.classList.add('hidden'); otherInput.value = ''; showLenderLinks(''); updateClearBtn(); return; }
+    var found = !!lenderMap[val];
+    if (found) { hiddenInput.value = val; searchInput.value = val; searchInput.disabled = false; otherWrap.classList.add('hidden'); otherInput.value = ''; showLenderLinks(val); }
+    else { hiddenInput.value = val; searchInput.value = 'Other (not in list)'; searchInput.disabled = true; otherWrap.classList.remove('hidden'); otherInput.value = val; showLenderLinks(''); }
+    updateClearBtn();
+  };
+
+  function init() {
+    searchInput = document.getElementById('pricing-lender-search');
+    hiddenInput = document.getElementById('pricing-lender');
+    dropdown = document.getElementById('pricing-lender-dropdown');
+    otherWrap = document.getElementById('pricing-lender-other-wrap');
+    otherInput = document.getElementById('pricing-lender-other');
+    linksDiv = document.getElementById('pricing-lender-links');
+    if (!searchInput || !hiddenInput || !dropdown) return;
+
+    /* Add clear button */
+    clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'lender-clear-btn';
+    clearBtn.innerHTML = '&times;';
+    clearBtn.title = 'Clear lender';
+    clearBtn.style.display = 'none';
+    clearBtn.addEventListener('click', function(e) { e.stopPropagation(); clearSelection(); });
+    searchInput.parentNode.appendChild(clearBtn);
+
+    searchInput.addEventListener('input', function() { renderDropdown(searchInput.value); openDropdown(); });
+    searchInput.addEventListener('focus', function() { renderDropdown(searchInput.value); openDropdown(); });
+    searchInput.addEventListener('keydown', handleKeydown);
+
+    dropdown.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var item = e.target.closest('.lender-dropdown-item[data-value]');
+      if (item) selectLender(item.getAttribute('data-value'));
+    });
+
+    document.addEventListener('mousedown', function(e) {
+      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+        closeDropdown();
+        if (!hiddenInput.value && searchInput.value && !searchInput.disabled) searchInput.value = '';
+      }
+    });
+
+    if (otherInput) {
+      otherInput.addEventListener('input', function() {
+        hiddenInput.value = otherInput.value;
+        syncToDealCard(otherInput.value);
+      });
+    }
+
+    fetchLenders();
+    updateClearBtn();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 400); });
+  } else {
+    setTimeout(init, 400);
   }
 })();
 </script>`;
