@@ -1178,6 +1178,11 @@ function debounce(func, wait) {
   let timeout;
   return function(...args) { clearTimeout(timeout); timeout = setTimeout(() => func(...args), wait); };
 }
+/* Escape HTML for safe rendering (used by formatCellValue, buildBoardCard, etc.) */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 /* -- Name helpers: combine First/Middle/Last into one string, and split back -- */
 function combineName(first, middle, last) {
   return [first, middle, last].map(s => (s || '').trim()).filter(Boolean).join(' ');
