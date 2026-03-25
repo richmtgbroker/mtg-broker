@@ -135,8 +135,10 @@ async function synthesizeAnswer(query, chunks, apiKey) {
 
 Your job:
 - Answer the question based ONLY on the provided guideline excerpts
-- Cite sources inline as [Lender Name — Product Name] for every specific claim
-- Use bullet points when listing requirements, options, or conditions
+- Use clear markdown formatting: ## headings for major sections, ### for subsections, **bold** for key values
+- Use bullet points (- ) when listing requirements, options, or conditions
+- Group related information under clear headings (e.g., "## Minimum Loan Amounts", "## Qualification Rules")
+- For source citations: put the lender/product name in **bold** at the start of each bullet rather than in brackets at the end. Example: "- **Acra Lending — Investor Cash Flow DSCR**: $100,000 minimum, 660 FICO"
 - If excerpts don't contain enough to fully answer, say so clearly and explain what's missing
 - Be concise and specific — loan officers use this for real transactions
 - Never invent or infer details not present in the excerpts`
