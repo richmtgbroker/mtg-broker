@@ -324,6 +324,9 @@
                 <div class="ff"><label>Type</label>
                   <select class="fc" id="property-type"><option value="">Select...</option><option value="SFR">SFR</option><option value="Condo">Condo</option><option value="Townhome">Townhome</option><option value="2-4 Unit">2-4 Unit</option><option value="Multi 5+">Multi 5+</option><option value="Manufactured">Manufactured</option><option value="Land">Land</option></select>
                 </div>
+                <div class="ff"><label># of Units</label><input type="number" class="fc" id="property-units" min="1" max="99" placeholder="1"></div>
+              </div>
+              <div class="cg">
                 <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="prop-page-value"></div>
               </div>
               <div class="cg">
@@ -393,8 +396,8 @@
               <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>
               <div class="ff"><textarea class="fc" id="loan-notes" placeholder="Add any notes about this loan..."></textarea></div>
             </div>
-            <!-- TASKS (notes page) -->
-            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-notes">
+            <!-- TASKS (own page) -->
+            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-tasks">
               <div class="card-title"><i class="fa-solid fa-list-check"></i> Tasks</div>
               <div class="task-list" id="task-list"></div>
               <div class="add-task-row">

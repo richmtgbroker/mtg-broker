@@ -239,7 +239,7 @@ const FIELD_TO_COLUMN = {
   'Borrower Phone': 'borrower_phone', 'Co-Borrower': 'co_borrower',
   'Property Street': 'property_street', 'Property City': 'property_city',
   'Property State': 'property_state', 'Property Zip': 'property_zip',
-  'Property Type': 'property_type', 'Property Value': 'property_value',
+  'Property Type': 'property_type', 'Property Units': 'property_units', 'Property Value': 'property_value',
   'Purchase Price': 'purchase_price', 'Loan Type': 'loan_type',
   'Loan Amount': 'loan_amount', 'Interest Rate': 'interest_rate',
   'Loan Term': 'loan_term', 'LTV': 'ltv', 'Expected Close': 'expected_close',
@@ -2354,6 +2354,7 @@ async function openLoanModal(id) {
   setVal('property-state', loan['Property State']); setVal('property-zip', loan['Property Zip']);
   setVal('property-county', loan['Property County']);
   setVal('property-type', loan['Property Type']);
+  setVal('property-units', loan['Property Units']);
   document.getElementById('property-value').value = loan['Property Value'] ? loan['Property Value'].toLocaleString() : '';
   document.getElementById('prop-page-value').value = loan['Property Value'] ? loan['Property Value'].toLocaleString() : '';
   document.getElementById('purchase-price').value = loan['Purchase Price'] ? loan['Purchase Price'].toLocaleString() : '';
@@ -2614,6 +2615,7 @@ async function saveLoan() {
     'Property State': document.getElementById('property-state').value.toUpperCase(),
     'Property Zip': document.getElementById('property-zip').value,
     'Property Type': document.getElementById('property-type').value,
+    'Property Units': document.getElementById('property-units').value ? parseInt(document.getElementById('property-units').value) : null,
     'Property County': document.getElementById('property-county') ? document.getElementById('property-county').value : '',
     'Property Value': parseCurrency(document.getElementById('property-value').value),
     'Purchase Price': parseCurrency(document.getElementById('purchase-price').value),
@@ -10776,6 +10778,7 @@ async function getPipelineTemplateHTML(request) {
         <a class="mnav-item" data-section="section-property" onclick="showSection('section-property')"><i class="fa-solid fa-house"></i><span>Property</span></a>
         <a class="mnav-item" data-section="section-comp-pay" onclick="showSection('section-comp-pay')"><i class="fa-solid fa-sack-dollar"></i><span>Comp</span></a>
         <a class="mnav-item" data-section="section-lock" onclick="showSection('section-lock')"><i class="fa-solid fa-lock"></i><span>Lock</span></a>
+        <a class="mnav-item" data-section="section-tasks" onclick="showSection('section-tasks')"><i class="fa-solid fa-list-check"></i><span>Tasks</span></a>
         <a class="mnav-item" data-section="section-notes" onclick="showSection('section-notes')"><i class="fa-solid fa-pen-to-square"></i><span>Notes</span></a>
         <a class="mnav-item" data-section="section-links" onclick="showSection('section-links')"><i class="fa-solid fa-link"></i><span>Links</span></a>
         <div class="mnav-divider"></div>
@@ -11002,6 +11005,9 @@ async function getPipelineTemplateHTML(request) {
                 <div class="ff"><label>Type</label>
                   <select class="fc" id="property-type"><option value="">Select...</option><option value="SFR">SFR</option><option value="Condo">Condo</option><option value="Townhome">Townhome</option><option value="2-4 Unit">2-4 Unit</option><option value="Multi 5+">Multi 5+</option><option value="Manufactured">Manufactured</option><option value="Land">Land</option></select>
                 </div>
+                <div class="ff"><label># of Units</label><input type="number" class="fc" id="property-units" min="1" max="99" placeholder="1"></div>
+              </div>
+              <div class="cg">
                 <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="prop-page-value"></div>
               </div>
               <div class="cg">
@@ -11071,8 +11077,8 @@ async function getPipelineTemplateHTML(request) {
               <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> Notes</div>
               <div class="ff"><textarea class="fc" id="loan-notes" placeholder="Add any notes about this loan..."></textarea></div>
             </div>
-            <!-- TASKS (notes page) -->
-            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-notes">
+            <!-- TASKS (own page) -->
+            <div class="card section-card section-hidden hidden" id="tasks-section" data-page="section-tasks">
               <div class="card-title"><i class="fa-solid fa-list-check"></i> Tasks</div>
               <div class="task-list" id="task-list"></div>
               <div class="add-task-row">
