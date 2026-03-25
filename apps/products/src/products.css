@@ -1,0 +1,763 @@
+/* ================================================================
+   PRODUCTS PAGE - CSS (v3.0)
+   Page: /app/products
+   Migrated from Webflow embed to Cloudflare Pages bundle
+   ================================================================ */
+
+/* ================================================
+   1. MAIN LAYOUT
+   ================================================ */
+.main-content-section {
+  padding-bottom: 60px;
+  min-height: calc(100vh - var(--navbar-height) - 150px);
+  flex: 1 0 auto;
+}
+
+body.app-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body.app-page .simple-calc-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+
+/* ================================================
+   2. HIDE WEBFLOW ELEMENTS
+   ================================================ */
+.search-form-block,
+.w-form-done,
+.w-form-fail,
+.empty-state-box,
+.product-list-wrapper,
+.w-pagination-wrapper,
+.w-dyn-empty {
+  display: none !important;
+}
+
+
+/* ================================================
+   3. PAGE HEADER + COUNT BADGE + PRINT BUTTON
+   ================================================ */
+.page-header {
+  font-family: 'Host Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 0;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.products-count-badge {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+
+.products-count-badge.is-filtered {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+/* --- Print List Button --- */
+.products-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Host Grotesk', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  margin-left: auto;
+  align-self: center;
+}
+
+.products-print-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.products-print-btn:active {
+  background: #e2e8f0;
+}
+
+.products-print-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+
+/* ================================================
+   4. TOOLBAR ROW (Search + Alphabet + Reset)
+   ================================================ */
+.products-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #F8FAFC;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+}
+
+/* --- Search input wrapper --- */
+.products-toolbar .search-input-wrapper {
+  position: relative;
+  width: 220px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+/* Magnifying glass icon */
+.products-toolbar .search-input-wrapper::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.products-search-input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  padding: 0 32px 0 36px;
+  font-size: 14px;
+  font-family: 'Host Grotesk', sans-serif;
+  background-color: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.products-search-input:focus {
+  border-color: #2563EB;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.products-search-input::placeholder {
+  color: #94a3b8;
+}
+
+/* x clear button inside input */
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: #e2e8f0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+
+.search-clear-btn:hover {
+  background: #cbd5e1;
+  color: #334155;
+}
+
+.search-clear-btn.is-visible {
+  display: flex;
+}
+
+/* --- Vertical divider between search and alphabet --- */
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+/* --- Alphabet nav (inline in toolbar) --- */
+.alpha-nav-inline {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.alpha-nav-inline::-webkit-scrollbar {
+  display: none;
+}
+
+.alpha-nav-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Host Grotesk', sans-serif;
+  color: #475569;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.alpha-nav-letter:hover {
+  background: #e2e8f0;
+  color: #2563eb;
+}
+
+.alpha-nav-letter.is-active {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.alpha-nav-letter.is-disabled {
+  color: #d1d5db;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* --- Reset button --- */
+.products-reset-btn {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Host Grotesk', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.products-reset-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.products-reset-btn.is-visible {
+  display: inline-flex;
+}
+
+
+/* ================================================
+   5. CATEGORY FILTER PILLS
+   ================================================ */
+.category-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.category-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Host Grotesk', sans-serif;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.category-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.category-pill.is-all {
+  font-weight: 700;
+}
+
+.category-pill.is-active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.category-pill.is-active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.category-pill-count {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.65;
+}
+
+.category-pill.is-active .category-pill-count {
+  opacity: 0.9;
+}
+
+
+/* ================================================
+   6. LETTER GROUP HEADERS
+   ================================================ */
+.letter-group-header {
+  grid-column: 1 / -1;
+  padding: 14px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.letter-group-header:first-child {
+  padding-top: 2px;
+}
+
+.letter-group-label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #94a3b8;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.letter-group-line {
+  flex: 1;
+  height: 1px;
+  background: #f1f5f9;
+}
+
+
+/* ================================================
+   7. PRODUCT CARDS
+   ================================================ */
+.products-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.products-results-grid .product-card {
+  background: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  gap: 8px;
+}
+
+/* Blue left accent on hover */
+.products-results-grid .product-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: #2563eb;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.products-results-grid .product-card:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.products-results-grid .product-card:hover::before {
+  opacity: 1;
+}
+
+.products-results-grid .product-card:active {
+  background: #f1f5f9;
+}
+
+/* Product name */
+.products-results-grid .product-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  flex: 1;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+/* Chevron */
+.products-results-grid .product-card::after {
+  content: '\203A';
+  font-size: 22px;
+  color: #cbd5e1;
+  font-weight: 300;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.products-results-grid .product-card:hover::after {
+  color: #2563eb;
+  transform: translateX(2px);
+}
+
+
+/* ================================================
+   8. EMPTY STATE
+   ================================================ */
+.products-empty-state {
+  padding: 40px 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  text-align: center;
+  margin-top: 12px;
+}
+
+.products-empty-state .empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.products-empty-state .empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #0f172a;
+}
+
+.products-empty-state .empty-sub {
+  font-size: 15px;
+  margin: 0;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.products-empty-state .empty-reset-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.products-empty-state .empty-reset-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+
+/* ================================================
+   9. LOADING SKELETON
+   ================================================ */
+.products-loading {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.skeleton-card {
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e8ecf1 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+
+/* ================================================
+   10. RESPONSIVE
+   ================================================ */
+@media screen and (max-width: 991px) {
+  .products-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .products-toolbar .search-input-wrapper {
+    width: 200px;
+  }
+
+  .alpha-nav-inline {
+    overflow-x: auto;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .products-results-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .page-header {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .products-count-badge {
+    font-size: 13px;
+  }
+
+  /* Stack search above alphabet on mobile */
+  .products-toolbar {
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .products-toolbar .search-input-wrapper {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .alpha-nav-inline {
+    width: 100%;
+  }
+
+  .alpha-nav-letter {
+    width: 26px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .products-search-input {
+    font-size: 14px;
+  }
+
+  .products-reset-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .category-filter-bar {
+    padding: 10px 0 6px;
+    gap: 6px;
+  }
+
+  .category-pill {
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .products-results-grid {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .products-loading {
+    grid-template-columns: 1fr;
+  }
+
+  .products-results-grid .product-card {
+    min-height: 46px;
+    padding: 12px 14px;
+  }
+
+  .products-results-grid .product-card-name {
+    font-size: 14px;
+  }
+
+  .letter-group-header {
+    padding: 10px 0 2px;
+  }
+
+  .letter-group-label {
+    font-size: 13px;
+  }
+
+  /* Print button: icon-only on mobile */
+  .products-print-btn span {
+    display: none;
+  }
+
+  .products-print-btn {
+    padding: 0 10px;
+    min-width: 32px;
+    justify-content: center;
+  }
+}
+
+
+/* ================================================
+   11. PRINT STYLES
+   ================================================ */
+@media print {
+  /* Hide everything on the page by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the print container and its children */
+  .products-print-container,
+  .products-print-container * {
+    visibility: visible;
+  }
+
+  /* Position print container at the top of the page */
+  .products-print-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 30px;
+    box-sizing: border-box;
+  }
+
+  /* Print header with logo */
+  .print-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #2563eb;
+    margin-bottom: 16px;
+  }
+
+  .print-header img {
+    height: 28px;
+    width: auto;
+  }
+
+  .print-header-text {
+    font-family: 'Host Grotesk', Arial, sans-serif;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  /* Print product list — compact multi-column layout */
+  .print-product-list {
+    column-count: 3;
+    column-gap: 24px;
+    font-family: 'Host Grotesk', Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #0f172a;
+  }
+
+  .print-letter-group {
+    break-inside: avoid;
+    margin-bottom: 8px;
+  }
+
+  .print-letter-heading {
+    font-size: 13px;
+    font-weight: 800;
+    color: #2563eb;
+    margin: 0 0 2px 0;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .print-product-name {
+    padding: 1px 0;
+    margin: 0;
+  }
+
+  .print-footer {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    font-family: 'Host Grotesk', Arial, sans-serif;
+    font-size: 10px;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  /* Page setup */
+  @page {
+    size: letter portrait;
+    margin: 0.4in;
+  }
+}

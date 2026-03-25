@@ -1,0 +1,4 @@
+# Cloudflare Pages configuration for MTG Products
+name = "mtg-products"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
