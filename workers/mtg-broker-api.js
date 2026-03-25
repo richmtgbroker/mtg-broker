@@ -2,7 +2,9 @@
  * MTG Broker API - Cloudflare Worker
  * Handles Pipeline, Billing, Calculator saves, Mortgage Rates, Loan Products, Credit Vendors, Goal Plans, Broker Profiles, and other user data
  * 
- * UPDATED: March 23, 2026 - v7.27
+ * UPDATED: March 24, 2026 - v7.28
+ * v7.28: PRO plan gating for referral program endpoints. All /api/referral/*
+ *        routes now check JWT planUid and return 403 for non-PRO users.
  * v7.27: CRIT-1 security fix — JWT signature verification. Server now verifies
  *        the Outseta RS256 JWT before trusting any user identity. Plain emails
  *        in Authorization headers are rejected. verifyOutsetaJWT() added.
@@ -4203,18 +4205,28 @@ export default {
         return await deleteAvatar(userEmail, request, env);
       }
 
-      // REFERRAL PROGRAM (Rewardful + Airtable)
-      if (path === '/api/referral' && method === 'GET') {
-        return await getReferralStatus(userEmail, apiKey, request, env);
-      }
-      if (path === '/api/referral/enroll' && method === 'POST') {
-        return await enrollAffiliate(userEmail, apiKey, request, env);
-      }
-      if (path === '/api/referral/payout-setup' && method === 'PUT') {
-        return await updatePayoutSetup(userEmail, apiKey, request, env);
-      }
-      if (path === '/api/referral/commissions' && method === 'GET') {
-        return await getReferralCommissions(userEmail, apiKey, request, env);
+      // REFERRAL PROGRAM (Rewardful + Airtable) — PRO plan only
+      if (path.startsWith('/api/referral')) {
+        const PRO_PLAN_UID = 'yWobBP9D';
+        const userPlanUid = jwtPayload?.['outseta:planUid'] || '';
+        if (userPlanUid !== PRO_PLAN_UID) {
+          return jsonResponse({
+            error: 'Referral program is available on the PRO plan. Please upgrade to access this feature.'
+          }, 403, request);
+        }
+
+        if (path === '/api/referral' && method === 'GET') {
+          return await getReferralStatus(userEmail, apiKey, request, env);
+        }
+        if (path === '/api/referral/enroll' && method === 'POST') {
+          return await enrollAffiliate(userEmail, apiKey, request, env);
+        }
+        if (path === '/api/referral/payout-setup' && method === 'PUT') {
+          return await updatePayoutSetup(userEmail, apiKey, request, env);
+        }
+        if (path === '/api/referral/commissions' && method === 'GET') {
+          return await getReferralCommissions(userEmail, apiKey, request, env);
+        }
       }
 
 

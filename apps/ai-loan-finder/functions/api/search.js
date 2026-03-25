@@ -1,6 +1,106 @@
 // Cloudflare Pages Function for loan product search
 // Queries Supabase directly, then uses Claude to rank and explain results
 
+// ─── PLAN LIMITS ─────────────────────────────────────────────────────────────
+// Plan UIDs from Outseta — used to identify user tier from JWT
+const PLAN_UIDS = {
+  LITE: 'NmdnZg90',
+  PLUS: 'Dmw8leQ4',
+  PRO:  'yWobBP9D',
+};
+
+// LITE users get 5 searches per day. PLUS and PRO are unlimited.
+const LITE_DAILY_SEARCH_LIMIT = 5;
+
+
+// Decode the Outseta JWT to extract user email and plan UID.
+// We only need the payload — no signature verification here because
+// Outseta handles auth gating on the Webflow page. This is just for
+// identifying the user and their plan for usage tracking.
+function decodeJwt(token) {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    // Base64url decode the payload
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return {
+      email: payload.email || payload.sub || null,
+      planUid: payload['outseta:planUid'] || null,
+    };
+  } catch (e) {
+    console.error('JWT decode error:', e.message);
+    return null;
+  }
+}
+
+
+// Determine plan name from planUid
+function getPlanName(planUid) {
+  if (planUid === PLAN_UIDS.PRO) return 'PRO';
+  if (planUid === PLAN_UIDS.PLUS) return 'PLUS';
+  return 'LITE'; // Default to LITE if no plan or unknown plan
+}
+
+
+// Count how many searches a user has done today (UTC)
+async function getTodaySearchCount(supabaseUrl, supabaseKey, userEmail) {
+  // Get start of today in UTC
+  const now = new Date();
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const todayIso = todayStart.toISOString();
+
+  const url = `${supabaseUrl}/rest/v1/search_log?select=id&user_email=eq.${encodeURIComponent(userEmail)}&searched_at=gte.${encodeURIComponent(todayIso)}`;
+
+  const response = await fetch(url, {
+    headers: {
+      'apikey': supabaseKey,
+      'Authorization': `Bearer ${supabaseKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'count=exact',
+      'Range-Unit': 'items',
+      'Range': '0-0', // We only need the count, not the data
+    }
+  });
+
+  if (!response.ok) {
+    console.error('Search count query failed:', response.status);
+    return 0; // Fail open — don't block users if count query fails
+  }
+
+  // Supabase returns count in Content-Range header: "0-0/5"
+  const contentRange = response.headers.get('Content-Range');
+  if (contentRange) {
+    const match = contentRange.match(/\/(\d+)/);
+    if (match) return parseInt(match[1], 10);
+  }
+
+  return 0;
+}
+
+
+// Log a search to the search_log table
+async function logSearch(supabaseUrl, supabaseKey, userEmail, planUid, scenario) {
+  try {
+    await fetch(`${supabaseUrl}/rest/v1/search_log`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_email: userEmail,
+        plan_uid: planUid || 'unknown',
+        scenario: scenario.substring(0, 500), // Truncate long scenarios
+      }),
+    });
+  } catch (e) {
+    // Non-blocking — don't fail the search if logging fails
+    console.error('Failed to log search:', e.message);
+  }
+}
+
+
 const SYSTEM_PROMPT = `You are a mortgage loan product matching engine for mtg.broker. You help loan officers find the right wholesale lending products for their borrower scenarios.
 
 You will be given:
@@ -330,7 +430,7 @@ export async function onRequestPost(context) {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
   try {
@@ -343,13 +443,61 @@ export async function onRequestPost(context) {
     }
 
     const body = await request.json();
-    const { scenario } = body;
+    const { scenario, token: bodyToken } = body;
 
     if (!scenario || typeof scenario !== 'string' || !scenario.trim()) {
       return new Response(
         JSON.stringify({ error: 'Please provide a borrower scenario' }),
         { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
+    }
+
+    // ── Identify user from Outseta JWT ──────────────────────────────────────
+    // Token can come from Authorization header or request body
+    const authHeader = request.headers.get('Authorization');
+    const rawToken = authHeader?.replace('Bearer ', '') || bodyToken || null;
+
+    let userEmail = null;
+    let planUid = null;
+    let planName = 'LITE'; // Default to LITE (most restrictive) if no token
+
+    if (rawToken) {
+      const decoded = decodeJwt(rawToken);
+      if (decoded) {
+        userEmail = decoded.email;
+        planUid = decoded.planUid;
+        planName = getPlanName(planUid);
+      }
+    }
+    console.log('User:', userEmail, '| Plan:', planName);
+
+    // ── LITE plan daily search limit ────────────────────────────────────────
+    const supabaseUrl = env.SUPABASE_URL || 'https://tcmahfwhdknxhhdvqpum.supabase.co';
+    const supabaseKey = env.SUPABASE_ANON_KEY;
+    let searchesUsedToday = 0;
+
+    if (planName === 'LITE' && userEmail && supabaseKey) {
+      searchesUsedToday = await getTodaySearchCount(supabaseUrl, supabaseKey, userEmail);
+      console.log('LITE user searches today:', searchesUsedToday, '/', LITE_DAILY_SEARCH_LIMIT);
+
+      if (searchesUsedToday >= LITE_DAILY_SEARCH_LIMIT) {
+        return new Response(
+          JSON.stringify({
+            error: "You've reached your daily search limit of 5. Upgrade to PLUS or PRO for unlimited searches.",
+            limit: LITE_DAILY_SEARCH_LIMIT,
+            used: searchesUsedToday,
+            plan: planName,
+          }),
+          { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        );
+      }
+    }
+
+    // ── Log the search ──────────────────────────────────────────────────────
+    if (userEmail && supabaseKey) {
+      // Fire and forget — don't wait for log to complete before searching
+      logSearch(supabaseUrl, supabaseKey, userEmail, planUid, scenario);
+      searchesUsedToday += 1; // Increment for the response (this search counts)
     }
 
     // Step 1: Parse scenario for Supabase filters
@@ -452,6 +600,13 @@ Please analyze these products, rank them by best fit for this borrower scenario,
     // Include full Supabase records so the frontend can show a complete product detail modal
     parsedResult.raw_products = products;
 
+    // Include search usage info so the frontend can show "X/5 searches used" for LITE users
+    parsedResult.usage = {
+      plan: planName,
+      searches_today: searchesUsedToday,
+      daily_limit: planName === 'LITE' ? LITE_DAILY_SEARCH_LIMIT : null,
+    };
+
     return new Response(
       JSON.stringify(parsedResult),
       { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -473,7 +628,7 @@ export async function onRequestOptions() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
 }

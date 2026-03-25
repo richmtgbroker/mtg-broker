@@ -4,6 +4,15 @@ import { useState, useEffect, useCallback } from 'react'
 const API_URL           = 'https://mtg-loan-finder.pages.dev/api/search'
 const GUIDELINE_API_URL = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
 
+// Get Outseta JWT from localStorage (set by Outseta auth on the Webflow page)
+function getOutsetaToken() {
+  try {
+    return localStorage.getItem('Outseta.nocode.accessToken') || null
+  } catch (e) {
+    return null
+  }
+}
+
 // ─── CONSTANTS — FIND A LOAN MODE ─────────────────────────────────────────────
 
 const EXAMPLE_SCENARIOS = [
@@ -785,6 +794,9 @@ function App() {
   const [guidelineError, setGuidelineError] = useState(null)
   const [guidelineProgress, setGuidelineProgress] = useState('')
 
+  // ── Search usage tracking (for LITE plan daily limit) ──
+  const [searchUsage, setSearchUsage] = useState(null) // { plan, searches_today, daily_limit }
+
   // ── Loan search handler ──
   const handleLoanSearch = async () => {
     if (!scenario.trim()) return
@@ -801,19 +813,34 @@ function App() {
     }, 3000)
 
     try {
+      // Include Outseta JWT so the API can identify the user and their plan
+      const token = getOutsetaToken()
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ scenario }),
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
+        // Update usage info even on limit error (429)
+        if (errorData.plan) {
+          setSearchUsage({
+            plan: errorData.plan,
+            searches_today: errorData.used || 0,
+            daily_limit: errorData.limit || null,
+          })
+        }
         throw new Error(errorData.error || `Request failed with status ${response.status}`)
       }
 
       const data = await response.json()
       setLoanResults(data)
+      // Update usage info from successful response
+      if (data.usage) setSearchUsage(data.usage)
     } catch (err) {
       console.error('Loan search error:', err)
       setLoanError(err.message || 'Failed to search for loan products. Please try again.')
@@ -909,6 +936,21 @@ function App() {
               onSelect={(q) => { setScenario(q); setLoanResults(null); setLoanError(null) }}
               disabled={isAnyLoading}
             />
+
+            {/* Daily search usage indicator for LITE plan users */}
+            {searchUsage && searchUsage.daily_limit && (
+              <div className="search-usage-banner">
+                <i className="fas fa-chart-simple"></i>{' '}
+                <span>
+                  {searchUsage.searches_today}/{searchUsage.daily_limit} daily searches used
+                </span>
+                {searchUsage.searches_today >= searchUsage.daily_limit && (
+                  <span className="usage-limit-hit">
+                    {' '}&mdash; <a href="https://mtg.broker/pricing" target="_blank" rel="noopener noreferrer">Upgrade to PLUS or PRO</a> for unlimited searches
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="results-container">

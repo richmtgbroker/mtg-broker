@@ -434,7 +434,7 @@ const PLAN_LIMITS = {
     calculatorSaves: 0,
     canAccessAdvancedCalcs: false,
     canClickLoanSearchDetails: false,
-    canClickDirectoryLinks: false,
+    canClickDirectoryLinks: true,
     canAddFavorites: false,
     canExportPipeline: false,
     canPrintCalculatorPDF: false
