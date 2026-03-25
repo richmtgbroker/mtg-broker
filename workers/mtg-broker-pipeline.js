@@ -11708,8 +11708,8 @@ function zillowLookup() {
     +'.ld-pe-strip{padding:8px 0;margin-bottom:10px;border-bottom:1px solid #F1F5F9}'
     +'.ld-pe-label{font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}'
     +'.ld-pe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}'
-    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #1a56db;border-radius:6px;background:#1a56db;text-decoration:none;transition:all .15s}'
-    +'.ld-pe-btn:hover{background:#1e40af;border-color:#1e40af}'
+    +'.ld-pe-btn{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #1e3a8a;border-radius:6px;background:#1e3a8a;text-decoration:none;transition:all .15s}'
+    +'.ld-pe-btn:hover{background:#172554;border-color:#172554}'
     +'.ld-pe-logo{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0;filter:brightness(0) invert(1)}'
     +'.ld-pe-name{font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
     +'.ld-pe-arrow{width:12px;height:12px;flex-shrink:0;color:rgba(255,255,255,.7);margin-left:auto}'
@@ -12714,10 +12714,19 @@ function zillowLookup() {
     updateClearBtn();
   }
 
+  /* Poll until the pricing-lender-search element exists (injected by injectPricingCards at ~600ms) */
+  function tryInit() {
+    if (document.getElementById('pricing-lender-search')) { init(); return; }
+    var attempts = 0;
+    var timer = setInterval(function() {
+      if (document.getElementById('pricing-lender-search')) { clearInterval(timer); init(); }
+      else if (++attempts > 60) clearInterval(timer);
+    }, 150);
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 400); });
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(tryInit, 500); });
   } else {
-    setTimeout(init, 400);
+    setTimeout(tryInit, 500);
   }
 })();
 </script>`;
