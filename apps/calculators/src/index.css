@@ -1,0 +1,468 @@
+/* ================================================
+   CALCULATORS PAGE STYLES
+   Cloudflare-served React app version
+   ================================================ */
+
+
+/* ================================================
+   PAGE HEADER - Modern App Style
+   ================================================ */
+.calc-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 40px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.calc-page-header-icon {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.calc-page-header-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: #ffffff;
+  fill: none;
+}
+
+.calc-page-header-text {
+  flex: 1;
+  text-align: left;
+}
+
+.calc-page-header-text h1 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  text-align: left;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.calc-page-header-text p {
+  font-size: 15px;
+  color: #64748B;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  max-width: none;
+  text-align: left;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Small meta chips row under subtitle */
+.calc-header-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calc-header-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748B;
+  background: #F1F5F9;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.calc-header-chip svg {
+  width: 13px;
+  height: 13px;
+  stroke: #94A3B8;
+}
+
+.calc-header-chip.chip-active {
+  background: #DBEAFE;
+  color: #2563EB;
+}
+
+.calc-header-chip.chip-active svg {
+  stroke: #2563EB;
+}
+
+/* Mobile: stack icon above text */
+@media (max-width: 480px) {
+  .calc-page-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .calc-page-header-text h1 {
+    font-size: 24px;
+  }
+}
+
+
+/* ================================================
+   SECTION LABELS & GROUPS
+   ================================================ */
+.section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #E5E7EB;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.section-group {
+  margin-bottom: 50px;
+}
+
+
+/* ================================================
+   CARD GRID
+   ================================================ */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 30px;
+}
+
+@media (max-width: 480px) {
+  .tools-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ================================================
+   TOOL CARDS - Base
+   ================================================ */
+.tool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 32px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  height: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tool-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+  border-color: #BFDBFE;
+}
+
+.tool-card.coming-soon {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Locked card treatment (LITE users on PLUS/PRO cards) */
+.tool-card.locked {
+  opacity: 0.6;
+  filter: grayscale(40%);
+  cursor: not-allowed;
+}
+
+.tool-card.locked:hover {
+  transform: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border-color: #E5E7EB;
+}
+
+
+/* ================================================
+   LOCK BADGE (shown on locked cards)
+   ================================================ */
+.lock-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.tool-link-locked {
+  color: #F59E0B !important;
+}
+
+
+/* ================================================
+   ICON BOX
+   ================================================ */
+.icon-box {
+  width: 56px;
+  height: 56px;
+  background: #EFF6FF;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: background 0.2s ease;
+}
+
+.icon-box svg {
+  width: 28px;
+  height: 28px;
+  stroke: #0066CC;
+}
+
+.tool-card:hover .icon-box {
+  background: #DBEAFE;
+}
+
+.tool-card.coming-soon .icon-box {
+  background: #F3F4F6;
+}
+
+.tool-card.coming-soon .icon-box svg {
+  stroke: #9CA3AF;
+}
+
+
+/* ================================================
+   CARD TYPOGRAPHY
+   ================================================ */
+.tool-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.tool-desc {
+  font-size: 15px;
+  color: #6B7280;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  flex-grow: 1;
+}
+
+.tool-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0066CC;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tool-card:hover .tool-link svg {
+  transform: translateX(3px);
+  transition: transform 0.2s ease;
+}
+
+.tool-card.coming-soon .tool-link {
+  color: #9CA3AF;
+}
+
+
+/* ================================================
+   TAGS (New, Coming Soon)
+   ================================================ */
+.tag-new {
+  font-size: 11px;
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 3px 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+.tag-soon {
+  font-size: 11px;
+  background: #FEF3C7;
+  color: #92400E;
+  padding: 3px 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+
+/* ================================================
+   PLUS / PRO BADGE
+   ================================================ */
+.plan-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  z-index: 2;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.plan-badge svg {
+  width: 16px;
+  height: 16px;
+  fill: #ffffff;
+  stroke: none;
+}
+
+.plan-badge:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+}
+
+/* Tooltip on hover */
+.plan-badge-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #0F172A;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.plan-badge-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: #0F172A;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.plan-badge:hover .plan-badge-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+
+/* ================================================
+   NEXA CALCULATORS SECTION
+   ================================================ */
+.nexa-section-group {
+  margin-bottom: 50px;
+}
+
+.nexa-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #334155;
+  font-family: 'Host Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nexa-label-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* NEXA card - dark theme */
+.tool-card.nexa-card {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+.tool-card.nexa-card:hover {
+  border-color: #475569;
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.3);
+}
+
+.tool-card.nexa-card .icon-box {
+  background: #1E293B;
+}
+
+.tool-card.nexa-card .icon-box svg {
+  stroke: #60A5FA;
+}
+
+.tool-card.nexa-card:hover .icon-box {
+  background: #334155;
+}
+
+.tool-card.nexa-card .tool-title {
+  color: #F1F5F9;
+}
+
+.tool-card.nexa-card .tool-desc {
+  color: #94A3B8;
+}
+
+.tool-card.nexa-card .tool-link {
+  color: #60A5FA;
+}
+
+/* NEXA tag */
+.tag-nexa {
+  font-size: 11px;
+  background: #1E293B;
+  color: #60A5FA;
+  padding: 3px 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 8px;
+  font-weight: 600;
+  border: 1px solid #334155;
+}
