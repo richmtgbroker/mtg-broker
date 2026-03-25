@@ -245,6 +245,10 @@ function parseScenarioForFilters(scenario) {
     filters.loanType = 'Bank Statement';
   } else if (lower.includes('non-qm') || lower.includes('non qm')) {
     filters.loanType = 'Non-QM';
+  } else if (lower.includes('heloc') || lower.includes('home equity line') || lower.includes('home equity loan')) {
+    filters.loanType = 'HELOC';
+  } else if (lower.includes('reverse mortgage') || lower.includes('hecm')) {
+    filters.loanType = 'Reverse';
   }
 
   // Detect property type
@@ -379,7 +383,7 @@ async function querySupabase(env, filters) {
   if (filters.str)           params.append('dscr_str_income_usable', 'ilike.*Yes*');
   if (filters.llc)           params.append('vest_in_llc', 'ilike.*Yes*');
 
-  params.append('limit', '25');
+  params.append('limit', '50');
 
   const url = `${baseUrl}?${params.toString()}`;
   console.log('Supabase query URL:', url);
