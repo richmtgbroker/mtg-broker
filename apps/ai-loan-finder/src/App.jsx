@@ -437,14 +437,12 @@ function LoanCard({ product, rawProduct, onViewDetails, rank }) {
       <div className={`loan-rank rank-${rank}`}>#{rank}</div>
 
       <div className="loan-card-header">
-        <div className="loan-card-title-group">
-          <h3 className="loan-product-name">{product.product_name}</h3>
-          <p className="loan-lender">
-            <i className="fas fa-building"></i>
-            {product.lender}
-          </p>
-        </div>
         <span className="loan-product-type">{product.product_type}</span>
+        <h3 className="loan-product-name">{product.product_name}</h3>
+        <p className="loan-lender">
+          <i className="fas fa-building"></i>
+          {product.lender}
+        </p>
       </div>
 
       {/* Key stats grid */}
