@@ -331,6 +331,7 @@ const DASHBOARD_HTML = `
 
   let allLeads = [];
   let userEmail = null;
+  let userToken = null; // Raw JWT for authenticated API calls
   let calendarMonth = new Date().getMonth();
   let calendarYear = new Date().getFullYear();
   let upcomingClosings = [];
@@ -458,6 +459,7 @@ const DASHBOARD_HTML = `
     try {
       var token = localStorage.getItem('Outseta.nocode.accessToken');
       if (token) {
+        userToken = token; // Store raw JWT for API calls
         var payload = JSON.parse(atob(token.split('.')[1]));
         if (payload.email) return payload.email;
       }
@@ -479,6 +481,11 @@ const DASHBOARD_HTML = `
       } catch (e) {}
     }
     return null;
+  }
+
+  // Returns the best auth token for API calls (JWT preferred, email fallback)
+  function getAuthToken() {
+    return userToken || userEmail || '';
   }
 
   function getPipelineCacheKey() {
@@ -663,7 +670,7 @@ const DASHBOARD_HTML = `
 
     try {
       var response = await fetch(API_BASE + '/api/pipeline/loans', {
-        headers: { 'Authorization': 'Bearer ' + userEmail, 'Content-Type': 'application/json' }
+        headers: { 'Authorization': 'Bearer ' + getAuthToken(), 'Content-Type': 'application/json' }
       });
       if (!response.ok) { updatePipelineUI({ loans: 0, volume: 0, closings: 0 }); updateLeadsUI([]); return; }
 
@@ -862,7 +869,7 @@ const DASHBOARD_HTML = `
 
     try {
       var response = await fetch(PIPELINE_API + '/api/pipeline/tasks', {
-        headers: { 'Authorization': 'Bearer ' + userEmail }
+        headers: { 'Authorization': 'Bearer ' + getAuthToken() }
       });
       if (!response.ok) throw new Error('API error');
       var records = await response.json();
@@ -924,7 +931,7 @@ const DASHBOARD_HTML = `
 
     try {
       var response = await fetch(API_BASE + '/api/favorites', {
-        headers: { 'Authorization': 'Bearer ' + userEmail }
+        headers: { 'Authorization': 'Bearer ' + getAuthToken() }
       });
       if (!response.ok) throw new Error('API error');
       var data = await response.json();
@@ -967,11 +974,11 @@ const DASHBOARD_HTML = `
         var icon = typeIcons[type];
         var link = typeLinks[type];
         var colorClass = typeColors[type];
-        html += '<div class="fav-group"><div class="fav-group-label">' + icon + ' ' + type + 's</div>';
-        html += items.slice(0, 4).map(function(fav) {
-          return '<a href="' + link + '" class="fav-chip ' + colorClass + '">' + escapeHtml(fav.itemName) + '</a>';
+        html += '<div class="fav-group"><div class="fav-group-label">' + icon + ' ' + type + 's</div><div class="fav-group-grid">';
+        html += items.slice(0, 6).map(function(fav) {
+          return '<a href="' + link + '" class="fav-card ' + colorClass + '">' + escapeHtml(fav.itemName) + '</a>';
         }).join('');
-        html += '</div>';
+        html += '</div></div>';
       });
 
       listEl.innerHTML = html;
