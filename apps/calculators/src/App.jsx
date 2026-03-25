@@ -338,25 +338,48 @@ export default function App() {
       }
     }
 
-    // Check NEXA status via Outseta JWT
-    function checkNexa() {
-      try {
-        const token = localStorage.getItem('Outseta.nocode.accessToken')
-        if (!token) return
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        const email = (payload.email || payload.Email || '').toLowerCase()
-        if (email.endsWith('@nexalending.com') || email.endsWith('@nexamortgage.com')) {
-          setIsNexaUser(true)
-        }
-      } catch (e) {
-        // Silently fail — NEXA section stays hidden
-      }
-    }
-
     checkBilling()
-    checkNexa()
 
     return () => { cancelled = true }
+  }, [])
+
+  // NEXA detection: The sidebar worker adds body.nexa-user class via a
+  // 3-step check (sessionStorage cache → JWT email domain → Outseta
+  // NexaAccess custom field). We watch for that class instead of
+  // duplicating the logic here.
+  useEffect(() => {
+    // Check immediately (sidebar may have already set it)
+    if (document.body.classList.contains('nexa-user')) {
+      setIsNexaUser(true)
+    }
+
+    // Watch for the class being added/removed by the sidebar script
+    const observer = new MutationObserver(() => {
+      const hasClass = document.body.classList.contains('nexa-user')
+      setIsNexaUser(hasClass)
+    })
+
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    // Also poll briefly in case sidebar hasn't run yet (up to 5 seconds)
+    let attempts = 0
+    const poll = setInterval(() => {
+      attempts++
+      if (document.body.classList.contains('nexa-user')) {
+        setIsNexaUser(true)
+        clearInterval(poll)
+      } else if (attempts >= 50) {
+        clearInterval(poll)
+      }
+    }, 100)
+
+    return () => {
+      observer.disconnect()
+      clearInterval(poll)
+    }
   }, [])
 
   // Handle locked card click — show upgrade modal
