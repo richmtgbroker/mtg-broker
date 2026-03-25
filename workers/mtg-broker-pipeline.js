@@ -1606,14 +1606,6 @@ async function initPipeline() {
   });
   await loadLoans();
 
-  // Deep-link: auto-open a loan if ?openLoan=<uuid> is in the URL
-  var openLoanParam = new URLSearchParams(window.location.search).get('openLoan');
-  if (openLoanParam && typeof openLoanModal === 'function') {
-    openLoanModal(openLoanParam);
-    // Clean up the URL so refreshing doesn't re-open the modal
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-
   console.log(\`Pipeline v12.2 loaded in \${(performance.now() - startTime).toFixed(0)}ms\`);
 }
 if (document.readyState === 'loading') {
@@ -1621,6 +1613,22 @@ if (document.readyState === 'loading') {
 } else {
   initPipeline();
 }
+
+// Deep-link: auto-open a loan if ?openLoan=<uuid> is in the URL.
+// Runs on window.load so ALL scripts (including Notes override) are fully set up.
+window.addEventListener('load', function() {
+  var openLoanParam = new URLSearchParams(window.location.search).get('openLoan');
+  if (openLoanParam) {
+    // Small delay to ensure all DOMContentLoaded handlers and script inits are done
+    setTimeout(function() {
+      if (typeof openLoanModal === 'function') {
+        console.log('Deep-link: opening loan', openLoanParam);
+        openLoanModal(openLoanParam);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }, 500);
+  }
+});
 function toggleColumnSelector() {
   event.stopPropagation();
   document.getElementById('column-selector-dropdown').classList.toggle('open');
