@@ -2838,7 +2838,7 @@ if (document.readyState === 'loading') {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -4241,7 +4241,7 @@ function runRefiCalc() {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400', // Cache 24 hours, bust with ?v=
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600', // Cache 24 hours, bust with ?v=
       ...getCorsHeaders(request)
     }
   });
@@ -5133,7 +5133,7 @@ async function getPipelineChecklistJS(request) {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -6072,7 +6072,7 @@ async function getPipelineDocumentsJS(request) {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -6516,7 +6516,7 @@ async function getPipelineAssetsJS(request) {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -7500,7 +7500,7 @@ async function getPurchaseAgreementJS(request) {
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -8406,7 +8406,7 @@ console.log('Pipeline Closing Costs Calculator v1.0 loaded');
     status: 200,
     headers: {
       'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
       ...getCorsHeaders(request)
     }
   });
@@ -11160,7 +11160,7 @@ async function getPipelineBootstrapHTML(request) {
      Pipeline Calculator JS (Affordability calcs, toggle logic)
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-calcs.js?v=3.5';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-calcs.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- ============================================================
@@ -11168,7 +11168,7 @@ async function getPipelineBootstrapHTML(request) {
      v13.3: Cache-bust to v15.15 for PA PDF extraction (v7.23 worker)
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js?v=15.16';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-app.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- ============================================================
@@ -11176,22 +11176,22 @@ async function getPipelineBootstrapHTML(request) {
      Must load AFTER pipeline-app.js to access globals
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-checklist.js?v=2.2';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-checklist.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- v13.0: Pipeline Documents JS -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-documents.js?v=2.1';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-documents.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- v13.2+: Pipeline Purchase Agreement JS (Contract tab) -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-purchase-agreement.js?v=1.2';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-purchase-agreement.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- v13.7: Pipeline Closing Costs JS -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-closing-costs.js?v=1.0';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-closing-costs.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- ============================================================
@@ -11669,7 +11669,7 @@ function zillowLookup() {
      v12.8: Pipeline Assets JS Module Loader
      ============================================================ -->
 <script>
-(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js?v=1.5';s.defer=true;document.body.appendChild(s);})();
+(function(){var s=document.createElement('script');s.src='https://mtg-broker-pipeline.rich-e00.workers.dev/static/pipeline-assets.js';s.defer=true;document.body.appendChild(s);})();
 </script>
 
 <!-- v13.1: showSection 2-column layout fix -->
