@@ -876,9 +876,13 @@ function App() {
     }, 3000)
 
     try {
+      const token = getOutsetaToken()
+      const glHeaders = { 'Content-Type': 'application/json' }
+      if (token) glHeaders['Authorization'] = `Bearer ${token}`
+
       const response = await fetch(GUIDELINE_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: glHeaders,
         body: JSON.stringify({ query: guidelineQuery }),
       })
 
@@ -902,9 +906,13 @@ function App() {
   // ── Look up a product by name (used by guideline source cards) ──
   const handleOpenProduct = async (productName, lenderName) => {
     try {
+      const token = getOutsetaToken()
+      const plHeaders = { 'Content-Type': 'application/json' }
+      if (token) plHeaders['Authorization'] = `Bearer ${token}`
+
       const response = await fetch(PRODUCT_LOOKUP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: plHeaders,
         body: JSON.stringify({ product_name: productName, lender_name: lenderName }),
       })
       if (!response.ok) return

@@ -1,14 +1,18 @@
 // functions/api/guideline-search.js
 // Cloudflare Pages Function — semantic search through lender PDF guidelines.
 //
+// v1.1 — Security: Added JWT verification (RS256) to prevent unauthenticated
+//         API abuse. Only verified Outseta users can call this endpoint.
+//
 // NEW endpoint — does NOT modify or replace the existing /api/search endpoint.
 //
 // Flow:
 //   POST { query: "Which lenders allow gift funds on investment properties?" }
-//   1. Generate embedding for the query (OpenAI text-embedding-3-small)
-//   2. Query Supabase pgvector for the 20 most similar guideline chunks
-//   3. Send query + chunks to Claude Haiku to synthesize a cited answer
-//   4. Return { answer, sources, query }
+//   1. Verify JWT (reject unauthenticated requests)
+//   2. Generate embedding for the query (OpenAI text-embedding-3-small)
+//   3. Query Supabase pgvector for the 35 most similar guideline chunks
+//   4. Send query + chunks to Claude Haiku to synthesize a cited answer
+//   5. Return { answer, sources, query }
 //
 // Required env vars (set in Cloudflare Pages dashboard + .dev.vars):
 //   OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, ANTHROPIC_API_KEY
@@ -22,9 +26,77 @@ function getCorsHeaders(request) {
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   }
 }
+
+
+// ─── JWT VERIFICATION (RS256) ───────────────────────────────────────────────
+let jwksCache = null
+let jwksCacheTimestamp = null
+const JWKS_CACHE_DURATION = 60 * 60 * 1000 // 1 hour
+
+async function getOutsetaJwks() {
+  const now = Date.now()
+  if (jwksCache && jwksCacheTimestamp && (now - jwksCacheTimestamp < JWKS_CACHE_DURATION)) {
+    return jwksCache
+  }
+  const res = await fetch('https://mtgbroker.outseta.com/.well-known/jwks')
+  if (!res.ok) throw new Error('Failed to fetch JWKS')
+  jwksCache = await res.json()
+  jwksCacheTimestamp = now
+  return jwksCache
+}
+
+async function verifyOutsetaJWT(token) {
+  try {
+    if (!token || typeof token !== 'string') return null
+
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+
+    const b64 = (s) => s.replace(/-/g, '+').replace(/_/g, '/')
+
+    const header  = JSON.parse(atob(b64(parts[0])))
+    const payload = JSON.parse(atob(b64(parts[1])))
+
+    if (header.alg !== 'RS256') return null
+
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < now) return null
+
+    if (payload.iss !== 'https://mtgbroker.outseta.com') return null
+
+    const jwks = await getOutsetaJwks()
+    const key = (header.kid ? jwks.keys?.find(k => k.kid === header.kid) : null) || jwks.keys?.[0]
+    if (!key) return null
+
+    const publicKey = await crypto.subtle.importKey(
+      'jwk',
+      key,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['verify']
+    )
+
+    const encoder  = new TextEncoder()
+    const data     = encoder.encode(`${parts[0]}.${parts[1]}`)
+    const sigBytes = Uint8Array.from(atob(b64(parts[2])), c => c.charCodeAt(0))
+
+    const isValid = await crypto.subtle.verify(
+      { name: 'RSASSA-PKCS1-v1_5' },
+      publicKey,
+      sigBytes,
+      data
+    )
+
+    return isValid ? payload : null
+  } catch (e) {
+    console.error('JWT verification error:', e.message)
+    return null
+  }
+}
+
 
 // Handle CORS preflight
 export async function onRequestOptions({ request }) {
@@ -36,6 +108,22 @@ export async function onRequestPost(context) {
   const { request, env } = context
 
   try {
+    // ── Verify JWT — reject unauthenticated requests ──────────────────
+    const authHeader = request.headers.get('Authorization')
+    const rawToken = authHeader?.replace('Bearer ', '') || null
+
+    if (!rawToken) {
+      return jsonError(request, 'Authentication required', 401)
+    }
+
+    const payload = await verifyOutsetaJWT(rawToken)
+    if (!payload) {
+      return jsonError(request, 'Invalid or expired token', 401)
+    }
+
+    const userEmail = payload.email || payload.sub || 'unknown'
+    console.log('Guideline search by:', userEmail)
+
     const body = await request.json()
     const { query } = body
 
@@ -67,7 +155,7 @@ export async function onRequestPost(context) {
 
   } catch (err) {
     console.error('Guideline search error:', err)
-    return jsonError(request, err.message || 'Internal server error', 500)
+    return jsonError(request, 'Internal server error', 500)
   }
 }
 
@@ -88,7 +176,8 @@ async function generateEmbedding(text, apiKey) {
 
   if (!response.ok) {
     const err = await response.text()
-    throw new Error(`OpenAI embedding error (${response.status}): ${err}`)
+    console.error('OpenAI embedding error:', response.status, err)
+    throw new Error('Embedding generation failed')
   }
 
   const data = await response.json()
@@ -117,7 +206,8 @@ async function searchChunks(embedding, env) {
 
   if (!response.ok) {
     const err = await response.text()
-    throw new Error(`Supabase search error (${response.status}): ${err}`)
+    console.error('Supabase search error:', response.status, err)
+    throw new Error('Guideline search failed')
   }
 
   return response.json()
@@ -165,7 +255,8 @@ ${contextBlock}`
 
   if (!response.ok) {
     const err = await response.text()
-    throw new Error(`Anthropic API error (${response.status}): ${err}`)
+    console.error('Anthropic API error:', response.status, err)
+    throw new Error('Answer synthesis failed')
   }
 
   const data = await response.json()

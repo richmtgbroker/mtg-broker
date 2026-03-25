@@ -1,7 +1,27 @@
 // Cloudflare Pages Function for loan product search
+// v2.1 — Security hardening: JWT signature verification (RS256),
+// CORS origin lockdown, server-side plan enforcement.
 // v2.0 — Uses Claude Haiku to parse scenarios (replaces fragile regex),
 // Supabase RPC scoring function for ranked results, and condensed
 // field selection to reduce token usage.
+
+// ─── CORS ───────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://mtg.broker',
+  'https://www.mtg.broker',
+  'https://mtg-loan-finder.pages.dev',
+];
+
+function getCorsHeaders(request) {
+  const origin = request ? request.headers.get('Origin') : null;
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
 
 // ─── PLAN LIMITS ─────────────────────────────────────────────────────────────
 const PLAN_UIDS = {
@@ -13,18 +33,79 @@ const PLAN_UIDS = {
 const LITE_DAILY_SEARCH_LIMIT = 5;
 
 
-// Decode the Outseta JWT to extract user email and plan UID.
-function decodeJwt(token) {
+// ─── JWT VERIFICATION (RS256) ───────────────────────────────────────────────
+// Verifies the Outseta JWT signature using their public JWKS endpoint.
+// Returns the decoded payload if valid, null if invalid/expired/forged.
+
+let jwksCache = null;
+let jwksCacheTimestamp = null;
+const JWKS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+async function getOutsetaJwks() {
+  const now = Date.now();
+  if (jwksCache && jwksCacheTimestamp && (now - jwksCacheTimestamp < JWKS_CACHE_DURATION)) {
+    return jwksCache;
+  }
+  const res = await fetch('https://mtgbroker.outseta.com/.well-known/jwks');
+  if (!res.ok) throw new Error('Failed to fetch JWKS');
+  jwksCache = await res.json();
+  jwksCacheTimestamp = now;
+  return jwksCache;
+}
+
+async function verifyOutsetaJWT(token) {
   try {
+    if (!token || typeof token !== 'string') return null;
+
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return {
-      email: payload.email || payload.sub || null,
-      planUid: payload['outseta:planUid'] || null,
-    };
+
+    // base64url → base64 helper
+    const b64 = (s) => s.replace(/-/g, '+').replace(/_/g, '/');
+
+    const header  = JSON.parse(atob(b64(parts[0])));
+    const payload = JSON.parse(atob(b64(parts[1])));
+
+    // Outseta uses RS256
+    if (header.alg !== 'RS256') return null;
+
+    // Check expiration
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+
+    // Check issuer
+    if (payload.iss !== 'https://mtgbroker.outseta.com') return null;
+
+    // Fetch JWKS and find the matching key by kid, falling back to first key
+    const jwks = await getOutsetaJwks();
+    const key = (header.kid ? jwks.keys?.find(k => k.kid === header.kid) : null) || jwks.keys?.[0];
+    if (!key) return null;
+
+    // Import the RSA public key for signature verification
+    const publicKey = await crypto.subtle.importKey(
+      'jwk',
+      key,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    // Verify the signature over "header.payload"
+    const encoder  = new TextEncoder();
+    const data     = encoder.encode(`${parts[0]}.${parts[1]}`);
+    const sigBytes = Uint8Array.from(atob(b64(parts[2])), c => c.charCodeAt(0));
+
+    const isValid = await crypto.subtle.verify(
+      { name: 'RSASSA-PKCS1-v1_5' },
+      publicKey,
+      sigBytes,
+      data
+    );
+
+    return isValid ? payload : null;
+
   } catch (e) {
-    console.error('JWT decode error:', e.message);
+    console.error('JWT verification error:', e.message);
     return null;
   }
 }
@@ -469,11 +550,7 @@ Return up to 10 best matches ranked by fit. Include up to 2 near-misses if relev
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
+  const corsHeaders = getCorsHeaders(request);
 
   try {
     const apiKey = env.ANTHROPIC_API_KEY;
@@ -494,7 +571,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    // ── Identify user from Outseta JWT ──────────────────────────────────────
+    // ── Verify user identity from Outseta JWT (RS256 signature check) ────
     const authHeader = request.headers.get('Authorization');
     const rawToken = authHeader?.replace('Bearer ', '') || bodyToken || null;
 
@@ -503,16 +580,20 @@ export async function onRequestPost(context) {
     let planName = 'LITE';
 
     if (rawToken) {
-      const decoded = decodeJwt(rawToken);
-      if (decoded) {
-        userEmail = decoded.email;
-        planUid = decoded.planUid;
+      // Verify JWT signature — rejects forged/expired/tampered tokens
+      const payload = await verifyOutsetaJWT(rawToken);
+      if (payload) {
+        userEmail = payload.email || payload.sub || null;
+        planUid = payload['outseta:planUid'] || null;
         planName = getPlanName(planUid);
+      } else {
+        // Token provided but invalid — treat as unauthenticated LITE user
+        console.warn('JWT verification failed — treating as LITE');
       }
     }
     console.log('User:', userEmail, '| Plan:', planName);
 
-    // ── LITE plan daily search limit ────────────────────────────────────────
+    // ── LITE plan daily search limit ────────────────────────────────────
     const supabaseUrl = env.SUPABASE_URL || 'https://tcmahfwhdknxhhdvqpum.supabase.co';
     const supabaseKey = env.SUPABASE_ANON_KEY;
     let searchesUsedToday = 0;
@@ -534,20 +615,20 @@ export async function onRequestPost(context) {
       }
     }
 
-    // ── Log the search ──────────────────────────────────────────────────────
+    // ── Log the search ──────────────────────────────────────────────────
     if (userEmail && supabaseKey) {
       logSearch(supabaseUrl, supabaseKey, userEmail, planUid, scenario);
       searchesUsedToday += 1;
     }
 
-    // ── STEP 1: Parse scenario with Claude Haiku ────────────────────────────
+    // ── STEP 1: Parse scenario with Claude Haiku ────────────────────────
     // This replaces the old regex-based parser. Claude understands context,
     // so "720 credit score" is correctly parsed as FICO, not a loan amount.
     console.log('Step 1: Parsing scenario with Claude Haiku...');
     const parsed = await parseScenarioWithClaude(scenario, apiKey);
     console.log('Parsed scenario:', JSON.stringify(parsed));
 
-    // ── STEP 2: Query scored products from Supabase ─────────────────────────
+    // ── STEP 2: Query scored products from Supabase ─────────────────────
     // Uses RPC function that scores products by relevance instead of hard
     // binary filtering. Near-misses are included with lower scores.
     console.log('Step 2: Querying scored products...');
@@ -563,12 +644,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    // ── STEP 3: Format condensed product data for Claude ────────────────────
+    // ── STEP 3: Format condensed product data for Claude ────────────────
     // Only sends fields relevant to the scenario, reducing tokens by ~60%.
     console.log('Step 3: Formatting condensed product data...');
     const productsText = formatProductsCondensed(products, parsed);
 
-    // ── STEP 4: Call Claude to rank and explain ─────────────────────────────
+    // ── STEP 4: Call Claude to rank and explain ─────────────────────────
     console.log('Step 4: Calling Claude for ranking...');
     const userMessage = `BORROWER SCENARIO:
 ${scenario.trim()}
@@ -652,7 +733,7 @@ Please analyze these products, rank them by best fit for this borrower scenario,
     parsedResult.meta = {
       filters_applied: parsed,
       products_found: products.length,
-      search_version: '2.0',
+      search_version: '2.1',
     };
     parsedResult.raw_products = products;
     parsedResult.usage = {
@@ -676,13 +757,9 @@ Please analyze these products, rank them by best fit for this borrower scenario,
 }
 
 // Handle CORS preflight requests
-export async function onRequestOptions() {
+export async function onRequestOptions({ request }) {
   return new Response(null, {
     status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers: getCorsHeaders(request),
   });
 }
