@@ -92,7 +92,9 @@ export function initLoanSearch() {
 
   function resolveFieldKey(pattern) {
     const normalized = String(pattern).toLowerCase().replace(/[^a-z0-9]/g, '');
+    // Exact match
     if (allFields.includes(pattern)) return pattern;
+    // Normalized key match
     for (const key of allFields) {
       const keyNorm = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
       if (keyNorm === normalized) return key;
@@ -100,6 +102,11 @@ export function initLoanSearch() {
     for (const key of Object.keys(fieldMetadata)) {
       const keyNorm = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
       if (keyNorm === normalized) return key;
+    }
+    // Match by fieldMetadata label (handles Airtable field IDs like fldXXX)
+    for (const key of Object.keys(fieldMetadata)) {
+      const label = (fieldMetadata[key]?.label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (label === normalized) return key;
     }
     return null;
   }
@@ -1145,7 +1152,14 @@ export function initLoanSearch() {
     const grid = $('.filters-grid');
     if (grid) grid.innerHTML = '';
 
-    const filterKeys = allFields.filter(k => (fieldMetadata[k]?.filterable !== false) && !isRangeSubField(k) && !isNonFilterable(k));
+    // Fields shown as quick-access filters in the search bar — skip them in the panel
+    const QUICK_FILTER_LABELS = ['min fico', 'purpose', 'occupancy'];
+    function isQuickFilterField(key) {
+      const label = (fieldMetadata[key]?.label || key).toLowerCase().replace(/[^a-z ]/g, '').trim();
+      return QUICK_FILTER_LABELS.some(qf => label === qf);
+    }
+
+    const filterKeys = allFields.filter(k => (fieldMetadata[k]?.filterable !== false) && !isRangeSubField(k) && !isNonFilterable(k) && !isQuickFilterField(k));
 
     const groups = {};
     filterKeys.forEach(key => {
@@ -1163,8 +1177,10 @@ export function initLoanSearch() {
       return a.localeCompare(b);
     });
 
+    // Skip loan_amount range filter from panel (it's in the quick-access bar)
+    const QUICK_RANGE_KEYS = new Set(['loan_amount']);
     const rangeFiltersByGroup = {};
-    Object.keys(RANGE_FILTER_CONFIGS).forEach(rangeKey => {
+    Object.keys(RANGE_FILTER_CONFIGS).filter(k => !QUICK_RANGE_KEYS.has(k)).forEach(rangeKey => {
       const cfg = RANGE_FILTER_CONFIGS[rangeKey];
       const minNorm = String(cfg.minField).toLowerCase().replace(/[^a-z0-9]/g, '');
       const minMetaKey = Object.keys(fieldMetadata).find(k =>
