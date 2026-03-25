@@ -246,7 +246,12 @@ Webflow strips external domains from `<script src="...">` attributes when saving
 - Supabase mirror (migrated from Airtable, used by AI Loan Finder)
 - Webflow site live at mtg.broker
 
+### What's Automated
+- **Airtable → Supabase sync** — Daily at 3 AM UTC via `mtg-broker-airtable-sync` Worker
+  - `loan_products` (662 records) and `lenders` (297 records) both sync automatically
+  - Manual trigger: `GET https://mtg-broker-airtable-sync.rich-e00.workers.dev/` (both tables), `/products`, or `/lenders`
+  - Pipeline tables (`pipeline_loans`, `pipeline_tasks`) are Supabase-native — no sync needed
+
 ### What Needs Work
 - End-to-end search testing with real borrower scenarios
-- Automated Airtable → Supabase data sync
 - Workers, embeds, and shared components not yet populated in this repo

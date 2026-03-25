@@ -1,12 +1,16 @@
 /**
  * mtg-broker-airtable-sync — Cloudflare Worker
  * =========================================================
- * Syncs all loan product records from Airtable → Supabase.
+ * Syncs Airtable tables → Supabase:
+ *   1. Loan Products  (Airtable tblVSU5z4WSxreX7l → Supabase loan_products)
+ *   2. Lenders         (Airtable tbl1mpg3KFakZsFK7 → Supabase lenders)
  *
  * SCHEDULE: Daily at 3 AM UTC (cron: 0 3 * * *)
  *
  * ENDPOINTS:
- *   GET /         → runs a full sync immediately and returns results
+ *   GET /         → runs full sync (both tables) and returns results
+ *   GET /products → syncs only loan_products
+ *   GET /lenders  → syncs only lenders
  *   GET /health   → returns status + confirms secrets are set
  *
  * REQUIRED SECRETS (set in Cloudflare dashboard → Workers → Settings → Variables):
@@ -27,14 +31,25 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const AIRTABLE_BASE_ID  = 'appuJgI9X93OLaf0u';
-const AIRTABLE_TABLE_ID = 'tblVSU5z4WSxreX7l';
-const AIRTABLE_API_URL  = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`;
+const AIRTABLE_BASE_ID = 'appuJgI9X93OLaf0u';
+const SUPABASE_URL     = 'https://tcmahfwhdknxhhdvqpum.supabase.co';
+const BATCH_SIZE       = 50;
 
-const SUPABASE_URL   = 'https://tcmahfwhdknxhhdvqpum.supabase.co';
-const SUPABASE_TABLE = 'loan_products';
-
-const BATCH_SIZE = 50; // Records per Supabase insert
+// Table-specific config
+const TABLES = {
+  loan_products: {
+    airtable_table_id: 'tblVSU5z4WSxreX7l',
+    supabase_table:    'loan_products',
+    delete_filter:     'airtable_id=not.is.null',
+    mapper:            mapLoanProductRecord,
+  },
+  lenders: {
+    airtable_table_id: 'tbl1mpg3KFakZsFK7',
+    supabase_table:    'lenders',
+    delete_filter:     'id=gt.0',  // Delete all rows (old rows lack airtable_id)
+    mapper:            mapLenderRecord,
+  },
+};
 
 
 // ============================================================
@@ -63,12 +78,20 @@ function joinArray(arr) {
   return arr || null;
 }
 
+// Extract URL from Airtable's link-type fields (can be string or {label, url} object)
+function extractUrl(field) {
+  if (!field) return null;
+  if (typeof field === 'string') return field || null;
+  if (typeof field === 'object' && field.url) return field.url || null;
+  return null;
+}
+
 
 // ============================================================
-// FIELD MAPPING
+// FIELD MAPPING — Loan Products
 // Maps one Airtable record to a Supabase loan_products row.
 // ============================================================
-function mapRecord(record) {
+function mapLoanProductRecord(record) {
   const fields = record.fields || {};
   return {
     airtable_id:                    record.id,
@@ -131,15 +154,33 @@ function mapRecord(record) {
 
 
 // ============================================================
+// FIELD MAPPING — Lenders
+// Maps one Airtable record to a Supabase lenders row.
+// ============================================================
+function mapLenderRecord(record) {
+  const fields = record.fields || {};
+  return {
+    airtable_id:              record.id,
+    name:                     fields['Lender Name'] || null,
+    website_url:              fields['Corporate Website (Final)'] || fields['Corporate Website'] || null,
+    tpo_portal_url:           fields['TPO Broker Portal (Final)'] || extractUrl(fields['TPO Portal']) || null,
+    correspondent_portal_url: extractUrl(fields['Correspondent Portal']) || null,
+    turn_times_url:           fields['Turn Times'] || extractUrl(fields['Turn Times URL']) || null,
+  };
+}
+
+
+// ============================================================
 // AIRTABLE — fetch all records (handles pagination)
 // ============================================================
-async function fetchAllAirtableRecords(apiKey) {
+async function fetchAllAirtableRecords(airtableTableId, apiKey) {
+  const apiUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${airtableTableId}`;
   const allRecords = [];
   let offset = null;
   let page = 1;
 
   do {
-    const url = new URL(AIRTABLE_API_URL);
+    const url = new URL(apiUrl);
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
 
@@ -174,9 +215,9 @@ async function fetchAllAirtableRecords(apiKey) {
 // ============================================================
 // SUPABASE — delete all rows, insert in batches, count
 // ============================================================
-async function deleteAllSupabaseRecords(serviceKey) {
+async function deleteAllSupabaseRecords(supabaseTable, deleteFilter, serviceKey) {
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?airtable_id=not.is.null`,
+    `${SUPABASE_URL}/rest/v1/${supabaseTable}?${deleteFilter}`,
     {
       method: 'DELETE',
       headers: {
@@ -193,17 +234,17 @@ async function deleteAllSupabaseRecords(serviceKey) {
   }
 }
 
-async function insertAllSupabaseRecords(records, serviceKey) {
+async function insertSupabaseRecords(supabaseTable, records, mapper, serviceKey) {
   let inserted = 0;
   let errors = 0;
   const errorDetails = [];
 
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const mappedBatch = batch.map(mapRecord);
+    const mappedBatch = batch.map(mapper);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
 
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${supabaseTable}`, {
       method: 'POST',
       headers: {
         'apikey': serviceKey,
@@ -231,9 +272,9 @@ async function insertAllSupabaseRecords(records, serviceKey) {
   return { inserted, errors, errorDetails };
 }
 
-async function getSupabaseCount(serviceKey) {
+async function getSupabaseCount(supabaseTable, serviceKey) {
   const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=count`,
+    `${SUPABASE_URL}/rest/v1/${supabaseTable}?select=count`,
     {
       headers: {
         'apikey': serviceKey,
@@ -256,66 +297,107 @@ async function getSupabaseCount(serviceKey) {
 
 
 // ============================================================
-// MAIN SYNC FUNCTION
+// SYNC ONE TABLE
+// Returns { success, airtable_count, inserted, errors, supabase_count, errorDetails }
 // ============================================================
-async function runSync(env) {
+async function syncTable(tableConfig, apiKey, serviceKey, logLine) {
+  const { airtable_table_id, supabase_table, delete_filter, mapper } = tableConfig;
+
+  // Fetch from Airtable
+  logLine(`  Fetching from Airtable (${airtable_table_id})...`);
+  const airtableRecords = await fetchAllAirtableRecords(airtable_table_id, apiKey);
+  logLine(`  ✓ Fetched ${airtableRecords.length} records`);
+
+  // Safety check — never wipe Supabase if Airtable returns nothing
+  if (airtableRecords.length === 0) {
+    throw new Error(`Airtable returned 0 records for ${supabase_table} — aborting to avoid wiping Supabase`);
+  }
+
+  // Clear Supabase table
+  logLine(`  Clearing ${supabase_table}...`);
+  await deleteAllSupabaseRecords(supabase_table, delete_filter, serviceKey);
+  logLine(`  ✓ Table cleared`);
+
+  // Insert all records
+  logLine(`  Inserting ${airtableRecords.length} records into ${supabase_table}...`);
+  const { inserted, errors, errorDetails } = await insertSupabaseRecords(
+    supabase_table, airtableRecords, mapper, serviceKey
+  );
+
+  const finalCount = await getSupabaseCount(supabase_table, serviceKey);
+
+  return {
+    success: errors === 0 && finalCount === airtableRecords.length,
+    airtable_count: airtableRecords.length,
+    inserted,
+    errors,
+    supabase_count: finalCount,
+    errorDetails,
+  };
+}
+
+
+// ============================================================
+// MAIN SYNC FUNCTION
+// tablesToSync: array of table keys from TABLES config, e.g. ['loan_products', 'lenders']
+// ============================================================
+async function runSync(env, tablesToSync) {
   const startTime = Date.now();
   const log = [];
   const logLine = msg => { console.log(msg); log.push(msg); };
+  const results = {};
 
   try {
     logLine(`[${new Date().toISOString()}] Starting Airtable → Supabase sync`);
+    logLine(`Tables: ${tablesToSync.join(', ')}`);
 
     if (!env.AIRTABLE_API_KEY)     throw new Error('Missing secret: AIRTABLE_API_KEY');
     if (!env.SUPABASE_SERVICE_KEY) throw new Error('Missing secret: SUPABASE_SERVICE_KEY');
 
-    // Step 1: Fetch from Airtable
-    logLine('Step 1: Fetching records from Airtable...');
-    const airtableRecords = await fetchAllAirtableRecords(env.AIRTABLE_API_KEY);
-    logLine(`✓ Fetched ${airtableRecords.length} records from Airtable`);
+    let allSuccess = true;
 
-    // Safety check — never wipe Supabase if Airtable returns nothing
-    if (airtableRecords.length === 0) {
-      throw new Error('Airtable returned 0 records — aborting to avoid wiping Supabase');
+    for (const tableKey of tablesToSync) {
+      const tableConfig = TABLES[tableKey];
+      if (!tableConfig) {
+        logLine(`⚠ Unknown table: ${tableKey} — skipping`);
+        continue;
+      }
+
+      logLine('');
+      logLine(`── Syncing ${tableKey} ──────────────────────────────`);
+
+      try {
+        const tableResult = await syncTable(tableConfig, env.AIRTABLE_API_KEY, env.SUPABASE_SERVICE_KEY, logLine);
+        results[tableKey] = tableResult;
+
+        logLine(`  Airtable: ${tableResult.airtable_count} | Inserted: ${tableResult.inserted} | Errors: ${tableResult.errors} | Supabase: ${tableResult.supabase_count ?? 'unknown'}`);
+
+        if (tableResult.errors > 0) {
+          tableResult.errorDetails.forEach(e => logLine(`    - ${e}`));
+        }
+
+        logLine(tableResult.success ? `  ✓ ${tableKey} synced successfully` : `  ⚠ ${tableKey} synced with issues`);
+
+        if (!tableResult.success) allSuccess = false;
+      } catch (tableError) {
+        logLine(`  ✗ ${tableKey} FAILED: ${tableError.message}`);
+        results[tableKey] = { success: false, error: tableError.message };
+        allSuccess = false;
+      }
     }
 
-    // Step 2: Clear Supabase
-    logLine('Step 2: Deleting all existing rows from Supabase...');
-    await deleteAllSupabaseRecords(env.SUPABASE_SERVICE_KEY);
-    logLine('✓ Supabase table cleared');
-
-    // Step 3: Insert all records
-    logLine(`Step 3: Inserting ${airtableRecords.length} records into Supabase...`);
-    const { inserted, errors, errorDetails } = await insertAllSupabaseRecords(
-      airtableRecords,
-      env.SUPABASE_SERVICE_KEY
-    );
-
-    const finalCount = await getSupabaseCount(env.SUPABASE_SERVICE_KEY);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-
     logLine('');
-    logLine('─── SYNC RESULTS ───────────────────────────────────');
-    logLine(`Airtable records:     ${airtableRecords.length}`);
-    logLine(`Successfully inserted: ${inserted}`);
-    logLine(`Errors:               ${errors}`);
-    logLine(`Supabase final count: ${finalCount ?? 'unknown'}`);
-    logLine(`Duration:             ${duration}s`);
+    logLine('─── OVERALL ────────────────────────────────────────');
+    logLine(`Duration: ${duration}s`);
+    logLine(allSuccess ? '✓ All syncs completed successfully!' : '⚠ Some syncs had issues');
 
-    if (errors > 0) {
-      logLine('Error details:');
-      errorDetails.forEach(e => logLine(`  - ${e}`));
-    }
-
-    const success = errors === 0 && finalCount === airtableRecords.length;
-    logLine(success ? '✓ Sync completed successfully!' : '⚠ Sync completed with issues');
-
-    return { success, airtable_count: airtableRecords.length, inserted, errors, supabase_count: finalCount, duration_seconds: parseFloat(duration), log };
+    return { success: allSuccess, tables: results, duration_seconds: parseFloat(duration), log };
 
   } catch (error) {
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
     logLine(`✗ SYNC FAILED: ${error.message}`);
-    return { success: false, error: error.message, duration_seconds: parseFloat(duration), log };
+    return { success: false, error: error.message, tables: results, duration_seconds: parseFloat(duration), log };
   }
 }
 
@@ -324,9 +406,9 @@ async function runSync(env) {
 // WORKER ENTRY POINT
 // ============================================================
 export default {
-  // Cron trigger — runs daily at 3 AM UTC
+  // Cron trigger — runs daily at 3 AM UTC, syncs all tables
   async scheduled(event, env, ctx) {
-    const result = await runSync(env);
+    const result = await runSync(env, ['loan_products', 'lenders']);
     if (!result.success) {
       console.error('SYNC FAILED:', JSON.stringify(result));
     }
@@ -340,19 +422,31 @@ export default {
 
     const url = new URL(request.url);
 
-    // Health check — just confirms secrets are set, no sync
+    // Health check — confirms secrets are set, no sync
     if (url.pathname === '/health') {
       return Response.json({
         status: 'ok',
         has_airtable_key: !!env.AIRTABLE_API_KEY,
         has_supabase_key: !!env.SUPABASE_SERVICE_KEY,
+        tables: Object.keys(TABLES),
         cron: '0 3 * * * (daily at 3 AM UTC)',
         next_run: 'Check Cloudflare dashboard → Workers → Triggers',
       });
     }
 
-    // Manual sync trigger — runs immediately
-    const result = await runSync(env);
+    // Sync specific table
+    if (url.pathname === '/products') {
+      const result = await runSync(env, ['loan_products']);
+      return Response.json(result, { status: result.success ? 200 : 500 });
+    }
+
+    if (url.pathname === '/lenders') {
+      const result = await runSync(env, ['lenders']);
+      return Response.json(result, { status: result.success ? 200 : 500 });
+    }
+
+    // Default: sync all tables
+    const result = await runSync(env, ['loan_products', 'lenders']);
     return Response.json(result, { status: result.success ? 200 : 500 });
   },
 };
