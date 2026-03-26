@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
 import Logo from "../components/Logo";
 import { isLoggedIn, getUserPlan } from "../lib/auth";
+import { OUTSETA_DOMAIN } from "../lib/constants";
 
 export function meta() {
   return [
@@ -13,74 +14,86 @@ export function meta() {
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/app/dashboard";
-  const widgetRef = useRef(null);
-  const redirectedRef = useRef(false);
 
-  // Redirect helper — only fires once
-  function doRedirect() {
-    if (redirectedRef.current) return;
-    redirectedRef.current = true;
-    const plan = getUserPlan();
-    window.location.href = plan ? redirectTo : "/pricing";
-  }
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
+  // If already logged in, redirect immediately
   useEffect(() => {
-    // If already logged in, redirect immediately
     if (isLoggedIn()) {
-      doRedirect();
+      const plan = getUserPlan();
+      window.location.href = plan ? redirectTo : "/pricing";
+    }
+  }, [redirectTo]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(null);
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
       return;
     }
 
-    // AGGRESSIVE polling at 100ms to detect Outseta JWT BEFORE Outseta's
-    // own redirect fires. Outseta sets the token in localStorage and then
-    // redirects to the hardcoded post-login URL (mtg.broker). We need to
-    // detect the token and redirect ourselves first, keeping the user on
-    // the current domain.
-    const fastPoll = setInterval(() => {
-      if (isLoggedIn()) {
-        clearInterval(fastPoll);
-        doRedirect();
-      }
-    }, 100);
+    setLoading(true);
 
-    // Also intercept beforeunload to try to prevent Outseta's redirect
-    function handleBeforeUnload(e) {
-      if (isLoggedIn() && !redirectedRef.current) {
-        doRedirect();
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    }
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    try {
+      // Authenticate via Outseta's token endpoint
+      const res = await fetch(`https://${OUTSETA_DOMAIN}/tokens`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          username: email.trim(),
+          password: password,
+          grant_type: "password",
+          client_id: OUTSETA_DOMAIN.split(".")[0], // "mtgbroker"
+        }).toString(),
+      });
 
-    // Try to re-initialize the Outseta widget if it didn't auto-render
-    const initTimer = setInterval(() => {
-      if (typeof window.Outseta !== "undefined") {
-        if (widgetRef.current && widgetRef.current.children.length === 0) {
-          try {
-            if (typeof window.Outseta.init === "function") {
-              window.Outseta.init();
-            }
-          } catch (e) {}
-        } else {
-          clearInterval(initTimer);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 || res.status === 401) {
+          throw new Error("Invalid email or password. Please try again.");
         }
+        throw new Error(data.error_description || data.error || "Login failed. Please try again.");
       }
-    }, 300);
 
-    // Stop polling after 60 seconds
-    const cleanup = setTimeout(() => {
-      clearInterval(fastPoll);
-      clearInterval(initTimer);
-    }, 60000);
+      const data = await res.json();
+      const token = data.access_token;
 
-    return () => {
-      clearInterval(fastPoll);
-      clearInterval(initTimer);
-      clearTimeout(cleanup);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [redirectTo]);
+      if (!token) {
+        throw new Error("No access token received. Please try again.");
+      }
+
+      // Save token to localStorage (same key Outseta's NoCode SDK uses)
+      localStorage.setItem("Outseta.nocode.accessToken", token);
+
+      // Redirect to dashboard on the CURRENT domain
+      const plan = getUserPlan();
+      window.location.href = plan ? redirectTo : "/pricing";
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
+  // Shared styles
+  const inputStyle = {
+    width: "100%",
+    padding: "12px 14px",
+    fontSize: "15px",
+    fontFamily: "inherit",
+    border: "1.5px solid #e2e8f0",
+    borderRadius: "10px",
+    outline: "none",
+    color: "#0f172a",
+    background: "#fff",
+    boxSizing: "border-box",
+    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
+  };
 
   return (
     <div
@@ -136,14 +149,173 @@ export default function LoginPage() {
           Sign in to access your dashboard
         </p>
 
-        {/* Outseta embedded login widget */}
-        <div
-          ref={widgetRef}
-          data-o-auth="1"
-          data-mode="embed"
-          data-widget-mode="login"
-          style={{ minHeight: "300px" }}
-        />
+        {/* Error message */}
+        {error && (
+          <div
+            style={{
+              padding: "10px 14px",
+              marginBottom: "16px",
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: "8px",
+              fontSize: "13px",
+              color: "#dc2626",
+              lineHeight: 1.5,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Login form */}
+        <form onSubmit={handleSubmit}>
+          {/* Email */}
+          <div style={{ marginBottom: "14px" }}>
+            <label
+              htmlFor="login-email"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Email
+            </label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              style={inputStyle}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#1a56db";
+                e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.1)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#e2e8f0";
+                e.target.style.boxShadow = "none";
+              }}
+            />
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: "6px" }}>
+            <label
+              htmlFor="login-password"
+              style={{
+                display: "block",
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#374151",
+                marginBottom: "6px",
+              }}
+            >
+              Password
+            </label>
+            <div style={{ position: "relative" }}>
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                style={{ ...inputStyle, paddingRight: "48px" }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "#1a56db";
+                  e.target.style.boxShadow = "0 0 0 3px rgba(26,86,219,0.1)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "#e2e8f0";
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  color: "#64748b",
+                  fontFamily: "inherit",
+                  fontWeight: 500,
+                  padding: "4px",
+                }}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          {/* Forgot password */}
+          <div style={{ textAlign: "right", marginBottom: "20px" }}>
+            <a
+              href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=forgotPassword`}
+              style={{
+                fontSize: "13px",
+                color: "#1a56db",
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              Forgot password?
+            </a>
+          </div>
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "13px",
+              fontSize: "15px",
+              fontWeight: 700,
+              fontFamily: "inherit",
+              color: "#fff",
+              background: loading ? "#93bbfd" : "#1a56db",
+              border: "none",
+              borderRadius: "10px",
+              cursor: loading ? "not-allowed" : "pointer",
+              transition: "background 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
+          >
+            {loading ? (
+              <>
+                <span
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    border: "2px solid rgba(255,255,255,0.3)",
+                    borderTopColor: "#fff",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    animation: "spin 0.6s linear infinite",
+                  }}
+                />
+                Signing in...
+              </>
+            ) : (
+              "Sign In"
+            )}
+          </button>
+        </form>
 
         {/* Divider */}
         <div
@@ -160,7 +332,7 @@ export default function LoginPage() {
               href="/pricing"
               style={{ color: "#1a56db", fontWeight: 600, textDecoration: "none" }}
             >
-              Sign up
+              Create one free
             </a>
           </p>
         </div>
@@ -178,6 +350,9 @@ export default function LoginPage() {
       >
         &larr; Back to homepage
       </a>
+
+      {/* Spinner keyframe */}
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes spin { to { transform: rotate(360deg); } }` }} />
     </div>
   );
 }
