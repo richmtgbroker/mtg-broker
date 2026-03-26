@@ -140,6 +140,22 @@ function clearCacheSettings() {
   } catch (e) {}
 }
 
+/** Open Outseta profile widget with 3-method fallback (matches pricing app pattern) */
+function openOutsetaProfile(tab) {
+  // Method 1: Outseta.profile.open (newer SDK)
+  if (typeof Outseta !== 'undefined' && Outseta.profile && typeof Outseta.profile.open === 'function') {
+    Outseta.profile.open({ tab: tab })
+    return
+  }
+  // Method 2: Outseta.showProfile (alternative SDK)
+  if (typeof Outseta !== 'undefined' && typeof Outseta.showProfile === 'function') {
+    Outseta.showProfile({ tab: tab })
+    return
+  }
+  // Method 3: Navigate to hosted profile page (auto-authenticates via #o-authenticated)
+  window.location.href = 'https://mtgbroker.outseta.com/profile#o-authenticated'
+}
+
 // ============================================================
 // PREFERRED LINK ROW COMPONENT
 // ============================================================
@@ -570,15 +586,7 @@ export default function App() {
             <button
               type="button"
               className="settings-btn-secondary"
-              onClick={() => {
-                clearCacheSettings()
-                // Open Outseta's built-in profile editor modal
-                if (typeof window.Outseta !== 'undefined' && typeof window.Outseta.showProfile === 'function') {
-                  window.Outseta.showProfile({ tab: 'profile' })
-                } else {
-                  alert('Profile editor is loading. Please try again in a moment.')
-                }
-              }}
+              onClick={() => { clearCacheSettings(); openOutsetaProfile('profile') }}
               style={{ fontSize: '11px', padding: '5px 12px', whiteSpace: 'nowrap' }}
             >
               <i className="fas fa-pen"></i> Manage Profile
@@ -900,14 +908,7 @@ export default function App() {
           <button
             type="button"
             className="settings-btn-secondary"
-            onClick={() => {
-              // Open Outseta's built-in account/billing modal (no external URL)
-              if (typeof window.Outseta !== 'undefined' && typeof window.Outseta.showProfile === 'function') {
-                window.Outseta.showProfile({ tab: 'plan' })
-              } else {
-                alert('Account manager is loading. Please try again in a moment.')
-              }
-            }}
+            onClick={() => openOutsetaProfile('plan')}
           >
             <i className="fas fa-credit-card"></i> Manage Account & Billing
           </button>
