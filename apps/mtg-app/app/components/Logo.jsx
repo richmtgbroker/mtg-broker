@@ -1,23 +1,22 @@
 /**
  * MtgBroker logo — uses the actual brand logo image from /logo.png.
- * Uses inline styles with explicit dimensions to prevent Tailwind v4
- * base reset (img { height: auto }) from overriding the size.
- *
- * Props:
- *   height — logo height in px (default 28)
- *   inverted — if true, applies brightness/invert filter for dark backgrounds
+ * All sizing done via inline styles to override Tailwind v4 base reset.
+ * The logo PNG is 3471x552 (6.29:1 ratio).
  */
 export default function Logo({ height = 28, inverted = false }) {
+  const w = Math.round(height * 6.29);
   return (
     <img
       src="/logo.png"
       alt="MtgBroker"
-      width={Math.round(height * 6.3)}
+      width={w}
       height={height}
       style={{
-        height: height + "px",
-        width: "auto",
+        height: `${height}px`,
+        width: `${w}px`,
+        maxWidth: "none",
         display: "block",
+        objectFit: "contain",
         ...(inverted ? { filter: "brightness(0) invert(1)" } : {}),
       }}
     />

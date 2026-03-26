@@ -205,9 +205,9 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
-                <Link to="/login" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base border border-border-light bg-surface-active no-underline" style={{ color: "var(--color-text)" }}>
+                <a href="/login" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base border border-border-light bg-surface-active no-underline" style={{ color: "var(--color-text)" }}>
                   Login
-                </Link>
+                </a>
                 <Link to="/pricing" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base bg-primary-600 border border-primary-600 no-underline" style={{ color: "#fff" }}>
                   Signup
                 </Link>
@@ -280,9 +280,9 @@ export default function Navbar() {
                   <Link to="/pricing" className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-primary-600 mt-2.5 no-underline" style={{ color: "#fff" }}>
                     Sign Up Free
                   </Link>
-                  <Link to="/login" className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5 no-underline" style={{ color: "var(--color-text)" }}>
+                  <a href="/login" className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5 no-underline" style={{ color: "var(--color-text)" }}>
                     Login
-                  </Link>
+                  </a>
                 </div>
               )}
             </nav>
