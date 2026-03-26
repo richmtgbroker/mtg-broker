@@ -1,0 +1,299 @@
+/* ================================================
+   PRODUCT DETAIL PAGE - CSS
+   Page: /app/products/{slug}
+   Version: 2.0
+   Migrated from Webflow Head CSS embed to Cloudflare Pages bundle.
+
+   WEBFLOW SETUP: The page template just needs three container
+   divs — no bindings, no collection lists, no Designer work:
+     .product-detail-breadcrumb
+     .product-detail-header
+     .product-detail-content
+================================================ */
+
+
+/* ================================================
+   1. HIDE LEGACY CMS DATA (safety net — v2 JS ignores it)
+================================================ */
+.hidden-cms-data,
+.hidden-cms-data * {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+.product-detail-content .w-dyn-list,
+.product-detail-content .w-dyn-items,
+.product-detail-content .w-dyn-item,
+.w-pagination-wrapper {
+  display: none !important;
+}
+
+
+/* ================================================
+   2. HEADER — Icon + Title + Share buttons
+================================================ */
+
+.product-detail-icon {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #2563EB;
+  background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  border: 1px solid #BFDBFE;
+  flex-shrink: 0;
+}
+
+.product-detail-subtitle {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-title-row .detail-title {
+  margin: 0;
+}
+
+.product-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.product-share-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748B;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.product-share-btn:hover {
+  background: #EFF6FF;
+  border-color: #93C5FD;
+  color: #2563EB;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+}
+
+.product-share-btn.copied {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #059669;
+}
+
+@media (max-width: 768px) {
+  .product-detail-icon {
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    font-size: 28px;
+  }
+
+  .product-detail-subtitle { text-align: center; }
+
+  .detail-title-row {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .product-share-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}
+
+
+/* ================================================
+   3. DESCRIPTION SECTION
+================================================ */
+.product-description-content {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #475569;
+}
+
+.product-description-content p {
+  margin: 0 0 12px 0;
+}
+
+.product-description-content p:last-child {
+  margin-bottom: 0;
+}
+
+
+/* ================================================
+   4. QUICK FACTS ROW
+   Emoji-prefixed single-line fields (Income Limits,
+   FTHB Reqd, Geo Restricted, etc.) shown as a pill row
+================================================ */
+.product-quick-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.product-quick-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.product-quick-fact-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94A3B8;
+}
+
+
+/* ================================================
+   5. LENDERS SECTION — subtitle carries the divider
+================================================ */
+.detail-section-title.has-subtitle {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.lender-section-subtitle {
+  font-size: 13px;
+  font-weight: 400;
+  color: #94a3b8;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: 0.01em;
+}
+
+
+/* ================================================
+   6. NOTES BOX
+================================================ */
+.product-notes-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-left: 4px solid #2563EB;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+
+.product-notes-box p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #475569;
+  margin: 0;
+}
+
+
+/* ================================================
+   7. LOADING SKELETON
+================================================ */
+.product-detail-skeleton {
+  animation: prodShimmer 1.5s infinite;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  border-radius: 12px;
+}
+
+@keyframes prodShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-header  { height: 100px; margin-bottom: 16px; }
+.skeleton-section { height: 180px; margin-bottom: 16px; }
+
+
+/* ================================================
+   8. ERROR STATE
+================================================ */
+.product-error-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #64748B;
+}
+
+.product-error-state .error-icon {
+  font-size: 40px;
+  color: #CBD5E1;
+  margin-bottom: 16px;
+}
+
+.product-error-state h3 {
+  font-size: 18px;
+  color: #1E293B;
+  margin: 0 0 8px 0;
+}
+
+.product-error-state p {
+  font-size: 14px;
+  margin: 0 0 20px 0;
+}
+
+.product-error-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: #2563EB;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.product-error-back-btn:hover {
+  background: #1D4ED8;
+  color: #fff;
+  text-decoration: none;
+}
+
+
+/* ================================================
+   9. WEBFLOW CLEANUP
+================================================ */
+.product-detail-content .w-icon-slider-right,
+.product-detail-content .w-icon-slider-left,
+.product-detail-content .w-slider-arrow-right,
+.product-detail-content .w-slider-arrow-left {
+  display: none !important;
+}
+
+.product-detail-content .w-inline-block::after {
+  display: none !important;
+  content: none !important;
+}
