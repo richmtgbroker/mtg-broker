@@ -12968,6 +12968,52 @@ export default {
       return await getLenderList(env, request);
     }
 
+    // Standalone Pipeline app page — complete HTML for iframe embedding
+    // Assembles: CSS + template HTML + bootstrap HTML into a single page
+    // Accepts ?token=JWT for authentication passthrough from parent frame
+    if (path === '/app' && method === 'GET') {
+      const corsHeaders = getCorsHeaders(request);
+      const tokenParam = url.searchParams.get('token') || '';
+      const templateResp = await getPipelineTemplateHTML(request);
+      const templateHTML = await templateResp.text();
+      const bootstrapResp = await getPipelineBootstrapHTML(request);
+      const bootstrapHTML = await bootstrapResp.text();
+
+      const fullPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pipeline — MtgBroker</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/static/pipeline.css">
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Host Grotesk', system-ui, sans-serif; background: #f8fafc; }
+    .app-page-content { padding: 20px 24px; max-width: 100%; }
+  </style>
+  <script>
+    // Inject JWT from query param into localStorage so Pipeline JS can authenticate
+    (function() {
+      var token = ${JSON.stringify(tokenParam)};
+      if (token) {
+        try { localStorage.setItem('Outseta.nocode.accessToken', token); } catch(e) {}
+      }
+    })();
+  </script>
+</head>
+<body>
+  ${templateHTML}
+  ${bootstrapHTML}
+</body>
+</html>`;
+
+      return new Response(fullPage, {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' }
+      });
+    }
+
     // Health check
     if (path === '/health' || path === '/') {
       return jsonResponse({

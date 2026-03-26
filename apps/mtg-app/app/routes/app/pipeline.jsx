@@ -8,7 +8,7 @@ export function meta() {
 // loans, tasks, calculators, documents, and more. It's embedded here via iframe
 // until a full React conversion is done. The Worker handles its own auth via
 // Outseta JWT from localStorage.
-const PIPELINE_URL = "https://mtg-broker-pipeline.rich-e00.workers.dev";
+const PIPELINE_URL = "https://mtg-broker-pipeline.rich-e00.workers.dev/app";
 
 export default function PipelinePage() {
   const [token, setToken] = useState(null);
