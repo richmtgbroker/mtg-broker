@@ -4,10 +4,13 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 25, 2026 - v8.5 — Pricing tab enhancements:
- *   Added synced Lender searchable dropdown to Pricing Rate card (mirrors Deal card,
- *   bidirectional sync). Pricing Engine buttons now dark blue brand color (#1a56db).
- *   New Pricing Lender dropdown IIFE with full keyboard nav + Other option.
+ * UPDATED: March 25, 2026 - v8.6 — SSN full input, search expansion, escrow fields:
+ *   1. Full SSN input with XXX-XX-XXXX formatting + masked display (•••-••-XXXX).
+ *      Stores full SSN in Supabase, auto-derives last 4 for backward compat.
+ *   2. Pipeline search now includes co-borrower names, property state/zip,
+ *      and buyer's/seller's agent names from Purchase Agreement.
+ *   3. Added Flood Insurance and Mortgage Insurance rows to Payment table.
+ *      Both included in PITIA calculation and monthly display.
  *
  * PREVIOUS: March 25, 2026 - v8.3 — Liabilities tab + Pricing tab:
  *   New Liabilities tab (after Assets): dynamic liability rows with name, type,
@@ -271,6 +274,7 @@ const FIELD_TO_COLUMN = {
   'Co-Borrower Last Name': 'co_borrower_last_name',
   'HOI': 'hoi', 'Property Taxes': 'property_taxes',
   'Supplemental Insurance': 'supplemental_insurance', 'HOA': 'hoa', 'HOA Dues': 'hoa',
+  'Flood Insurance': 'flood_insurance', 'Mortgage Insurance': 'mortgage_insurance',
   'Lender': 'lender', 'Co-Borrower Role': 'co_borrower_role',
   'Property County': 'property_county', 'Channel': 'channel',
   'Comp Type': 'comp_type',
@@ -294,7 +298,9 @@ const FIELD_TO_COLUMN = {
   'Borrower Income Details': 'borrower_income_details',
   'Co-Borrower Income Details': 'co_borrower_income_details',
   'Borrower DOB': 'borrower_dob', 'Borrower SSN Last 4': 'borrower_ssn_last_4',
+  'Borrower SSN': 'borrower_ssn',
   'Co-Borrower DOB': 'co_borrower_dob', 'Co-Borrower SSN Last 4': 'co_borrower_ssn_last_4',
+  'Co-Borrower SSN': 'co_borrower_ssn',
   'Deal Notes': 'deal_notes', 'Pricing Notes': 'pricing_notes',
   'Points': 'points', 'YSP': 'ysp', 'Payroll Notes': 'payroll_notes',
   'Down Payment': 'down_payment', 'Closing Costs': 'closing_costs',
@@ -1868,24 +1874,30 @@ function updatePICalc() {
   var hoi = parseCurrency(document.getElementById('prop-hoi').value) || 0;
   var taxes = parseCurrency(document.getElementById('prop-taxes').value) || 0;
   var supp = parseCurrency(document.getElementById('prop-supp-ins').value) || 0;
+  var flood = parseCurrency(document.getElementById('prop-flood-ins').value) || 0;
+  var mi = parseCurrency(document.getElementById('prop-mi').value) || 0;
   var hoa = parseCurrency(document.getElementById('prop-hoa').value) || 0;
-  var hoiM = hoi / 12, taxM = taxes / 12, supM = supp / 12, hoaM = hoa;
+  var hoiM = hoi / 12, taxM = taxes / 12, supM = supp / 12, floodM = flood / 12, miM = mi, hoaM = hoa;
   var hoiEl = document.getElementById('hoi-monthly');
   var taxEl = document.getElementById('taxes-monthly');
   var supEl = document.getElementById('supp-monthly');
+  var floodEl = document.getElementById('flood-monthly');
+  var miEl = document.getElementById('mi-monthly');
   var hoaEl = document.getElementById('hoa-monthly');
   if (hoiEl) hoiEl.textContent = hoi > 0 ? fmtMo(hoiM) : '\\u2014';
   if (taxEl) taxEl.textContent = taxes > 0 ? fmtMo(taxM) : '\\u2014';
   if (supEl) supEl.textContent = supp > 0 ? fmtMo(supM) : '\\u2014';
+  if (floodEl) floodEl.textContent = flood > 0 ? fmtMo(floodM) : '\\u2014';
+  if (miEl) miEl.textContent = mi > 0 ? fmtMo(miM) : '\\u2014';
   if (hoaEl) hoaEl.textContent = hoa > 0 ? fmtMo(hoaM) : '\\u2014';
-  var monthlyExp = hoiM + taxM + supM + hoaM;
+  var monthlyExp = hoiM + taxM + supM + floodM + miM + hoaM;
   if (expEl) expEl.textContent = monthlyExp > 0 ? fmtMo(monthlyExp) : '\\u2014';
   /* Total PITIA — also 2 decimal places */
   var total = (pi > 0 ? pi : 0) + monthlyExp;
   if (totalEl) totalEl.textContent = total > 0 ? fmtMo(total) : '\\u2014';
 }
 function setupPICalc() {
-  ['loan-amount','loan-interest-rate','loan-term','prop-hoi','prop-taxes','prop-supp-ins','prop-hoa'].forEach(function(id) {
+  ['loan-amount','loan-interest-rate','loan-term','prop-hoi','prop-taxes','prop-supp-ins','prop-flood-ins','prop-mi','prop-hoa'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', debounce(updatePICalc, 300));
   });
@@ -2106,7 +2118,7 @@ function filterTable() {
   const lf = document.getElementById('lock-status-filter').value;
   const pf = document.getElementById('pay-status-filter').value;
   let filtered = getLoansForCurrentFilter().filter(loan => {
-    const ms = !search || (loan['Borrower Name']||'').toLowerCase().includes(search) || (loan['Borrower First Name']||'').toLowerCase().includes(search) || (loan['Borrower Last Name']||'').toLowerCase().includes(search) || (loan['Property Street']||'').toLowerCase().includes(search) || (loan['Property City']||'').toLowerCase().includes(search);
+    const ms = !search || (loan['Borrower Name']||'').toLowerCase().includes(search) || (loan['Borrower First Name']||'').toLowerCase().includes(search) || (loan['Borrower Last Name']||'').toLowerCase().includes(search) || (loan['Co-Borrower']||'').toLowerCase().includes(search) || (loan['Co-Borrower First Name']||'').toLowerCase().includes(search) || (loan['Co-Borrower Last Name']||'').toLowerCase().includes(search) || (loan['Property Street']||'').toLowerCase().includes(search) || (loan['Property City']||'').toLowerCase().includes(search) || (loan['Property State']||'').toLowerCase().includes(search) || (loan['Property Zip']||'').toLowerCase().includes(search) || (function(){ try { var pa = typeof loan['Purchase Agreement JSON'] === 'string' ? JSON.parse(loan['Purchase Agreement JSON']) : loan['Purchase Agreement JSON']; if (!pa) return false; return (pa.buyersAgent||'').toLowerCase().includes(search) || (pa.sellersAgent||'').toLowerCase().includes(search); } catch(e) { return false; } })();
     const mst = !sf || loan.Stage === sf;
     const mt = !tf || loan['Loan Type'] === tf;
     const ml = !lf || (loan['Lock Status']||'-') === lf;
@@ -2263,6 +2275,8 @@ function openNewLoanModal() {
   document.getElementById('prop-hoi').value = '';
   document.getElementById('prop-taxes').value = '';
   document.getElementById('prop-supp-ins').value = '';
+  document.getElementById('prop-flood-ins').value = '';
+  document.getElementById('prop-mi').value = '';
   document.getElementById('prop-hoa').value = '';
   /* Reset housing cost toggles to defaults: annual for ins/tax/supp, monthly for HOA */
   if (typeof calcInsMode !== 'undefined') calcInsMode = 'annual';
@@ -2283,7 +2297,7 @@ function openNewLoanModal() {
   var piEl = document.getElementById('pi-calc-display'); if (piEl) piEl.textContent = '\\u2014';
   var expEl = document.getElementById('monthly-expenses-display'); if (expEl) expEl.textContent = '\\u2014';
   var totalEl = document.getElementById('total-pitia-display'); if (totalEl) totalEl.textContent = '\\u2014';
-  ["hoi-monthly","taxes-monthly","supp-monthly","hoa-monthly"].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent="\u2014";});
+  ["hoi-monthly","taxes-monthly","supp-monthly","flood-monthly","mi-monthly","hoa-monthly"].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent="\u2014";});
   /* Build Links section HTML (only first time) and clear values */
   buildLinksSection();
   ['link-application','link-documents','link-lender-portal','link-appraisal-portal','link-other1-name','link-other1-url','link-other2-name','link-other2-url','link-other3-name','link-other3-url'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -2339,11 +2353,11 @@ async function openLoanModal(id) {
   }
   setVal('co-borrower-email', loan['Co-Borrower Email']); setVal('co-borrower-phone', loan['Co-Borrower Phone']);
   setVal('co-borrower-role', loan['Co-Borrower Role']);
-  /* v7.11: Borrower/Co-Borrower DOB + SSN Last 4 */
+  /* v7.11: Borrower/Co-Borrower DOB + SSN */
   setVal('borrower-dob', loan['Borrower DOB']);
-  setVal('borrower-ssn4', loan['Borrower SSN Last 4']);
+  setVal('borrower-ssn', loan['Borrower SSN'] || loan['Borrower SSN Last 4'] || '');
   setVal('co-borrower-dob', loan['Co-Borrower DOB']);
-  setVal('co-borrower-ssn4', loan['Co-Borrower SSN Last 4']);
+  setVal('co-borrower-ssn', loan['Co-Borrower SSN'] || loan['Co-Borrower SSN Last 4'] || '');
   /* Lender searchable dropdown — set hidden value + display input */
   setVal('loan-lender', loan['Lender']);
   if (window.setLenderValue) window.setLenderValue(loan['Lender'] || '');
@@ -2409,6 +2423,8 @@ async function openLoanModal(id) {
   document.getElementById('prop-hoi').value = loan['HOI'] ? (loan['HOI'] * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
   document.getElementById('prop-taxes').value = loan['Property Taxes'] ? (loan['Property Taxes'] * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
   document.getElementById('prop-supp-ins').value = loan['Supplemental Insurance'] ? (loan['Supplemental Insurance'] * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
+  document.getElementById('prop-flood-ins').value = loan['Flood Insurance'] ? (loan['Flood Insurance'] * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
+  document.getElementById('prop-mi').value = loan['Mortgage Insurance'] ? loan['Mortgage Insurance'].toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
   document.getElementById('prop-hoa').value = loan['HOA Dues'] ? loan['HOA Dues'].toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
   /* Also populate calculator sidebar fields (annual for ins/tax/supp, monthly for HOA) */
   document.getElementById('calc-insurance').value = loan['HOI'] ? (loan['HOI'] * 12).toLocaleString() : '';
@@ -2598,11 +2614,13 @@ async function saveLoan() {
     'Co-Borrower Email': document.getElementById('co-borrower-email').value,
     'Co-Borrower Phone': document.getElementById('co-borrower-phone').value,
     'Co-Borrower Role': document.getElementById('co-borrower-role').value,
-    /* v7.11: Borrower/Co-Borrower DOB + SSN Last 4 */
+    /* v8.6: Borrower/Co-Borrower DOB + full SSN (auto-derives last 4) */
     'Borrower DOB': document.getElementById('borrower-dob').value || null,
-    'Borrower SSN Last 4': document.getElementById('borrower-ssn4').value,
+    'Borrower SSN': document.getElementById('borrower-ssn').value.replace(/\\D/g, ''),
+    'Borrower SSN Last 4': (() => { var d = document.getElementById('borrower-ssn').value.replace(/\\D/g, ''); return d.length >= 4 ? d.slice(-4) : d; })(),
     'Co-Borrower DOB': document.getElementById('co-borrower-dob').value || null,
-    'Co-Borrower SSN Last 4': document.getElementById('co-borrower-ssn4').value,
+    'Co-Borrower SSN': document.getElementById('co-borrower-ssn').value.replace(/\\D/g, ''),
+    'Co-Borrower SSN Last 4': (() => { var d = document.getElementById('co-borrower-ssn').value.replace(/\\D/g, ''); return d.length >= 4 ? d.slice(-4) : d; })(),
     'Lender': document.getElementById('loan-lender').value,
     'Credit Pull Type': document.getElementById('credit-pull-type').value,
     'Credit Score': document.getElementById('credit-score').value ? parseInt(document.getElementById('credit-score').value) : null,
@@ -2665,6 +2683,8 @@ async function saveLoan() {
     'HOI': (() => { const v = parseCurrency(document.getElementById('prop-hoi').value); return v ? v / 12 : null; })(),
     'Property Taxes': (() => { const v = parseCurrency(document.getElementById('prop-taxes').value); return v ? v / 12 : null; })(),
     'Supplemental Insurance': (() => { const v = parseCurrency(document.getElementById('prop-supp-ins').value); return v ? v / 12 : null; })(),
+    'Flood Insurance': (() => { const v = parseCurrency(document.getElementById('prop-flood-ins').value); return v ? v / 12 : null; })(),
+    'Mortgage Insurance': parseCurrency(document.getElementById('prop-mi').value) || null,
     'HOA Dues': parseCurrency(document.getElementById('prop-hoa').value) || null,
     'Afford Max Purchase': parseCurrency(document.getElementById('calc-max-purchase').textContent) || null,
     'Afford Max Loan Amt': parseCurrency(document.getElementById('calc-max-loan').textContent) || null,
@@ -2807,15 +2827,28 @@ function wirePhoneInput(inputId) {
   if (el.value) el.value = formatPhoneValue(el.value);
 }
 
-/* --- SSN Last 4: mask with dots + eye toggle --- */
+/* --- SSN: full input with XXX-XX-XXXX formatting + masked display --- */
+function formatSSNValue(val) {
+  var digits = val.replace(/\\D/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 5) return digits.slice(0,3) + '-' + digits.slice(3);
+  return digits.slice(0,3) + '-' + digits.slice(3,5) + '-' + digits.slice(5,9);
+}
+function maskSSNDisplay(val) {
+  var digits = val.replace(/\\D/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 4) return digits;
+  return '\\u2022\\u2022\\u2022-\\u2022\\u2022-' + digits.slice(-4);
+}
 function wireSSNMasking(inputId) {
   var el = document.getElementById(inputId);
   if (!el) return;
-  /* Only proceed if not already wired */
   if (el.dataset.ssnWired) return;
   el.dataset.ssnWired = 'true';
+  /* Store raw digits separately so masking doesn't corrupt data */
+  el.dataset.ssnRaw = el.value.replace(/\\D/g, '');
 
-  /* Create wrapper for the toggle icon */
   var wrapper = el.parentElement;
   if (wrapper) {
     wrapper.style.position = 'relative';
@@ -2823,19 +2856,22 @@ function wireSSNMasking(inputId) {
     toggleBtn.type = 'button';
     toggleBtn.className = 'ssn-toggle-btn';
     toggleBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
-    toggleBtn.title = 'Show/hide SSN';
+    toggleBtn.title = 'Show SSN';
     toggleBtn.style.cssText = 'position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#6b7280;padding:4px;font-size:13px;z-index:2;';
     wrapper.appendChild(toggleBtn);
     el.style.paddingRight = '32px';
 
     var masked = true;
-    function updateMask() {
-      if (masked && el.value) {
-        el.type = 'password';
+    function updateDisplay() {
+      var raw = el.dataset.ssnRaw || '';
+      if (masked && raw) {
+        el.value = maskSSNDisplay(raw);
+        el.readOnly = true;
         toggleBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
         toggleBtn.title = 'Show SSN';
       } else {
-        el.type = 'text';
+        el.value = formatSSNValue(raw);
+        el.readOnly = false;
         toggleBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
         toggleBtn.title = 'Hide SSN';
       }
@@ -2843,12 +2879,28 @@ function wireSSNMasking(inputId) {
     toggleBtn.addEventListener('click', function(e) {
       e.preventDefault();
       masked = !masked;
-      updateMask();
+      updateDisplay();
+      if (!masked) el.focus();
+    });
+    /* Format as-you-type when unmasked */
+    el.addEventListener('input', function() {
+      if (masked) return;
+      var cursor = el.selectionStart;
+      var beforeLen = el.value.length;
+      var digits = el.value.replace(/\\D/g, '').slice(0, 9);
+      el.dataset.ssnRaw = digits;
+      el.value = formatSSNValue(digits);
+      var afterLen = el.value.length;
+      var newCursor = cursor + (afterLen - beforeLen);
+      el.setSelectionRange(newCursor, newCursor);
+    });
+    /* Re-mask on blur */
+    el.addEventListener('blur', function() {
+      masked = true;
+      updateDisplay();
     });
     /* Default to masked */
-    updateMask();
-    /* Re-mask when modal opens (listener on value changes) */
-    el.addEventListener('focus', function() { /* keep current state */ });
+    updateDisplay();
   }
 }
 
@@ -2856,8 +2908,8 @@ function wireSSNMasking(inputId) {
 function initInputFormatters() {
   wirePhoneInput('borrower-phone');
   wirePhoneInput('co-borrower-phone');
-  wireSSNMasking('borrower-ssn4');
-  wireSSNMasking('co-borrower-ssn4');
+  wireSSNMasking('borrower-ssn');
+  wireSSNMasking('co-borrower-ssn');
 }
 
 /* Hook into modal open — re-format phone values loaded from Airtable */
@@ -2870,11 +2922,11 @@ if (typeof _origOpenLoanModal === 'function') {
     if (bp && bp.value) bp.value = formatPhoneValue(bp.value);
     var cp = document.getElementById('co-borrower-phone');
     if (cp && cp.value) cp.value = formatPhoneValue(cp.value);
-    /* Re-mask SSN fields */
-    var bs = document.getElementById('borrower-ssn4');
-    if (bs) bs.type = 'password';
-    var cs = document.getElementById('co-borrower-ssn4');
-    if (cs) cs.type = 'password';
+    /* Update SSN raw data from loaded values and re-mask */
+    var bs = document.getElementById('borrower-ssn');
+    if (bs) { bs.dataset.ssnRaw = bs.value.replace(/\\D/g, ''); bs.value = maskSSNDisplay(bs.dataset.ssnRaw); bs.readOnly = true; }
+    var cs = document.getElementById('co-borrower-ssn');
+    if (cs) { cs.dataset.ssnRaw = cs.value.replace(/\\D/g, ''); cs.value = maskSSNDisplay(cs.dataset.ssnRaw); cs.readOnly = true; }
   };
 }
 var _origOpenNewLoanModal = window.openNewLoanModal;
@@ -2896,19 +2948,19 @@ if (typeof _origSaveLoan === 'function') {
     if (bp) bp.value = stripPhoneFormat(bp.value);
     var cp = document.getElementById('co-borrower-phone');
     if (cp) cp.value = stripPhoneFormat(cp.value);
-    /* Ensure SSN field is text type so .value reads correctly */
-    var bs = document.getElementById('borrower-ssn4');
-    if (bs) bs.type = 'text';
-    var cs = document.getElementById('co-borrower-ssn4');
-    if (cs) cs.type = 'text';
+    /* Set SSN fields to raw digits for save (they may be masked) */
+    var bs = document.getElementById('borrower-ssn');
+    if (bs) { bs.readOnly = false; bs.value = bs.dataset.ssnRaw || ''; }
+    var cs = document.getElementById('co-borrower-ssn');
+    if (cs) { cs.readOnly = false; cs.value = cs.dataset.ssnRaw || ''; }
     /* Call original save */
     await _origSaveLoan();
     /* Re-format phone after save */
     if (bp && bp.value) bp.value = formatPhoneValue(bp.value);
     if (cp && cp.value) cp.value = formatPhoneValue(cp.value);
     /* Re-mask SSN after save */
-    if (bs) bs.type = 'password';
-    if (cs) cs.type = 'password';
+    if (bs) { bs.value = maskSSNDisplay(bs.dataset.ssnRaw || ''); bs.readOnly = true; }
+    if (cs) { cs.value = maskSSNDisplay(cs.dataset.ssnRaw || ''); cs.readOnly = true; }
   };
 }
 
@@ -3679,6 +3731,10 @@ function runAffordCalc() {
   var suppRaw  = parseCurrency(document.getElementById('calc-supp-insurance').value) || 0;
   var moSupp   = (calcSuppMode === 'annual') ? suppRaw / 12 : suppRaw;
 
+  /* Flood Insurance from Payment section (stored as annual, convert to monthly) */
+  var floodRaw = parseCurrency(document.getElementById('prop-flood-ins').value) || 0;
+  var moFlood  = floodRaw / 12;
+
   /* HOA -> convert to monthly */
   var hoaRaw = parseCurrency(document.getElementById('calc-hoa').value) || 0;
   var moHOA  = (calcHOAMode === 'annual') ? hoaRaw / 12 : hoaRaw;
@@ -3729,7 +3785,7 @@ function runAffordCalc() {
   var miMonthlyRate = miRatePct / 100 / 12;
   var denom         = (1 - dpFrac) * (pmtFactor + miMonthlyRate);
 
-  var maxPurchase = Math.max(0, Math.round((maxHousing - moTaxes - moHOI - moSupp - moHOA) / denom));
+  var maxPurchase = Math.max(0, Math.round((maxHousing - moTaxes - moHOI - moSupp - moFlood - moHOA) / denom));
   var maxLoan     = Math.round(maxPurchase * (1 - dpFrac));
 
   /* ---- Compute actual monthly components (NOTE rate for P&I display) ---- */
@@ -3738,14 +3794,15 @@ function runAffordCalc() {
     ? (rNote * Math.pow(1 + rNote, n)) / (Math.pow(1 + rNote, n) - 1)
     : 1 / n;
 
-  var moPI      = Math.round(maxLoan * pmtFactorNote);
-  var moMI      = Math.round(maxLoan * miMonthlyRate);
-  var moTax     = Math.round(moTaxes);
-  var moIns     = Math.round(moHOI);
-  var moSuppIns = Math.round(moSupp);
-  var moHOAamt  = Math.round(moHOA);
+  var moPI       = Math.round(maxLoan * pmtFactorNote);
+  var moMI       = Math.round(maxLoan * miMonthlyRate);
+  var moTax      = Math.round(moTaxes);
+  var moIns      = Math.round(moHOI);
+  var moSuppIns  = Math.round(moSupp);
+  var moFloodIns = Math.round(moFlood);
+  var moHOAamt   = Math.round(moHOA);
 
-  var totalPayment = moPI + moMI + moTax + moIns + moSuppIns + moHOAamt;
+  var totalPayment = moPI + moMI + moTax + moIns + moSuppIns + moFloodIns + moHOAamt;
 
   /* ---- DTI Calculations ---- */
   var currentDTI = (monthlyDebts / monthlyGross) * 100;
@@ -3778,6 +3835,7 @@ function runAffordCalc() {
   lines.push('<div class="calc-payment-line"><span>Taxes</span><span>' + fCur(moTax) + '</span></div>');
   lines.push('<div class="calc-payment-line"><span>HOI</span><span>' + fCur(moIns) + '</span></div>');
   if (moSuppIns > 0) lines.push('<div class="calc-payment-line"><span>Supp Ins</span><span>' + fCur(moSuppIns) + '</span></div>');
+  if (moFloodIns > 0) lines.push('<div class="calc-payment-line"><span>Flood Ins</span><span>' + fCur(moFloodIns) + '</span></div>');
   if (moHOAamt > 0) lines.push('<div class="calc-payment-line"><span>HOA</span><span>' + fCur(moHOAamt) + '</span></div>');
   lines.push('<div class="calc-payment-total"><span>Total</span><span>' + fCur(totalPayment) + '</span></div>');
 
@@ -10805,7 +10863,7 @@ async function getPipelineTemplateHTML(request) {
               </div>
               <div class="cg">
                 <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="borrower-dob"></div>
-                <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+                <div class="ff"><label>SSN</label><input type="text" class="fc" id="borrower-ssn" maxlength="11" placeholder="XXX-XX-XXXX" autocomplete="off"></div>
               </div>
               <div class="cb-toggle" onclick="toggleCoBorrower()">
                 <span class="cb-toggle-label">Co-Borrower</span>
@@ -10828,7 +10886,7 @@ async function getPipelineTemplateHTML(request) {
                 </div>
                 <div class="cg">
                   <div class="ff"><label>Date of Birth</label><input type="date" class="fc" id="co-borrower-dob"></div>
-                  <div class="ff"><label>SSN Last 4</label><input type="text" class="fc" id="co-borrower-ssn4" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]{4}"></div>
+                  <div class="ff"><label>SSN</label><input type="text" class="fc" id="co-borrower-ssn" maxlength="11" placeholder="XXX-XX-XXXX" autocomplete="off"></div>
                 </div>
               </div>
             </div>
@@ -10973,6 +11031,16 @@ async function getPipelineTemplateHTML(request) {
                     <td class="pt-lbl">Supp. Ins.</td>
                     <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-supp-ins" data-decimals="2" placeholder="0.00"></td>
                     <td class="pt-mo"><span class="pt-val pt-cmp" id="supp-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">Flood Ins.</td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-flood-ins" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="flood-monthly">—</span></td>
+                  </tr>
+                  <tr>
+                    <td class="pt-lbl">MI <span class="pt-hint">(mo)</span></td>
+                    <td class="pt-inp"><input type="text" class="fc currency-input payment-calc-input" id="prop-mi" data-decimals="2" placeholder="0.00"></td>
+                    <td class="pt-mo"><span class="pt-val pt-cmp" id="mi-monthly">—</span></td>
                   </tr>
                   <tr>
                     <td class="pt-lbl">HOA <span class="pt-hint">(mo)</span></td>
