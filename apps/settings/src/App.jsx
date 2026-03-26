@@ -570,10 +570,15 @@ export default function App() {
             <button
               type="button"
               className="settings-btn-secondary"
-              data-o-profile="1"
-              data-mode="popup"
-              data-tab="profile"
-              onClick={clearCacheSettings}
+              onClick={() => {
+                clearCacheSettings()
+                // Open Outseta's built-in profile editor modal
+                if (typeof window.Outseta !== 'undefined' && typeof window.Outseta.showProfile === 'function') {
+                  window.Outseta.showProfile({ tab: 'profile' })
+                } else {
+                  alert('Profile editor is loading. Please try again in a moment.')
+                }
+              }}
               style={{ fontSize: '11px', padding: '5px 12px', whiteSpace: 'nowrap' }}
             >
               <i className="fas fa-pen"></i> Manage Profile
@@ -892,14 +897,20 @@ export default function App() {
           >
             <i className={'fas ' + saveIcon}></i> {saveLabel}
           </button>
-          <a
-            href="https://mtgbroker.outseta.com/profile#o-authenticated"
+          <button
+            type="button"
             className="settings-btn-secondary"
-            target="_blank"
-            rel="noopener"
+            onClick={() => {
+              // Open Outseta's built-in account/billing modal (no external URL)
+              if (typeof window.Outseta !== 'undefined' && typeof window.Outseta.showProfile === 'function') {
+                window.Outseta.showProfile({ tab: 'plan' })
+              } else {
+                alert('Account manager is loading. Please try again in a moment.')
+              }
+            }}
           >
-            <i className="fas fa-external-link-alt"></i> Manage Account & Billing
-          </a>
+            <i className="fas fa-credit-card"></i> Manage Account & Billing
+          </button>
         </div>
       </div>
     </div>
