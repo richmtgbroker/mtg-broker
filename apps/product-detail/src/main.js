@@ -54,44 +54,31 @@ import css from './product-detail.css?inline';
       return;
     }
 
-    // Build the standard app page wrapper that matches the rest of the
-    // app layout (sidebar offset + navbar top padding from Site Settings CSS)
+    // Find the main-content-section div (Webflow app layout container).
+    // This is where we inject — it handles sidebar offset + navbar padding.
+    var target = document.querySelector('.main-content-section') || document.body;
+
+    // Build the three content containers
     var wrapper = document.createElement('div');
-    wrapper.className = 'app-page-content';
-
+    wrapper.className = 'app-container';
     wrapper.innerHTML =
-      '<div class="app-container">' +
-        // Breadcrumb row
-        '<div class="product-detail-breadcrumb" ' +
-             'style="margin-bottom:12px;"></div>' +
-        // Header card — no extra class/padding; buildHeader injects .detail-header
-        // which already has its own padding, border, and border-radius from site CSS
-        '<div class="product-detail-header" ' +
-             'style="margin-bottom:20px;"></div>' +
-        // Content sections (stacked cards)
-        '<div class="product-detail-content"></div>' +
-      '</div>';
+      // Breadcrumb row
+      '<div class="product-detail-breadcrumb" ' +
+           'style="margin-bottom:12px;"></div>' +
+      // Header card — buildHeader injects .detail-header which has its own styling
+      '<div class="product-detail-header" ' +
+           'style="margin-bottom:20px;"></div>' +
+      // Content sections (stacked cards)
+      '<div class="product-detail-content"></div>';
 
-    // Insert right after the opening <body> tag / before the first
-    // Webflow-generated div, so the sidebar and navbar overlay correctly.
-    // We look for the first real element child of <body> that isn't a script.
-    var body = document.body;
-    var firstNonScript = null;
-    for (var i = 0; i < body.children.length; i++) {
-      var el = body.children[i];
-      if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
-        firstNonScript = el;
-        break;
-      }
-    }
-
-    if (firstNonScript) {
-      body.insertBefore(wrapper, firstNonScript);
+    // Insert at the beginning of main-content-section (before script embeds)
+    if (target.firstChild) {
+      target.insertBefore(wrapper, target.firstChild);
     } else {
-      body.appendChild(wrapper);
+      target.appendChild(wrapper);
     }
 
-    console.log('Product Detail: Auto-injected page containers');
+    console.log('Product Detail: Auto-injected page containers into main-content-section');
   }
 
 
