@@ -3,6 +3,9 @@
 //
 // v1.1 — Security: Added JWT verification (RS256) to prevent unauthenticated
 //         API abuse. Only verified Outseta users can call this endpoint.
+// v1.2 — Email ingestion support: Updated RPC now returns source_type,
+//         received_at, expires_at. Source cards show email vs PDF origin.
+//         System prompt updated to note recency of email-sourced data.
 //
 // NEW endpoint — does NOT modify or replace the existing /api/search endpoint.
 //
@@ -217,9 +220,23 @@ async function searchChunks(embedding, env) {
 
 async function synthesizeAnswer(query, chunks, apiKey) {
   // Build context block from the top chunks, labeled by source
-  const contextBlock = chunks.map((chunk, i) =>
-    `[Source ${i + 1}: ${chunk.lender_name} — ${chunk.product_name}]\n${chunk.chunk_text}`
-  ).join('\n\n---\n\n')
+  // Email-sourced chunks include date + expiration so Claude can note recency
+  const contextBlock = chunks.map((chunk, i) => {
+    let sourceLabel = `${chunk.lender_name} — ${chunk.product_name}`
+    if (chunk.source_type === 'email_update' && chunk.received_at) {
+      const receivedDate = new Date(chunk.received_at).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      })
+      sourceLabel += ` (Email Update, ${receivedDate})`
+      if (chunk.expires_at) {
+        const expiresDate = new Date(chunk.expires_at).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric'
+        })
+        sourceLabel += ` [expires ${expiresDate}]`
+      }
+    }
+    return `[Source ${i + 1}: ${sourceLabel}]\n${chunk.chunk_text}`
+  }).join('\n\n---\n\n')
 
   const systemPrompt = `You are a mortgage lending guidelines expert helping loan officers understand lender policies.
 
@@ -231,7 +248,13 @@ Your job:
 - For source citations: put the lender/product name in **bold** at the start of each bullet rather than in brackets at the end. Example: "- **Acra Lending — Investor Cash Flow DSCR**: $100,000 minimum, 660 FICO"
 - If excerpts don't contain enough to fully answer, say so clearly and explain what's missing
 - Be concise and specific — loan officers use this for real transactions
-- Never invent or infer details not present in the excerpts`
+- Never invent or infer details not present in the excerpts
+
+IMPORTANT — Some sources come from lender emails (marked "Email Update" with a date).
+- Email-sourced data may be more recent than PDF guidelines — note the date when citing.
+- If an email update conflicts with a PDF guideline on the same topic, prefer the email update and note that guidelines may have changed recently.
+- If an email has an expiration date, mention it so the LO knows the info is time-sensitive.
+- Example: "- **UWM — FHA FICO minimum** *(Email Update, Mar 22, 2026 — expires Apr 21, 2026)*: Temporarily reduced to 580 for purchase transactions"`
 
   const userMessage = `Question: ${query}
 
@@ -269,14 +292,21 @@ ${contextBlock}`
     const key = `${chunk.lender_name}|${chunk.product_name}`
     if (!seen.has(key)) {
       seen.add(key)
-      sources.push({
+      const source = {
         lender_name: chunk.lender_name,
         product_name: chunk.product_name,
         similarity: Math.round((chunk.similarity || 0) * 100),  // as integer percent
+        source_type: chunk.source_type || 'pdf_matrix',
         excerpt: chunk.chunk_text.length > 280
           ? chunk.chunk_text.slice(0, 280) + '…'
           : chunk.chunk_text,
-      })
+      }
+      // Add date info for email-sourced chunks
+      if (chunk.source_type === 'email_update') {
+        source.received_at = chunk.received_at
+        source.expires_at = chunk.expires_at
+      }
+      sources.push(source)
     }
   }
 
