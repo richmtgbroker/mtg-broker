@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import Logo from "../components/Logo";
 import { isLoggedIn, getUserPlan } from "../lib/auth";
 
@@ -14,63 +14,71 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/app/dashboard";
   const widgetRef = useRef(null);
+  const redirectedRef = useRef(false);
+
+  // Redirect helper — only fires once
+  function doRedirect() {
+    if (redirectedRef.current) return;
+    redirectedRef.current = true;
+    const plan = getUserPlan();
+    window.location.href = plan ? redirectTo : "/pricing";
+  }
 
   useEffect(() => {
     // If already logged in, redirect immediately
     if (isLoggedIn()) {
-      const plan = getUserPlan();
-      window.location.href = plan ? redirectTo : "/pricing";
+      doRedirect();
       return;
     }
 
-    // Poll for login completion — Outseta sets the token in localStorage
-    const timer = setInterval(() => {
+    // AGGRESSIVE polling at 100ms to detect Outseta JWT BEFORE Outseta's
+    // own redirect fires. Outseta sets the token in localStorage and then
+    // redirects to the hardcoded post-login URL (mtg.broker). We need to
+    // detect the token and redirect ourselves first, keeping the user on
+    // the current domain.
+    const fastPoll = setInterval(() => {
       if (isLoggedIn()) {
-        clearInterval(timer);
-        clearInterval(initTimer);
-        const plan = getUserPlan();
-        // Has an active plan → go to dashboard (or redirect param)
-        // No plan → go to pricing to pick one
-        window.location.href = plan ? redirectTo : "/pricing";
+        clearInterval(fastPoll);
+        doRedirect();
       }
-    }, 500);
+    }, 100);
 
-    // Try to re-initialize the Outseta widget if it didn't auto-render.
-    // The Outseta SDK looks for data-o-auth divs on DOMContentLoaded,
-    // but since this is a client-side route transition, we may need to
-    // manually trigger a re-scan.
+    // Also intercept beforeunload to try to prevent Outseta's redirect
+    function handleBeforeUnload(e) {
+      if (isLoggedIn() && !redirectedRef.current) {
+        doRedirect();
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Try to re-initialize the Outseta widget if it didn't auto-render
     const initTimer = setInterval(() => {
       if (typeof window.Outseta !== "undefined") {
-        // If the widget div is still empty, try to kick Outseta
         if (widgetRef.current && widgetRef.current.children.length === 0) {
           try {
-            if (typeof window.Outseta.auth?.open === "function") {
-              // This opens the modal — we want embed mode instead
-              // Just let the SDK find the div naturally
-            }
-            // Force Outseta to re-scan for embed divs
             if (typeof window.Outseta.init === "function") {
               window.Outseta.init();
             }
-          } catch (e) {
-            // Outseta SDK not fully loaded yet
-          }
+          } catch (e) {}
         } else {
           clearInterval(initTimer);
         }
       }
     }, 300);
 
-    // Stop polling after 30 seconds
+    // Stop polling after 60 seconds
     const cleanup = setTimeout(() => {
-      clearInterval(timer);
+      clearInterval(fastPoll);
       clearInterval(initTimer);
-    }, 30000);
+    }, 60000);
 
     return () => {
-      clearInterval(timer);
+      clearInterval(fastPoll);
       clearInterval(initTimer);
       clearTimeout(cleanup);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [redirectTo]);
 
@@ -100,9 +108,9 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "28px" }}>
-          <Link to="/" style={{ display: "inline-block" }}>
+          <a href="/" style={{ display: "inline-block" }}>
             <Logo height={32} />
-          </Link>
+          </a>
         </div>
 
         {/* Heading */}
@@ -148,19 +156,19 @@ export default function LoginPage() {
         >
           <p style={{ fontSize: "14px", color: "#64748b", margin: 0 }}>
             Don't have an account?{" "}
-            <Link
-              to="/pricing"
+            <a
+              href="/pricing"
               style={{ color: "#1a56db", fontWeight: 600, textDecoration: "none" }}
             >
               Sign up
-            </Link>
+            </a>
           </p>
         </div>
       </div>
 
       {/* Back to homepage */}
-      <Link
-        to="/"
+      <a
+        href="/"
         style={{
           marginTop: "24px",
           fontSize: "14px",
@@ -169,7 +177,7 @@ export default function LoginPage() {
         }}
       >
         &larr; Back to homepage
-      </Link>
+      </a>
     </div>
   );
 }
