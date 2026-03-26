@@ -1,33 +1,33 @@
 import { Link } from "react-router";
 import { OUTSETA_DOMAIN } from "../lib/constants";
 
-const LOGO_URL = "https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png";
+const LOGO_URL = "/logo.png";
 
 export default function MarketingFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-white border-t border-border">
+    <footer className="bg-[#0f172a]">
       {/* Main footer content */}
       <div className="max-w-[1280px] mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Column 1: Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src={LOGO_URL} alt="MtgBroker" className="h-8 w-auto" />
+              <img src={LOGO_URL} alt="MtgBroker" className="h-8 w-auto brightness-0 invert" />
             </Link>
-            <p className="text-sm text-text-muted leading-relaxed mb-4">
+            <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">
               The complete toolkit for modern Loan Officers.
             </p>
-            <p className="text-sm text-text-muted leading-relaxed mb-1">
+            <p className="text-sm text-[#94a3b8] leading-relaxed mb-1">
               2172 W 9 Mile Rd
             </p>
-            <p className="text-sm text-text-muted leading-relaxed mb-4">
+            <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">
               Pensacola, FL 32534
             </p>
             <a
               href="mailto:support@mtg.broker"
-              className="text-sm text-primary-600 no-underline hover:underline"
+              className="text-sm text-primary-300 no-underline hover:text-white transition-colors"
             >
               support@mtg.broker
             </a>
@@ -35,24 +35,24 @@ export default function MarketingFooter() {
 
           {/* Column 2: Product */}
           <div>
-            <h4 className="text-sm font-bold text-text uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
               Product
             </h4>
             <ul className="space-y-3 list-none p-0 m-0">
               <li>
-                <a href="/#features" className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors">
+                <a href="/#features" className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors">
                   Features
                 </a>
               </li>
               <li>
-                <Link to="/pricing" className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors">
+                <Link to="/pricing" className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors">
                   Pricing
                 </Link>
               </li>
               <li>
                 <a
                   href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=login#o-anonymous`}
-                  className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors"
+                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Login
                 </a>
@@ -60,7 +60,7 @@ export default function MarketingFooter() {
               <li>
                 <a
                   href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`}
-                  className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors"
+                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Signup
                 </a>
@@ -70,7 +70,7 @@ export default function MarketingFooter() {
 
           {/* Column 3: Company */}
           <div>
-            <h4 className="text-sm font-bold text-text uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
               Company
             </h4>
             <ul className="space-y-3 list-none p-0 m-0">
@@ -79,7 +79,7 @@ export default function MarketingFooter() {
                   href={`https://${OUTSETA_DOMAIN}/support/kb/categories`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors"
+                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Help Center
                 </a>
@@ -89,7 +89,7 @@ export default function MarketingFooter() {
                   href={`https://${OUTSETA_DOMAIN}/support/kb`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors"
+                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Submit a Ticket
                 </a>
@@ -97,7 +97,7 @@ export default function MarketingFooter() {
               <li>
                 <a
                   href="mailto:support@mtg.broker"
-                  className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors"
+                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Contact
                 </a>
@@ -107,22 +107,22 @@ export default function MarketingFooter() {
 
           {/* Column 4: Legal */}
           <div>
-            <h4 className="text-sm font-bold text-text uppercase tracking-wider mb-4">
+            <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
               Legal
             </h4>
             <ul className="space-y-3 list-none p-0 m-0">
               <li>
-                <Link to="/privacy-policy" className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors">
+                <Link to="/privacy-policy" className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms-of-service" className="text-sm text-text-muted no-underline hover:text-primary-600 transition-colors">
+                <Link to="/terms-of-service" className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors">
                   Terms of Service
                 </Link>
               </li>
             </ul>
-            <p className="text-xs text-text-faint leading-relaxed mt-4">
+            <p className="text-xs text-[#64748b] leading-relaxed mt-4">
               MtgBroker, LLC provides informational tools only. Results are estimates. We are not a lender.
             </p>
           </div>
@@ -130,14 +130,14 @@ export default function MarketingFooter() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-border">
+      <div className="border-t border-[#1e293b]">
         <div className="max-w-[1280px] mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Copyright + Equal Housing */}
-          <div className="flex items-center gap-4 text-sm text-text-muted">
+          <div className="flex items-center gap-4 text-sm text-[#94a3b8]">
             <span>&copy; {year} MtgBroker, LLC.</span>
             <div className="flex items-center gap-1.5">
               {/* Equal Housing Opportunity icon */}
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-[#94a3b8]">
                 <path d="M12 2L2 8v2h20V8L12 2zm0 2.5L18.5 8h-13L12 4.5zM4 12v10h6v-6h4v6h6V12H4zm2 2h2v2H6v-2zm8 0h2v2h-2v-2z" />
               </svg>
               <span className="text-xs">Equal Housing Opportunity</span>
@@ -150,7 +150,7 @@ export default function MarketingFooter() {
               href="https://www.facebook.com/mtgbrokerllc"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-muted hover:text-primary-600 transition-colors"
+              className="text-[#94a3b8] hover:text-white transition-colors"
               aria-label="Facebook"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -161,7 +161,7 @@ export default function MarketingFooter() {
               href="https://www.linkedin.com/company/108294435/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-muted hover:text-primary-600 transition-colors"
+              className="text-[#94a3b8] hover:text-white transition-colors"
               aria-label="LinkedIn"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -172,7 +172,7 @@ export default function MarketingFooter() {
               href="https://x.com/mtgbrokerllc"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-muted hover:text-primary-600 transition-colors"
+              className="text-[#94a3b8] hover:text-white transition-colors"
               aria-label="X (Twitter)"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">

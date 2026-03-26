@@ -109,7 +109,8 @@ const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/.*\.mtg\.broker$/i,
   /^https:\/\/localhost(?::\d+)?$/i,
   /^https:\/\/.*\.webflow\.io$/i,
-  /^https:\/\/.*\.workers\.dev$/i
+  /^https:\/\/.*\.workers\.dev$/i,
+  /^https:\/\/.*\.pages\.dev$/i
 ];
 
 function getCorsHeaders(request) {

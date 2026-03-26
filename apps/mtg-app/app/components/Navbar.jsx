@@ -5,7 +5,7 @@ import { PLAN_MAP, OUTSETA_DOMAIN } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
 
-const LOGO_URL = "https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png";
+const LOGO_URL = "/logo.png";
 
 export default function Navbar() {
   const location = useLocation();
