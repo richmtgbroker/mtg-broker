@@ -218,13 +218,15 @@ export default function Pricing() {
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a
               href={getOutsetaAuthUrl("register", PLAN_UIDS.PRO)}
-              className="px-8 py-4 bg-white text-text rounded-xl font-bold text-lg no-underline hover:bg-gray-100 transition-colors"
+              className="px-8 py-4 bg-white rounded-xl font-bold text-lg no-underline hover:bg-gray-100 transition-colors"
+              style={{ color: "var(--color-text)" }}
             >
               Start PRO Free Trial
             </a>
             <a
               href={getOutsetaAuthUrl("register", PLAN_UIDS.LITE)}
-              className="px-8 py-4 border-2 border-white/30 text-white rounded-xl font-bold text-lg no-underline hover:bg-white/10 transition-colors"
+              className="px-8 py-4 border-2 border-white/30 rounded-xl font-bold text-lg no-underline hover:bg-white/10 transition-colors"
+              style={{ color: "#fff" }}
             >
               Start with Free Plan
             </a>
@@ -294,9 +296,10 @@ function PricingCard({ name, price, period, description, features, cta, ctaHref,
         href={ctaHref}
         className={`block w-full py-3.5 rounded-xl text-center font-bold no-underline transition-colors ${
           featured
-            ? "bg-primary-600 text-white hover:bg-primary-hover"
-            : "bg-surface-active text-text border border-border hover:bg-surface-section"
+            ? "bg-primary-600 hover:bg-primary-hover"
+            : "bg-surface-active border border-border hover:bg-surface-section"
         }`}
+        style={{ color: featured ? "#fff" : "var(--color-text)" }}
       >
         {cta}
       </a>

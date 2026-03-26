@@ -99,7 +99,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3 justify-end flex-none">
             {loggedIn ? (
               <>
-                <Link to="/app/dashboard" className="font-extrabold text-white px-5 py-2.5 rounded-md bg-primary-600 hover:bg-primary-800 no-underline text-[15px] h-10 inline-flex items-center shadow-sm transition-all max-md:hidden">
+                <Link to="/app/dashboard" className="font-extrabold px-5 py-2.5 rounded-md bg-primary-600 hover:bg-primary-800 no-underline text-[15px] h-10 inline-flex items-center shadow-sm transition-all max-md:hidden" style={{ color: "#fff" }}>
                   Dashboard
                 </Link>
 
@@ -189,10 +189,10 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
-                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base border border-border-light bg-surface-active text-text">
+                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base border border-border-light bg-surface-active text-text" style={{ color: "var(--color-text)" }}>
                   Login
                 </a>
-                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base bg-primary-600 text-white border border-primary-600">
+                <a href="#o-anonymous-register" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base bg-primary-600 text-white border border-primary-600" style={{ color: "#fff" }}>
                   Signup
                 </a>
               </div>
@@ -261,10 +261,10 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div>
-                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-primary-600 text-white mt-2.5">
+                  <a href="#o-anonymous-register" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-primary-600 mt-2.5" style={{ color: "#fff" }}>
                     Sign Up Free
                   </a>
-                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-surface-active text-text border border-border-light mt-2.5">
+                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5" style={{ color: "var(--color-text)" }}>
                     Login
                   </a>
                 </div>

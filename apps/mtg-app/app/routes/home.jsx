@@ -30,12 +30,13 @@ export default function Home() {
             <div className="flex items-center gap-4 flex-wrap">
               <Link
                 to="/pricing"
-                className="px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
+                className="px-8 py-4 bg-primary-600 rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
+                style={{ color: "#fff" }}
               >
                 View Plans
               </Link>
               <a
-                href="#o-anonymous"
+                href="#o-anonymous-register"
                 className="px-8 py-4 text-primary-600 font-bold text-lg no-underline hover:text-primary-hover transition-colors"
               >
                 Create Free Account &rarr;
@@ -203,8 +204,9 @@ export default function Home() {
             Stop guessing and start closing. Find the right guidelines and programs in seconds.
           </p>
           <a
-            href="#o-anonymous"
-            className="inline-block px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
+            href="#o-anonymous-register"
+            className="inline-block px-8 py-4 bg-primary-600 rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
+            style={{ color: "#fff" }}
           >
             Get Started for Free
           </a>
@@ -322,9 +324,10 @@ function PricingCard({ name, price, period, description, features, cta, ctaHref,
         href={ctaHref}
         className={`block w-full py-3.5 rounded-xl text-center font-bold no-underline transition-colors ${
           featured
-            ? "bg-primary-600 text-white hover:bg-primary-hover"
-            : "bg-surface-active text-text border border-border hover:bg-surface-section"
+            ? "bg-primary-600 hover:bg-primary-hover"
+            : "bg-surface-active border border-border hover:bg-surface-section"
         }`}
+        style={{ color: featured ? "#fff" : "var(--color-text)" }}
       >
         {cta}
       </a>

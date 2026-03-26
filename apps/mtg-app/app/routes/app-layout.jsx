@@ -88,7 +88,8 @@ export default function AppLayout() {
                 </p>
                 <a
                   href="#o-anonymous"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-primary-600 hover:bg-primary-hover no-underline transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary-600 hover:bg-primary-hover no-underline transition-colors"
+                  style={{ color: "#fff" }}
                 >
                   Login or Sign Up
                 </a>

@@ -59,7 +59,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <a
-                  href="#o-anonymous"
+                  href="#o-anonymous-register"
                   className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Signup

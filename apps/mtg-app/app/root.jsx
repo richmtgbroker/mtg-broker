@@ -36,17 +36,12 @@ export default function Root() {
         <meta name="apple-mobile-web-app-title" content="MtgBroker" />
         <Meta />
         <Links />
-      </head>
-      <body>
-        <Outlet />
-        <ScrollRestoration />
-        <Scripts />
 
-        {/* Outseta Authentication SDK */}
+        {/* Outseta Authentication SDK — must be in <head> so o_options is global */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              var o_options = {
+              window.o_options = {
                 domain: 'mtgbroker.outseta.com',
                 load: 'auth,customForm,emailList,leadCapture,nocode,profile,support',
                 tokenStorage: 'local',
@@ -56,7 +51,7 @@ export default function Root() {
             `,
           }}
         />
-        <script src="https://cdn.outseta.com/outseta.min.js" data-options="o_options" />
+        <script src="https://cdn.outseta.com/outseta.min.js" data-options="o_options"></script>
 
         {/* Rewardful Referral Tracking */}
         <script
@@ -64,7 +59,12 @@ export default function Root() {
             __html: `(function(w,r){w._rwq=r;w[r]=w[r]||function(){(w[r].q=w[r].q||[]).push(arguments)}})(window,'rewardful');`,
           }}
         />
-        <script async src="https://r.wdfl.co/rw.js" data-rewardful="a3ca66" />
+        <script async src="https://r.wdfl.co/rw.js" data-rewardful="a3ca66"></script>
+      </head>
+      <body>
+        <Outlet />
+        <ScrollRestoration />
+        <Scripts />
       </body>
     </html>
   );
