@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Footer from "../components/Footer";
 import MobileBottomNav from "../components/MobileBottomNav";
 import { isLoggedIn } from "../lib/auth";
+import { goToLogin } from "../lib/constants";
 
 /**
  * App layout — wraps all /app/* routes with navbar, sidebar, footer.
@@ -86,13 +87,13 @@ export default function AppLayout() {
                 <p className="text-text-muted text-sm mb-6">
                   You need to be logged in to access this page.
                 </p>
-                <a
-                  href="#o-anonymous"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary-600 hover:bg-primary-hover no-underline transition-colors"
+                <button
+                  onClick={goToLogin}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary-600 hover:bg-primary-hover border-none cursor-pointer transition-colors"
                   style={{ color: "#fff" }}
                 >
                   Login or Sign Up
-                </a>
+                </button>
               </div>
             </div>
           )}

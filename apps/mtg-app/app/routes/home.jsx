@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 import MarketingFooter from "../components/MarketingFooter";
-import { OUTSETA_DOMAIN, PLAN_UIDS, getOutsetaAuthUrl } from "../lib/constants";
+import { OUTSETA_DOMAIN, PLAN_UIDS, getOutsetaAuthUrl, goToSignup } from "../lib/constants";
 
 export function meta() {
   return [
@@ -35,12 +35,12 @@ export default function Home() {
               >
                 View Plans
               </Link>
-              <a
-                href="#o-anonymous-register"
-                className="px-8 py-4 text-primary-600 font-bold text-lg no-underline hover:text-primary-hover transition-colors"
+              <button
+                onClick={() => goToSignup()}
+                className="px-8 py-4 text-primary-600 font-bold text-lg bg-transparent border-none cursor-pointer hover:text-primary-hover transition-colors"
               >
                 Create Free Account &rarr;
-              </a>
+              </button>
             </div>
           </div>
 
@@ -203,13 +203,13 @@ export default function Home() {
           <p className="text-lg text-[#94a3b8] max-w-2xl mx-auto mb-8">
             Stop guessing and start closing. Find the right guidelines and programs in seconds.
           </p>
-          <a
-            href="#o-anonymous-register"
-            className="inline-block px-8 py-4 bg-primary-600 rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
+          <button
+            onClick={() => goToSignup()}
+            className="px-8 py-4 bg-primary-600 rounded-xl font-bold text-lg border-none cursor-pointer hover:bg-primary-hover transition-colors shadow-lg"
             style={{ color: "#fff" }}
           >
             Get Started for Free
-          </a>
+          </button>
           <p className="text-sm text-[#64748b] mt-4 flex items-center justify-center gap-2">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />

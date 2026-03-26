@@ -21,7 +21,7 @@ export const NEXA_DOMAINS = ["@nexamortgage.com", "@nexalending.com"];
 // Outseta domain
 export const OUTSETA_DOMAIN = "mtgbroker.outseta.com";
 
-// Build an Outseta auth URL that redirects back to the current site after auth.
+// Build an Outseta hosted auth URL that redirects back to the current site after auth.
 // For plan-specific signup: getOutsetaAuthUrl("register", "NmdnZg90")
 // For general login: getOutsetaAuthUrl("login")
 // During SSR, falls back to mtg.broker as the redirect target.
@@ -30,8 +30,22 @@ export function getOutsetaAuthUrl(mode = "register", planUid = null) {
   const origin = typeof window !== "undefined" ? window.location.origin : "https://mtg.broker";
   const params = new URLSearchParams({ widgetMode: mode });
   if (planUid) params.set("planUid", planUid);
-  params.set("redirectUrl", origin + "/app/dashboard");
-  return `${base}?${params.toString()}#o-anonymous`;
+  params.set("authenticationCallbackUrl", origin + "/app/dashboard");
+  return `${base}?${params.toString()}`;
+}
+
+// Navigate to Outseta login page
+export function goToLogin() {
+  if (typeof window !== "undefined") {
+    window.location.href = getOutsetaAuthUrl("login");
+  }
+}
+
+// Navigate to Outseta signup page
+export function goToSignup(planUid = null) {
+  if (typeof window !== "undefined") {
+    window.location.href = getOutsetaAuthUrl("register", planUid);
+  }
 }
 
 // API endpoints

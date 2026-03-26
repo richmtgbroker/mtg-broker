@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
 import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName, logout } from "../lib/auth";
-import { PLAN_MAP, OUTSETA_DOMAIN } from "../lib/constants";
+import { PLAN_MAP, OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
 
@@ -73,7 +73,7 @@ export default function Navbar() {
           {/* Brand + Plan Tags */}
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/app/dashboard" className="flex items-center h-11 no-underline min-w-[220px]" aria-label="MtgBroker dashboard">
-              <img src={LOGO_URL} alt="MtgBroker" className="h-8 w-auto block" loading="eager" />
+              <img src={LOGO_URL} alt="MtgBroker" className="block" style={{ height: "32px", width: "auto" }} loading="eager" />
             </Link>
 
             {loggedIn && plan && (
@@ -189,12 +189,12 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
-                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base border border-border-light bg-surface-active text-text" style={{ color: "var(--color-text)" }}>
+                <button onClick={goToLogin} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base border border-border-light bg-surface-active cursor-pointer" style={{ color: "var(--color-text)" }}>
                   Login
-                </a>
-                <a href="#o-anonymous-register" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base bg-primary-600 text-white border border-primary-600" style={{ color: "#fff" }}>
+                </button>
+                <button onClick={goToSignup} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base bg-primary-600 border border-primary-600 cursor-pointer" style={{ color: "#fff" }}>
                   Signup
-                </a>
+                </button>
               </div>
             )}
 
@@ -261,12 +261,12 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div>
-                  <a href="#o-anonymous-register" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-primary-600 mt-2.5" style={{ color: "#fff" }}>
+                  <button onClick={goToSignup} className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-primary-600 mt-2.5 border-none cursor-pointer" style={{ color: "#fff" }}>
                     Sign Up Free
-                  </a>
-                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5" style={{ color: "var(--color-text)" }}>
+                  </button>
+                  <button onClick={goToLogin} className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5 cursor-pointer" style={{ color: "var(--color-text)" }}>
                     Login
-                  </a>
+                  </button>
                 </div>
               )}
             </nav>

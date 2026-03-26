@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { OUTSETA_DOMAIN } from "../lib/constants";
+import { OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
 
 const LOGO_URL = "/logo.png";
 
@@ -14,7 +14,7 @@ export default function MarketingFooter() {
           {/* Column 1: Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src={LOGO_URL} alt="MtgBroker" className="h-8 w-auto brightness-0 invert" />
+              <img src={LOGO_URL} alt="MtgBroker" className="brightness-0 invert" style={{ height: "32px", width: "auto" }} />
             </Link>
             <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">
               The complete toolkit for modern Loan Officers.
@@ -50,20 +50,20 @@ export default function MarketingFooter() {
                 </Link>
               </li>
               <li>
-                <a
-                  href="#o-anonymous"
-                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
+                <button
+                  onClick={goToLogin}
+                  className="text-sm text-[#94a3b8] bg-transparent border-none cursor-pointer p-0 font-inherit hover:text-white transition-colors"
                 >
                   Login
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#o-anonymous-register"
-                  className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
+                <button
+                  onClick={goToSignup}
+                  className="text-sm text-[#94a3b8] bg-transparent border-none cursor-pointer p-0 font-inherit hover:text-white transition-colors"
                 >
                   Signup
-                </a>
+                </button>
               </li>
             </ul>
           </div>
