@@ -4,7 +4,7 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 25, 2026 - v8.6 — SSN full input, search expansion, escrow fields:
+ * UPDATED: March 25, 2026 - v8.7 — SSN full input, search expansion, escrow fields, closing costs escrow:
  *   1. Full SSN input with XXX-XX-XXXX formatting + masked display (•••-••-XXXX).
  *      Stores full SSN in Supabase, auto-derives last 4 for backward compat.
  *   2. Pipeline search now includes co-borrower names, property state/zip,
@@ -8174,11 +8174,40 @@ function buildClosingCostsSidebar() {
         ['cc-prepaid-hoi', 'Prepaid HOI', 'dollar'],
       ])
 
-    /* --- Section G: Escrows --- */
-    + ccSectionHTML('G', 'Escrows', [
-        ['cc-insurance-escrow', 'Insurance Escrow', 'dollar'],
-        ['cc-tax-escrow', 'Tax Escrow', 'dollar'],
-      ])
+    /* --- Section G: Escrows (custom layout with months × monthly = total) --- */
+    + '<div class="cc-sec-hdr" data-section="G">'
+    +   '<span class="cc-sec-title"><i class="fa-solid fa-chevron-right"></i> Escrows</span>'
+    +   '<span class="cc-sec-total" id="cc-sec-total-G">$0</span>'
+    + '</div>'
+    + '<div class="cc-sec-body" id="cc-sec-body-G">'
+    +   '<div class="cc-escrow-header" style="display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:4px;padding:0 0 4px 0;font-size:10px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">'
+    +     '<span></span><span style="text-align:center;"># Mo</span><span style="text-align:center;">Monthly</span><span style="text-align:center;">Total</span>'
+    +   '</div>'
+    +   '<div class="cc-escrow-row" style="display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:6px;">'
+    +     '<label style="font-size:12px;color:#334155;">Insurance</label>'
+    +     '<input type="number" id="cc-ins-esc-months" class="cc-inp cc-escrow-months" min="0" max="24" placeholder="0" style="text-align:center;">'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-ins-esc-monthly" class="cc-inp currency-input cc-escrow-monthly" placeholder="0"></div>'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-insurance-escrow" class="cc-inp currency-input cc-escrow-total" placeholder="0"></div>'
+    +   '</div>'
+    +   '<div class="cc-escrow-row" style="display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:6px;">'
+    +     '<label style="font-size:12px;color:#334155;">Tax</label>'
+    +     '<input type="number" id="cc-tax-esc-months" class="cc-inp cc-escrow-months" min="0" max="24" placeholder="0" style="text-align:center;">'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-tax-esc-monthly" class="cc-inp currency-input cc-escrow-monthly" placeholder="0"></div>'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-tax-escrow" class="cc-inp currency-input cc-escrow-total" placeholder="0"></div>'
+    +   '</div>'
+    +   '<div class="cc-escrow-row" style="display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:6px;">'
+    +     '<label style="font-size:12px;color:#334155;">Supp. Ins.</label>'
+    +     '<input type="number" id="cc-supp-esc-months" class="cc-inp cc-escrow-months" min="0" max="24" placeholder="0" style="text-align:center;">'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-supp-esc-monthly" class="cc-inp currency-input cc-escrow-monthly" placeholder="0"></div>'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-supp-escrow" class="cc-inp currency-input cc-escrow-total" placeholder="0"></div>'
+    +   '</div>'
+    +   '<div class="cc-escrow-row" style="display:grid;grid-template-columns:1fr 70px 1fr 1fr;gap:4px;align-items:center;margin-bottom:6px;">'
+    +     '<label style="font-size:12px;color:#334155;">MI</label>'
+    +     '<input type="number" id="cc-mi-esc-months" class="cc-inp cc-escrow-months" min="0" max="24" placeholder="0" style="text-align:center;">'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-mi-esc-monthly" class="cc-inp currency-input cc-escrow-monthly" placeholder="0"></div>'
+    +     '<div class="cc-dlr"><span>$</span><input type="text" id="cc-mi-escrow" class="cc-inp currency-input cc-escrow-total" placeholder="0"></div>'
+    +   '</div>'
+    + '</div>'
 
     /* --- Section H: Other Costs --- */
     + ccSectionHTML('H', 'Other Costs', [
@@ -8275,6 +8304,41 @@ function buildClosingCostsSidebar() {
       if (el.classList.contains('currency-input') && el.type === 'text') {
         ccFormatInput(el);
       }
+      runCCCalc();
+    });
+  });
+
+  /* ---- Escrow: months × monthly = total auto-calc ---- */
+  var escrowRows = [
+    { months: 'cc-ins-esc-months', monthly: 'cc-ins-esc-monthly', total: 'cc-insurance-escrow' },
+    { months: 'cc-tax-esc-months', monthly: 'cc-tax-esc-monthly', total: 'cc-tax-escrow' },
+    { months: 'cc-supp-esc-months', monthly: 'cc-supp-esc-monthly', total: 'cc-supp-escrow' },
+    { months: 'cc-mi-esc-months', monthly: 'cc-mi-esc-monthly', total: 'cc-mi-escrow' }
+  ];
+  escrowRows.forEach(function(row) {
+    var moEl = document.getElementById(row.months);
+    var mlyEl = document.getElementById(row.monthly);
+    var totEl = document.getElementById(row.total);
+    if (!moEl || !mlyEl || !totEl) return;
+    /* When months or monthly changes, auto-calc total */
+    function autoCalcTotal() {
+      var months = parseFloat(moEl.value) || 0;
+      var monthly = ccParseCurrency(mlyEl.value) || 0;
+      if (months > 0 && monthly > 0) {
+        totEl.value = Math.round(months * monthly).toLocaleString('en-US');
+        totEl.dataset.autoCalc = 'true';
+      }
+      runCCCalc();
+    }
+    moEl.addEventListener('input', autoCalcTotal);
+    mlyEl.addEventListener('input', function() {
+      ccFormatInput(mlyEl);
+      autoCalcTotal();
+    });
+    /* When total is manually edited, stop auto-calc override */
+    totEl.addEventListener('input', function() {
+      ccFormatInput(totEl);
+      totEl.dataset.autoCalc = 'false';
       runCCCalc();
     });
   });
@@ -8473,7 +8537,8 @@ function runCCCalc() {
   var totalF = ccGetVal('cc-prepaid-interest') + ccGetVal('cc-prepaid-hoi');
 
   /* ---- Section G: Escrows ---- */
-  var totalG = ccGetVal('cc-insurance-escrow') + ccGetVal('cc-tax-escrow');
+  var totalG = ccGetVal('cc-insurance-escrow') + ccGetVal('cc-tax-escrow')
+    + ccGetVal('cc-supp-escrow') + ccGetVal('cc-mi-escrow');
 
   /* ---- Section H: Other ---- */
   var totalH = ccGetVal('cc-pest')
@@ -8757,7 +8822,9 @@ var CC_FIELD_IDS = [
   'cc-lenders-title', 'cc-title-other',
   'cc-recording', 'cc-transfer-tax',
   'cc-prepaid-interest', 'cc-prepaid-hoi',
-  'cc-insurance-escrow', 'cc-tax-escrow',
+  'cc-insurance-escrow', 'cc-tax-escrow', 'cc-supp-escrow', 'cc-mi-escrow',
+  'cc-ins-esc-months', 'cc-ins-esc-monthly', 'cc-tax-esc-months', 'cc-tax-esc-monthly',
+  'cc-supp-esc-months', 'cc-supp-esc-monthly', 'cc-mi-esc-months', 'cc-mi-esc-monthly',
   'cc-pest', 'cc-realtor-admin', 'cc-warranty', 'cc-owner-title',
   'cc-earnest', 'cc-seller-concession', 'cc-lender-credit'
 ];
