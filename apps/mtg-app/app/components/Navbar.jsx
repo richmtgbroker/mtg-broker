@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
-import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, logout } from "../lib/auth";
+import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName, logout } from "../lib/auth";
 import { PLAN_MAP, OUTSETA_DOMAIN } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
@@ -13,23 +13,32 @@ export default function Navbar() {
   const [plan, setPlan] = useState(null);
   const [admin, setAdmin] = useState(false);
   const [nexa, setNexa] = useState(false);
+  const [email, setEmail] = useState(null);
+  const [name, setName] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const helpRef = useRef(null);
+  const userRef = useRef(null);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
     setPlan(getUserPlan());
     setAdmin(isAdmin());
     setNexa(isNexaUser());
+    setEmail(getUserEmail());
+    setName(getUserName());
   }, [location.pathname]);
 
-  // Close help dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClick(e) {
       if (helpRef.current && !helpRef.current.contains(e.target)) {
         setHelpOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target)) {
+        setUserOpen(false);
       }
     }
     document.addEventListener("click", handleClick);
@@ -46,6 +55,13 @@ export default function Navbar() {
     PLUS: "bg-primary-50 text-primary-600 border-primary-200",
     PRO: "bg-gradient-to-br from-primary-600 to-purple-600 text-white border-transparent",
   };
+
+  // Get initials for avatar circle
+  const initials = name
+    ? name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+    : email
+      ? email[0].toUpperCase()
+      : "?";
 
   return (
     <>
@@ -124,10 +140,52 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {/* Avatar */}
-                <Link to="/app/settings" className="w-11 h-11 rounded-full border border-border-light bg-white flex items-center justify-center overflow-hidden no-underline text-text max-md:hidden">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Z" stroke="currentColor" strokeWidth="2" /><path d="M4.5 20.5c1.8-3.2 5-5.1 7.5-5.1s5.7 1.9 7.5 5.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                </Link>
+                {/* User Avatar + Dropdown */}
+                <div className="relative max-md:hidden" ref={userRef}>
+                  <button
+                    onClick={() => setUserOpen(!userOpen)}
+                    className="w-11 h-11 rounded-full border border-border-light bg-primary-50 flex items-center justify-center cursor-pointer text-primary-600 font-bold text-sm hover:border-primary-200 transition-all"
+                    aria-label="User menu"
+                    aria-expanded={userOpen}
+                  >
+                    {initials}
+                  </button>
+                  {userOpen && (
+                    <div className="absolute top-[calc(100%+10px)] right-0 w-[260px] bg-white border border-border-light rounded-2xl shadow-lg z-[10000] overflow-hidden animate-[fadeIn_0.15s_ease]">
+                      {/* User info */}
+                      <div className="px-4 pt-4 pb-3 border-b border-border-light">
+                        {name && <div className="text-sm font-bold text-text truncate">{name}</div>}
+                        {email && <div className="text-xs text-text-muted truncate mt-0.5">{email}</div>}
+                        {plan && (
+                          <span className={`inline-block mt-2 text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md border ${planColors[plan] || planColors.LITE}`}>
+                            {plan} Plan
+                          </span>
+                        )}
+                      </div>
+                      {/* Links */}
+                      <div className="py-1.5">
+                        <Link to="/app/dashboard" onClick={() => setUserOpen(false)} className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+                          <span className="text-sm font-medium">Dashboard</span>
+                        </Link>
+                        <Link to="/app/settings" onClick={() => setUserOpen(false)} className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15 1.65 1.65 0 0 0 3.09 14H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                          <span className="text-sm font-medium">Settings</span>
+                        </Link>
+                      </div>
+                      {/* Divider + Logout */}
+                      <div className="border-t border-border-light py-1.5">
+                        <button
+                          onClick={() => { setUserOpen(false); logout(); }}
+                          className="flex items-center gap-3 px-4 py-2.5 w-full text-left bg-transparent border-none cursor-pointer font-inherit text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                          <span className="text-sm font-medium">Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
@@ -157,6 +215,19 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="w-full bg-white border-b border-border-light shadow-lg p-5 max-h-[calc(100vh-77px)] overflow-y-auto">
+            {/* Mobile user info */}
+            {loggedIn && (name || email) && (
+              <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-surface-active rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-sm shrink-0">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  {name && <div className="text-sm font-bold text-text truncate">{name}</div>}
+                  {email && <div className="text-xs text-text-muted truncate">{email}</div>}
+                </div>
+              </div>
+            )}
+
             <nav className="flex flex-col gap-1">
               {[...mainNavItems, ...secondaryNavItems, ...toolsNavItems].map((item) => (
                 <MobileNavLink key={item.href} item={item} currentPath={location.pathname} />
@@ -184,7 +255,7 @@ export default function Navbar() {
                   <Link to="/app/dashboard" className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] no-underline font-bold text-sm bg-primary-600 text-white">
                     Dashboard
                   </Link>
-                  <button onClick={logout} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] font-bold text-sm bg-surface-active text-text-secondary border border-border-light cursor-pointer">
+                  <button onClick={logout} className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] font-bold text-sm bg-surface-active text-red-600 border border-border-light cursor-pointer">
                     Logout
                   </button>
                 </div>

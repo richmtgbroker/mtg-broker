@@ -77,10 +77,30 @@ export function isNexaUser() {
 }
 
 /**
- * Logout — clear token and redirect.
+ * Get user's display name from JWT.
+ */
+export function getUserName() {
+  const payload = decodeToken();
+  if (!payload) return null;
+  return payload.name || null;
+}
+
+/**
+ * Logout — clear token, call Outseta logout if available, redirect home.
  */
 export function logout() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("Outseta.nocode.accessToken");
+  // Try to call Outseta's logout to clear their session cookies
+  try {
+    if (window.Outseta && typeof window.Outseta.getUser === "function") {
+      const user = window.Outseta.getUser();
+      if (user && typeof user.logout === "function") {
+        user.logout();
+      }
+    }
+  } catch (e) {
+    // Outseta not loaded or logout failed — continue with redirect
+  }
   window.location.href = "/";
 }
