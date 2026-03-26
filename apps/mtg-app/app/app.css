@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* ================================================
+   MTG.BROKER DESIGN SYSTEM
+   Font: Host Grotesk
+   Primary: #1a56db / #2563EB
+   ================================================ */
+
+@theme {
+  --color-primary: #1a56db;
+  --color-primary-hover: #1e40af;
+  --color-primary-light: #e0ecff;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+
+  --color-border: #e5e7eb;
+  --color-border-light: #e7eaf0;
+  --color-text: #0f172a;
+  --color-text-secondary: #374151;
+  --color-text-muted: #64748b;
+  --color-text-faint: #94a3b8;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-surface-active: #f1f5f9;
+  --color-surface-section: #f3f4f6;
+
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+
+  --font-sans: "Host Grotesk", system-ui, -apple-system, sans-serif;
+
+  --navbar-height: 77px;
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 2px;
+}
+
+.bg-gradient-marketing {
+  background: linear-gradient(180deg, #f0f5ff 0%, #ffffff 30%);
+}
