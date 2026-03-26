@@ -65,10 +65,7 @@ html {
   background: linear-gradient(180deg, #f0f5ff 0%, #ffffff 30%);
 }
 
-/* Force navbar logo to always display — overrides Tailwind v4 base reset */
+/* Prevent Tailwind base img reset from collapsing logos */
 img[alt="MtgBroker"] {
   max-width: none !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }

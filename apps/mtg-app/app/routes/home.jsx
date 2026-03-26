@@ -7,6 +7,12 @@ export function meta() {
   return [
     { title: "MtgBroker — The Complete Toolkit for Modern Loan Officers" },
     { name: "description", content: "Stop juggling PDFs, spreadsheets, and sticky notes. Get instant access to lender guidelines, scenario answers, calculators, and vendor contacts — all in one place." },
+    { property: "og:title", content: "MtgBroker — The Complete Toolkit for Modern Loan Officers" },
+    { property: "og:description", content: "Find wholesale loan products, manage lender relationships, and run your mortgage business more efficiently." },
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://mtg.broker" },
+    { property: "og:image", content: "https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png" },
+    { name: "twitter:card", content: "summary_large_image" },
   ];
 }
 

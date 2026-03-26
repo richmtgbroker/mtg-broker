@@ -8,6 +8,10 @@ export function meta() {
   return [
     { title: "Pricing | MtgBroker" },
     { name: "description", content: "Compare LITE, PLUS, and PRO plans for independent mortgage loan officers. Start free, upgrade when you're ready." },
+    { property: "og:title", content: "Pricing | MtgBroker" },
+    { property: "og:description", content: "Compare LITE ($0/mo), PLUS ($49/mo), and PRO ($79/mo) plans. Start free, upgrade when you're ready." },
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://mtg.broker/pricing" },
   ];
 }
 

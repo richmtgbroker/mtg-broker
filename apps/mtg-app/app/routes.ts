@@ -9,6 +9,10 @@ export default [
   route("/admin-hub", "routes/admin-hub.jsx"),
   route("/login", "routes/login.jsx"),
 
+  // SEO files
+  route("/robots.txt", "routes/robots[.]txt.jsx"),
+  route("/sitemap.xml", "routes/sitemap[.]xml.jsx"),
+
   // App pages (with navbar + sidebar + footer)
   layout("routes/app-layout.jsx", [
     route("/app/dashboard", "routes/app/dashboard.jsx"),
