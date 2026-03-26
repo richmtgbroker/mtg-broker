@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import { OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
-
-const LOGO_URL = "/logo.png";
+import Logo from "./Logo";
 
 export default function MarketingFooter() {
   const year = new Date().getFullYear();
@@ -14,7 +13,7 @@ export default function MarketingFooter() {
           {/* Column 1: Brand */}
           <div className="lg:col-span-1">
             <Link to="/" className="inline-block mb-4">
-              <img src={LOGO_URL} alt="MtgBroker" className="brightness-0 invert" style={{ height: "32px", width: "auto" }} />
+              <Logo height={28} inverted />
             </Link>
             <p className="text-sm text-[#94a3b8] leading-relaxed mb-4">
               The complete toolkit for modern Loan Officers.

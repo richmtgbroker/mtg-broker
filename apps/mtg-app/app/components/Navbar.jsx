@@ -4,8 +4,7 @@ import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName
 import { PLAN_MAP, OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
-
-const LOGO_URL = "/logo.png";
+import Logo from "./Logo";
 
 export default function Navbar() {
   const location = useLocation();
@@ -30,6 +29,23 @@ export default function Navbar() {
     setEmail(getUserEmail());
     setName(getUserName());
   }, [location.pathname]);
+
+  // Poll for auth token changes (handles Outseta redirect setting token async)
+  useEffect(() => {
+    if (loggedIn) return; // already logged in, no need to poll
+    const timer = setInterval(() => {
+      if (isLoggedIn()) {
+        setLoggedIn(true);
+        setPlan(getUserPlan());
+        setAdmin(isAdmin());
+        setNexa(isNexaUser());
+        setEmail(getUserEmail());
+        setName(getUserName());
+        clearInterval(timer);
+      }
+    }, 500);
+    return () => clearInterval(timer);
+  }, [loggedIn]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -73,7 +89,7 @@ export default function Navbar() {
           {/* Brand + Plan Tags */}
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/app/dashboard" className="flex items-center h-11 no-underline min-w-[220px]" aria-label="MtgBroker dashboard">
-              <img src={LOGO_URL} alt="MtgBroker" className="block" style={{ height: "32px", width: "auto" }} loading="eager" />
+              <Logo height={28} />
             </Link>
 
             {loggedIn && plan && (
@@ -189,12 +205,12 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
-                <button onClick={goToLogin} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base border border-border-light bg-surface-active cursor-pointer" style={{ color: "var(--color-text)" }}>
+                <Link to="/login" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base border border-border-light bg-surface-active no-underline" style={{ color: "var(--color-text)" }}>
                   Login
-                </button>
-                <button onClick={goToSignup} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base bg-primary-600 border border-primary-600 cursor-pointer" style={{ color: "#fff" }}>
+                </Link>
+                <Link to="/pricing" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center font-extrabold text-base bg-primary-600 border border-primary-600 no-underline" style={{ color: "#fff" }}>
                   Signup
-                </button>
+                </Link>
               </div>
             )}
 
@@ -261,12 +277,12 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div>
-                  <button onClick={goToSignup} className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-primary-600 mt-2.5 border-none cursor-pointer" style={{ color: "#fff" }}>
+                  <Link to="/pricing" className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-primary-600 mt-2.5 no-underline" style={{ color: "#fff" }}>
                     Sign Up Free
-                  </button>
-                  <button onClick={goToLogin} className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5 cursor-pointer" style={{ color: "var(--color-text)" }}>
+                  </Link>
+                  <Link to="/login" className="block w-full px-4 py-3 rounded-xl font-extrabold text-base text-center bg-surface-active border border-border-light mt-2.5 no-underline" style={{ color: "var(--color-text)" }}>
                     Login
-                  </button>
+                  </Link>
                 </div>
               )}
             </nav>
