@@ -12,23 +12,46 @@ const BUNDLE_URL = "https://mtg-social-media.pages.dev/index.js";
 
 export default function SocialMediaPage() {
   const mountRef = useRef(null);
-  const loadedRef = useRef(false);
 
   useEffect(() => {
-    // Only load once
-    if (loadedRef.current) return;
-    loadedRef.current = true;
+    // Track elements we inject so we can clean up on unmount
+    const injectedElements = [];
 
     // The bundle expects a <div id="social-media-app"> to mount into.
-    // It injects CSS + HTML + loads the engine script.
+    // It injects CSS via <style> tags and loads the engine script.
     const script = document.createElement("script");
     script.src = BUNDLE_URL;
     script.defer = true;
     document.head.appendChild(script);
+    injectedElements.push(script);
+
+    // Watch for <style> tags the bundle injects so we can remove them later.
+    // The bundle injects styles into <head> when the script runs.
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.tagName === "STYLE" || (node.tagName === "SCRIPT" && node.src && node.src.includes("social-media"))) {
+            injectedElements.push(node);
+          }
+        }
+      }
+    });
+    observer.observe(document.head, { childList: true });
 
     return () => {
-      // Cleanup on unmount — remove the script tag
-      script.remove();
+      // Cleanup on unmount — remove all injected elements
+      observer.disconnect();
+      for (const el of injectedElements) {
+        el.remove();
+      }
+      // Clear the mount point content (injected HTML)
+      if (mountRef.current) {
+        mountRef.current.innerHTML = "";
+      }
+      // Clean up global SMG object if it exists
+      if (typeof window !== "undefined" && window.SMG) {
+        delete window.SMG;
+      }
     };
   }, []);
 
