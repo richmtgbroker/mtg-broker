@@ -4,6 +4,9 @@ export default [
   // Marketing pages (no sidebar)
   route("/", "routes/home.jsx"),
   route("/pricing", "routes/pricing.jsx"),
+  route("/privacy-policy", "routes/privacy-policy.jsx"),
+  route("/terms-of-service", "routes/terms-of-service.jsx"),
+  route("/admin-hub", "routes/admin-hub.jsx"),
 
   // App pages (with navbar + sidebar + footer)
   layout("routes/app-layout.jsx", [
