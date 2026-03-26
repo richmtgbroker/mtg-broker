@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 import MarketingFooter from "../components/MarketingFooter";
-import { OUTSETA_DOMAIN } from "../lib/constants";
+import { OUTSETA_DOMAIN, PLAN_UIDS, getOutsetaAuthUrl } from "../lib/constants";
 
 export function meta() {
   return [
@@ -47,7 +47,7 @@ export default function Pricing() {
               { text: "Referral Program", included: false },
             ]}
             cta="Create Free Account"
-            ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=NmdnZg90#o-anonymous`}
+            ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.LITE)}
           />
 
           {/* PLUS */}
@@ -68,7 +68,7 @@ export default function Pricing() {
               { text: "Referral Program", included: false },
             ]}
             cta="Start PLUS Trial"
-            ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=Dmw8leQ4#o-anonymous`}
+            ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.PLUS)}
           />
 
           {/* PRO */}
@@ -90,7 +90,7 @@ export default function Pricing() {
               { text: "Referral Program", included: true },
             ]}
             cta="Start PRO Trial"
-            ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=yWobBP9D#o-anonymous`}
+            ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.PRO)}
           />
         </div>
       </section>
@@ -217,13 +217,13 @@ export default function Pricing() {
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a
-              href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=yWobBP9D#o-anonymous`}
+              href={getOutsetaAuthUrl("register", PLAN_UIDS.PRO)}
               className="px-8 py-4 bg-white text-text rounded-xl font-bold text-lg no-underline hover:bg-gray-100 transition-colors"
             >
               Start PRO Free Trial
             </a>
             <a
-              href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=NmdnZg90#o-anonymous`}
+              href={getOutsetaAuthUrl("register", PLAN_UIDS.LITE)}
               className="px-8 py-4 border-2 border-white/30 text-white rounded-xl font-bold text-lg no-underline hover:bg-white/10 transition-colors"
             >
               Start with Free Plan

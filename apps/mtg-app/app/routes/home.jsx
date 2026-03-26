@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import Navbar from "../components/Navbar";
 import MarketingFooter from "../components/MarketingFooter";
-import { OUTSETA_DOMAIN } from "../lib/constants";
+import { OUTSETA_DOMAIN, PLAN_UIDS, getOutsetaAuthUrl } from "../lib/constants";
 
 export function meta() {
   return [
@@ -35,7 +35,7 @@ export default function Home() {
                 View Plans
               </Link>
               <a
-                href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`}
+                href="#o-anonymous"
                 className="px-8 py-4 text-primary-600 font-bold text-lg no-underline hover:text-primary-hover transition-colors"
               >
                 Create Free Account &rarr;
@@ -144,7 +144,7 @@ export default function Home() {
                 { text: "Referral Program", included: false },
               ]}
               cta="Create Free Account"
-              ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=NmdnZg90#o-anonymous`}
+              ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.LITE)}
             />
 
             {/* PLUS */}
@@ -165,7 +165,7 @@ export default function Home() {
                 { text: "Referral Program", included: false },
               ]}
               cta="Start PLUS Trial"
-              ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=Dmw8leQ4#o-anonymous`}
+              ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.PLUS)}
             />
 
             {/* PRO */}
@@ -187,7 +187,7 @@ export default function Home() {
                 { text: "Referral Program", included: true },
               ]}
               cta="Start PRO Trial"
-              ctaHref={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register&planUid=yWobBP9D#o-anonymous`}
+              ctaHref={getOutsetaAuthUrl("register", PLAN_UIDS.PRO)}
             />
           </div>
         </div>
@@ -203,7 +203,7 @@ export default function Home() {
             Stop guessing and start closing. Find the right guidelines and programs in seconds.
           </p>
           <a
-            href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`}
+            href="#o-anonymous"
             className="inline-block px-8 py-4 bg-primary-600 text-white rounded-xl font-bold text-lg no-underline hover:bg-primary-hover transition-colors shadow-lg"
           >
             Get Started for Free

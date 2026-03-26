@@ -49,7 +49,9 @@ export default function Root() {
               var o_options = {
                 domain: 'mtgbroker.outseta.com',
                 load: 'auth,customForm,emailList,leadCapture,nocode,profile,support',
-                tokenStorage: 'local'
+                tokenStorage: 'local',
+                authenticationCallbackUrl: window.location.origin + '/app/dashboard',
+                logoutCallbackUrl: window.location.origin
               };
             `,
           }}

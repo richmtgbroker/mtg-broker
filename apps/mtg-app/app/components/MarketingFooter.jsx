@@ -51,7 +51,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <a
-                  href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=login#o-anonymous`}
+                  href="#o-anonymous"
                   className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Login
@@ -59,7 +59,7 @@ export default function MarketingFooter() {
               </li>
               <li>
                 <a
-                  href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`}
+                  href="#o-anonymous"
                   className="text-sm text-[#94a3b8] no-underline hover:text-white transition-colors"
                 >
                   Signup

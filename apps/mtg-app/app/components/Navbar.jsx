@@ -131,10 +131,10 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex gap-2 max-md:hidden">
-                <a href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=login#o-anonymous`} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base border border-border-light bg-surface-active text-text">
+                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base border border-border-light bg-surface-active text-text">
                   Login
                 </a>
-                <a href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`} className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base bg-primary-600 text-white border border-primary-600">
+                <a href="#o-anonymous" className="h-11 min-w-[110px] px-4 rounded-xl inline-flex items-center justify-center no-underline font-extrabold text-base bg-primary-600 text-white border border-primary-600">
                   Signup
                 </a>
               </div>
@@ -190,10 +190,10 @@ export default function Navbar() {
                 </div>
               ) : (
                 <div>
-                  <a href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=register#o-anonymous`} className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-primary-600 text-white mt-2.5">
+                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-primary-600 text-white mt-2.5">
                     Sign Up Free
                   </a>
-                  <a href={`https://${OUTSETA_DOMAIN}/auth?widgetMode=login#o-anonymous`} className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-surface-active text-text border border-border-light mt-2.5">
+                  <a href="#o-anonymous" className="block w-full px-4 py-3 rounded-xl no-underline font-extrabold text-base text-center bg-surface-active text-text border border-border-light mt-2.5">
                     Login
                   </a>
                 </div>
