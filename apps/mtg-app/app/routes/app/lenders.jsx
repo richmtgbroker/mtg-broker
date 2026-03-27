@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router";
+import { isNexaUser, checkNexaAccess } from "../../lib/auth";
 
 const LENDERS_API_PRIMARY = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const LENDERS_API_FALLBACK = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
@@ -22,6 +23,14 @@ export default function LendersPage() {
     try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); } catch { return []; }
   });
   const searchRef = useRef(null);
+  const [nexaAuthorized, setNexaAuthorized] = useState(() => isNexaUser());
+
+  // Async NEXA check (Outseta custom field fallback)
+  useEffect(() => {
+    if (!nexaAuthorized) {
+      checkNexaAccess().then((result) => { if (result) setNexaAuthorized(true); });
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -163,8 +172,8 @@ export default function LendersPage() {
 
         <div className="w-px h-8 bg-border hidden md:block" />
 
-        {/* Channel Filters */}
-        {["Broker", "NonDel", "NEXA"].map((ch) => (
+        {/* Channel Filters — NEXA-gated */}
+        {nexaAuthorized && ["Broker", "NonDel", "NEXA"].map((ch) => (
           <button
             key={ch}
             onClick={() => setChannelFilter(channelFilter === ch ? null : ch)}
@@ -178,7 +187,7 @@ export default function LendersPage() {
           </button>
         ))}
 
-        <div className="w-px h-8 bg-border hidden md:block" />
+        {nexaAuthorized && <div className="w-px h-8 bg-border hidden md:block" />}
 
         {/* Favorites Toggle */}
         <button
@@ -223,7 +232,7 @@ export default function LendersPage() {
             <LenderCard
               key={lender.name}
               lender={lender}
-              channels={getChannels(lender)}
+              channels={nexaAuthorized ? getChannels(lender) : []}
               isFavorite={favorites.includes(lender.name)}
               onToggleFavorite={() => toggleFavorite(lender.name)}
               searchTerm={searchTerm}
