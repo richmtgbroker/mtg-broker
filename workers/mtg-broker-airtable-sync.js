@@ -416,8 +416,19 @@ export default {
 
   // HTTP trigger — for manual runs and health checks
   async fetch(request, env, ctx) {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': request.headers.get('Origin') || '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
     if (request.method !== 'GET') {
-      return new Response('Method not allowed', { status: 405 });
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders });
     }
 
     const url = new URL(request.url);
@@ -431,22 +442,22 @@ export default {
         tables: Object.keys(TABLES),
         cron: '0 3 * * * (daily at 3 AM UTC)',
         next_run: 'Check Cloudflare dashboard → Workers → Triggers',
-      });
+      }, { headers: corsHeaders });
     }
 
     // Sync specific table
     if (url.pathname === '/products') {
       const result = await runSync(env, ['loan_products']);
-      return Response.json(result, { status: result.success ? 200 : 500 });
+      return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
     }
 
     if (url.pathname === '/lenders') {
       const result = await runSync(env, ['lenders']);
-      return Response.json(result, { status: result.success ? 200 : 500 });
+      return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
     }
 
     // Default: sync all tables
     const result = await runSync(env, ['loan_products', 'lenders']);
-    return Response.json(result, { status: result.success ? 200 : 500 });
+    return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
   },
 };
