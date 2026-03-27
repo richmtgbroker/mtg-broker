@@ -67,7 +67,7 @@ export default function AppLayout() {
   const sidebarWidth = sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       <Navbar />
       <Sidebar />
 

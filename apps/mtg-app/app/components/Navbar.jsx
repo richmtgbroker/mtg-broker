@@ -18,9 +18,11 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
 
   const helpRef = useRef(null);
   const userRef = useRef(null);
+  const supportRef = useRef(null);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
@@ -73,6 +75,20 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  // When support modal opens, tell Outseta to mount the support widget
+  useEffect(() => {
+    if (!supportOpen || !supportRef.current) return;
+    const container = supportRef.current;
+    // Clear any previous content and insert a fresh embed target
+    container.innerHTML = '<div data-o-support="1" data-mode="embed"></div>';
+    // Ask Outseta to scan and mount the widget in the new element
+    if (window.Outseta && typeof window.Outseta.init === 'function') {
+      window.Outseta.init();
+    } else if (window.Outseta && typeof window.Outseta.nocode === 'object' && typeof window.Outseta.nocode.init === 'function') {
+      window.Outseta.nocode.init();
+    }
+  }, [supportOpen]);
 
   const planColors = {
     LITE: "bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]",
@@ -158,12 +174,12 @@ export default function Navbar() {
                         </span>
                         <span className="flex flex-col gap-px"><span className="text-sm font-semibold">Knowledge Base</span><span className="text-xs text-text-faint">Browse help articles</span></span>
                       </a>
-                      <a href={`https://${OUTSETA_DOMAIN}/support/kb`} onClick={() => setHelpOpen(false)} className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors cursor-pointer">
+                      <button onClick={() => { setHelpOpen(false); setSupportOpen(true); }} className="flex items-center gap-3 px-4 py-2.5 w-full text-left bg-transparent border-none cursor-pointer font-inherit text-text hover:bg-surface-hover transition-colors">
                         <span className="w-[34px] h-[34px] rounded-[10px] bg-surface-active flex items-center justify-center shrink-0 text-text-secondary">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                         </span>
                         <span className="flex flex-col gap-px"><span className="text-sm font-semibold">Submit a Ticket</span><span className="text-xs text-text-faint">Get help from our team</span></span>
-                      </a>
+                      </button>
                       <a href="mailto:support@mtg.broker" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors">
                         <span className="w-[34px] h-[34px] rounded-[10px] bg-surface-active flex items-center justify-center shrink-0 text-text-secondary">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
@@ -312,6 +328,21 @@ export default function Navbar() {
         )}
       </header>
 
+      {/* Support Ticket Modal — Outseta embed mounts inside via useEffect */}
+      {supportOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-5">
+          <div className="absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease]" onClick={() => setSupportOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col animate-[slideUp_0.25s_ease-out]">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border-light">
+              <h3 className="text-lg font-bold m-0">Submit a Support Ticket</h3>
+              <button onClick={() => setSupportOpen(false)} className="w-9 h-9 rounded-[10px] border-none bg-surface-active flex items-center justify-center cursor-pointer text-text-muted hover:bg-border hover:text-text transition-all">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1" ref={supportRef} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -135,10 +135,10 @@ function RatesSection({ rates }) {
           const data = rates?.[key];
           const change = data ? parseFloat(data.change) : 0;
           return (
-            <div key={key} className="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-[14px] p-3 shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
-              <div className="text-xs text-white/85 font-medium mb-1 uppercase">{label}</div>
+            <div key={key} className="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-xl p-2.5 shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
+              <div className="text-[11px] text-white/85 font-medium mb-0.5 uppercase">{label}</div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-extrabold text-white">{data ? `${data.rate}%` : "--%"}</span>
+                <span className="text-base font-extrabold text-white">{data ? `${data.rate}%` : "--%"}</span>
                 {data && (
                   <span className={`text-xs font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded ${change > 0 ? "bg-red-500/20 text-red-300" : change < 0 ? "bg-green-500/20 text-green-300" : "bg-white/15 text-white/70"}`}>
                     {change > 0 && <span>&#9650;</span>}
@@ -162,14 +162,14 @@ function RatesSection({ rates }) {
             { name: "LoanSifter", url: "https://loansifternow.optimalblue.com/", domain: null },
             { name: "Polly", url: "https://lx.pollyex.com/accounts/login/", domain: "polly.io" },
           ].map((engine) => (
-            <a key={engine.name} href={engine.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-[10px] bg-white border border-[#E2E8F0] text-xs font-medium text-text-secondary no-underline hover:border-primary-600 hover:text-primary-600 transition-colors">
+            <a key={engine.name} href={engine.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-[#F1F5F9] border-[1.5px] border-[#CBD5E1] text-sm font-bold text-[#1E293B] no-underline hover:border-primary-600 hover:bg-[#EFF6FF] hover:text-primary-600 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(37,99,235,0.18)] transition-all">
               {engine.domain ? (
-                <img src={`https://www.google.com/s2/favicons?domain=${engine.domain}&sz=32`} alt="" className="w-4 h-4 rounded" />
+                <img src={`https://www.google.com/s2/favicons?domain=${engine.domain}&sz=32`} alt="" className="w-[22px] h-[22px] rounded" />
               ) : (
-                <svg className="w-4 h-4" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0066CC" /><text x="16" y="21" textAnchor="middle" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#fff">LS</text></svg>
+                <svg className="w-[22px] h-[22px]" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0066CC" /><text x="16" y="21" textAnchor="middle" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#fff">LS</text></svg>
               )}
               <span className="flex-1">{engine.name}</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="opacity-50"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
             </a>
           ))}
         </div>
@@ -461,6 +461,19 @@ function setCache(key, data) {
 
 async function loadUserName(setName) {
   if (typeof window === "undefined") return;
+
+  // Try JWT first — always available, no SDK dependency
+  try {
+    const token = localStorage.getItem("Outseta.nocode.accessToken");
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      let firstName = payload.given_name || payload.name || "";
+      if (firstName && firstName.includes(" ")) firstName = firstName.split(" ")[0];
+      if (firstName) { setName(firstName); return; }
+    }
+  } catch {}
+
+  // Fallback to Outseta SDK
   await new Promise((r) => setTimeout(r, 500));
   try {
     if (typeof window.getCachedOutsetaUser === "function") {
