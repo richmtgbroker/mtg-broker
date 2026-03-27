@@ -56,8 +56,7 @@ export default function LenderDetailPage() {
           setError("Lender not found");
         }
       } catch (e) {
-        // CORS or network error — show helpful message
-        if (!background) setError("Unable to load lender data. This page requires the production domain (mtg.broker) to fetch lender details.");
+        if (!background) setError("Failed to load lender data. Please try again.");
       }
       if (!background) setLoading(false);
     }
