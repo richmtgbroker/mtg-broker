@@ -53,22 +53,22 @@ export default function CalculatorsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start gap-4 mb-8">
-        <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <div className="flex items-start gap-5 mb-10 pb-7 border-b border-border">
+        <div className="w-14 h-14 min-w-[56px] rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #2563EB 0%, #1E40AF 100%)', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
             <rect x="4" y="2" width="16" height="20" rx="2" /><line x1="8" x2="16" y1="6" y2="6" /><line x1="16" x2="16" y1="14" y2="18" /><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" />
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Calculators</h1>
-          <p className="text-text-muted text-sm mb-3">Run the numbers, compare scenarios, and build confidence with every client conversation.</p>
+          <h1 className="text-[28px] font-extrabold text-text mb-1.5" style={{ letterSpacing: '-0.5px' }}>Calculators</h1>
+          <p className="text-[15px] text-text-muted mb-3 leading-normal">Run the numbers, compare scenarios, and build confidence with every client conversation.</p>
           <div className="flex gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-600 text-xs font-semibold">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12" /></svg>
+            <span className="inline-flex items-center gap-[5px] px-2.5 py-1 rounded-[20px] text-xs font-semibold" style={{ background: '#DBEAFE', color: '#2563EB' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" className="w-[13px] h-[13px]"><polyline points="20 6 9 17 4 12" /></svg>
               {availableCount} Available
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-active text-text-muted text-xs font-semibold">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <span className="inline-flex items-center gap-[5px] px-2.5 py-1 rounded-[20px] text-xs font-semibold" style={{ background: '#F1F5F9', color: '#64748B' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" className="w-[13px] h-[13px]"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
               {comingSoonCalcs.length} Coming Soon
             </span>
           </div>
@@ -92,12 +92,12 @@ export default function CalculatorsPage() {
 
       {/* NEXA */}
       {nexa && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-bold text-text">NEXA Calculators</span>
-            <span className="text-[9px] font-bold text-white bg-gradient-to-br from-primary-600 to-primary-800 px-2 py-0.5 rounded uppercase tracking-wider">NEXA</span>
+        <div className="mb-[50px]">
+          <div className="flex items-center gap-2.5 text-[13px] font-bold uppercase tracking-[0.1em] mb-5 pb-2.5 border-b-2" style={{ borderColor: '#334155', color: '#94A3B8' }}>
+            NEXA Calculators
+            <span className="text-[10px] font-extrabold text-white px-2 py-[3px] rounded tracking-[0.06em] uppercase" style={{ background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)' }}>NEXA</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid gap-[30px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
             {nexaCalcs.map((c) => <CalcCard key={c.id} calc={c} isNexa />)}
           </div>
         </div>
@@ -108,9 +108,9 @@ export default function CalculatorsPage() {
 
 function Section({ label, children }) {
   return (
-    <div className="mb-8">
-      <div className="text-sm font-bold text-text-faint uppercase tracking-wide mb-4">{label}</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="mb-[50px]">
+      <div className="text-[13px] font-bold uppercase tracking-[0.1em] mb-5 pb-2.5 border-b-2 border-border" style={{ color: '#6B7280' }}>{label}</div>
+      <div className="grid gap-[30px]" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
         {children}
       </div>
     </div>
@@ -118,40 +118,81 @@ function Section({ label, children }) {
 }
 
 function CalcCard({ calc, locked = false, comingSoon = false, isNexa = false }) {
-  const cardClasses = `rounded-2xl border p-5 flex flex-col transition-all ${
-    comingSoon ? "bg-surface-hover border-border opacity-60" :
-    locked ? "bg-surface-hover border-border cursor-pointer" :
-    isNexa ? "bg-gradient-to-br from-primary-50 to-white border-primary-200 hover:shadow-md" :
-    "bg-white border-border hover:border-primary-200 hover:shadow-md"
+  const baseCard = "relative rounded-2xl border p-8 flex flex-col transition-all duration-200 h-full";
+  const cardClasses = `${baseCard} ${
+    comingSoon ? "bg-white border-border opacity-60 pointer-events-none" :
+    locked ? "bg-white border-border opacity-60 grayscale-[40%] cursor-not-allowed" :
+    isNexa ? "bg-[#0F172A] border-[#334155] hover:-translate-y-[5px]" :
+    "bg-white border-border hover:-translate-y-[5px] hover:border-[#BFDBFE]"
   }`;
+  const cardShadow = comingSoon || locked
+    ? "0 4px 6px -1px rgba(0,0,0,0.05)"
+    : "0 4px 6px -1px rgba(0,0,0,0.05)";
+  const cardHoverShadow = isNexa
+    ? "0 15px 30px -5px rgba(0,0,0,0.3)"
+    : "0 15px 30px -5px rgba(0,0,0,0.1)";
 
   const content = (
     <>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${isNexa ? "bg-primary-600 text-white" : "bg-surface-active text-text-muted"}`}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" dangerouslySetInnerHTML={{ __html: calc.icon }} />
+      {/* Lock badge for locked cards */}
+      {locked && (
+        <div className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center z-10 pointer-events-none" style={{ background: 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)', boxShadow: '0 2px 6px rgba(245,158,11,0.4)' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" className="w-3.5 h-3.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+        </div>
+      )}
+      <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-colors duration-200 ${
+        isNexa ? "bg-[#1E293B] group-hover:bg-[#334155]" :
+        comingSoon ? "bg-[#F3F4F6]" :
+        "bg-[#EFF6FF] group-hover:bg-[#DBEAFE]"
+      }`}>
+        <svg viewBox="0 0 24 24" fill="none" stroke={isNexa ? "#60A5FA" : comingSoon ? "#9CA3AF" : "#0066CC"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7" dangerouslySetInnerHTML={{ __html: calc.icon }} />
       </div>
-      <div className="text-sm font-bold text-text mb-1 flex items-center gap-2">
+      <div className={`text-xl font-bold mb-2.5 flex items-center gap-2 ${isNexa ? "text-[#F1F5F9]" : "text-text"}`}>
         {calc.title}
-        {comingSoon && <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Soon</span>}
-        {isNexa && <span className="text-[9px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded uppercase">NEXA</span>}
+        {comingSoon && <span className="text-[11px] font-semibold px-2 py-[3px] rounded" style={{ background: '#FEF3C7', color: '#92400E' }}>Soon</span>}
+        {isNexa && <span className="text-[11px] font-semibold px-2 py-[3px] rounded border" style={{ background: '#1E293B', color: '#60A5FA', borderColor: '#334155' }}>NEXA</span>}
       </div>
-      <p className="text-xs text-text-muted leading-relaxed flex-1 mb-4">{calc.desc}</p>
-      <div className={`text-xs font-semibold flex items-center gap-1 ${locked ? "text-text-faint" : comingSoon ? "text-text-faint" : "text-primary-600"}`}>
+      <p className={`text-[15px] leading-[1.6] flex-1 mb-6 ${isNexa ? "text-[#94A3B8]" : "text-text-muted"}`}>{calc.desc}</p>
+      <div className={`text-sm font-semibold flex items-center gap-1.5 ${
+        locked ? "text-[#F59E0B]" :
+        comingSoon ? "text-[#9CA3AF]" :
+        isNexa ? "text-[#60A5FA]" :
+        "text-[#0066CC]"
+      }`}>
         {locked ? (
-          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> Upgrade to Unlock</>
+          <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> Upgrade to Unlock</>
         ) : comingSoon ? "Coming Soon" : (
-          <>Open Tool <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></>
+          <>Open Tool <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg></>
         )}
       </div>
     </>
   );
 
+  const styleProps = {
+    boxShadow: cardShadow,
+  };
+
   if (locked || comingSoon || !calc.href) {
-    return <div className={cardClasses}>{content}</div>;
+    return (
+      <div
+        className={`${cardClasses} group`}
+        style={styleProps}
+        onMouseEnter={(e) => { if (!locked && !comingSoon) e.currentTarget.style.boxShadow = cardHoverShadow; }}
+        onMouseLeave={(e) => { if (!locked && !comingSoon) e.currentTarget.style.boxShadow = cardShadow; }}
+      >
+        {content}
+      </div>
+    );
   }
 
   return (
-    <Link to={calc.href} className={`${cardClasses} no-underline`}>
+    <Link
+      to={calc.href}
+      className={`${cardClasses} no-underline group`}
+      style={styleProps}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = cardHoverShadow; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = cardShadow; }}
+    >
       {content}
     </Link>
   );
