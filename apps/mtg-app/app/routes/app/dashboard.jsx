@@ -248,8 +248,8 @@ function PipelineOverview({ stats }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
           </div>
           <div>
-            <div className="text-xs font-medium text-white/80">Pipeline Loans</div>
-            <div className="text-2xl font-extrabold tracking-[-0.5px]">{stats.loans}</div>
+            <div className="text-[13px] font-medium text-white/80">Pipeline Loans</div>
+            <div className="text-[28px] font-extrabold leading-tight tracking-[-0.5px]">{stats.loans}</div>
             <div className="text-xs text-white/60">Active in pipeline</div>
           </div>
         </Link>
@@ -259,8 +259,8 @@ function PipelineOverview({ stats }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
           </div>
           <div>
-            <div className="text-xs font-medium text-text-muted">Pipeline Volume</div>
-            <div className="text-2xl font-extrabold tracking-[-0.5px]">{formatCurrency(stats.volume)}</div>
+            <div className="text-[13px] font-medium text-text-muted">Pipeline Volume</div>
+            <div className="text-[28px] font-extrabold leading-tight tracking-[-0.5px] text-primary-600">{formatCurrency(stats.volume)}</div>
           </div>
         </Link>
 
@@ -269,8 +269,8 @@ function PipelineOverview({ stats }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           </div>
           <div>
-            <div className="text-xs font-medium text-text-muted">Upcoming Closings</div>
-            <div className="text-2xl font-extrabold tracking-[-0.5px]">{stats.closings}</div>
+            <div className="text-[13px] font-medium text-text-muted">Upcoming Closings</div>
+            <div className="text-[28px] font-extrabold leading-tight tracking-[-0.5px]">{stats.closings}</div>
             <div className="text-xs text-text-faint">Next 14 days</div>
           </div>
         </Link>
@@ -489,7 +489,7 @@ async function loadLenderCount(setCount) {
     const res = await fetch(LENDERS_API);
     if (!res.ok) return;
     const data = await res.json();
-    const count = data.count ?? (Array.isArray(data.lenders) ? data.lenders.length : 0);
+    const count = data.count ?? (Array.isArray(data) ? data.length : Array.isArray(data.lenders) ? data.lenders.length : 0);
     setCache("dash_lender_count", count);
     setCount(count);
   } catch {}

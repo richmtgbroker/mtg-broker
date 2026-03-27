@@ -84,13 +84,15 @@ export default function Navbar() {
       ? email[0].toUpperCase()
       : "?";
 
+  const isAppPage = location.pathname.startsWith("/app");
+
   return (
     <>
       {/* Spacer to push content below fixed navbar */}
       <div style={{ height: "var(--navbar-height)" }} aria-hidden="true" />
 
       <header className="fixed top-0 left-0 right-0 z-[9999] bg-white border-b border-border-light shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="w-[90%] max-w-[1280px] mx-auto py-4 flex items-center justify-between gap-4">
+        <div className={`py-4 flex items-center justify-between gap-4 ${isAppPage ? "w-full px-6" : "w-[90%] max-w-[1280px] mx-auto"}`}>
           {/* Brand + Plan Tags */}
           <div className="flex items-center gap-3 shrink-0">
             <a href={loggedIn ? "/app/dashboard" : "/"} style={{ display: "flex", alignItems: "center", height: "44px", textDecoration: "none", flexShrink: 0 }} aria-label="MtgBroker dashboard">

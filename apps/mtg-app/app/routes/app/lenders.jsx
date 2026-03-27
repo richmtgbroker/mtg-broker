@@ -215,6 +215,12 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
   const initial = lender.name.charAt(0).toUpperCase();
   const color = getAvatarColor(lender.name);
   const channels = lender.channel_types || lender.channels || [];
+  const [logoError, setLogoError] = useState(false);
+
+  // Build favicon URL from lender website
+  const faviconUrl = !logoError && lender.website_url
+    ? `https://www.google.com/s2/favicons?domain=${new URL(lender.website_url).hostname}&sz=64`
+    : null;
 
   const channelColors = {
     broker: "bg-blue-50 text-blue-700",
@@ -235,13 +241,24 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
         </svg>
       </button>
 
-      {/* Avatar circle */}
-      <div
-        className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-white text-xl font-bold mb-3 shrink-0"
-        style={{ backgroundColor: color }}
-      >
-        {initial}
-      </div>
+      {/* Lender logo or fallback avatar circle */}
+      {faviconUrl ? (
+        <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center bg-white border border-border-light mb-3 shrink-0 overflow-hidden">
+          <img
+            src={faviconUrl}
+            alt={lender.name}
+            className="w-8 h-8 object-contain"
+            onError={() => setLogoError(true)}
+          />
+        </div>
+      ) : (
+        <div
+          className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-white text-xl font-bold mb-3 shrink-0"
+          style={{ backgroundColor: color }}
+        >
+          {initial}
+        </div>
+      )}
 
       {/* Name */}
       <div className="text-sm font-semibold text-text mb-2 line-clamp-2">
