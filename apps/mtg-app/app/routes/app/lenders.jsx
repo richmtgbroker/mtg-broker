@@ -275,18 +275,18 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
   const displayName = lender.name;
 
   return (
-    <div className="relative bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.12)] hover:border-[#93c5fd] transition-all hover:-translate-y-0.5 flex flex-col">
+    <div className="relative bg-white border border-[#cbd5e1] rounded-2xl overflow-hidden shadow-[0_3px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.15)] hover:border-[#93c5fd] transition-all hover:-translate-y-0.5 flex flex-col">
       {/* Logo Area */}
       <Link
         to={`/app/lenders/${slug}`}
-        className="relative bg-[#f8fafc] flex items-center justify-center p-4 no-underline"
-        style={{ minHeight: "130px" }}
+        className="relative bg-[#f8fafc] flex items-center justify-center p-5 no-underline"
+        style={{ minHeight: "140px" }}
       >
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={lender.name}
-            className="max-w-[85%] max-h-[90px] object-contain"
+            className="max-w-[90%] max-h-[105px] object-contain"
             onError={() => setLogoError(true)}
           />
         ) : (
