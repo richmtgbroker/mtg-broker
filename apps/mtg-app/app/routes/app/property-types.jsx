@@ -53,7 +53,7 @@ export default function PropertyTypesPage() {
         <h1 className="text-2xl font-bold text-text mb-6">Property Types</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-surface-active animate-pulse" />
+            <div key={i} className="h-16 rounded-[10px] bg-surface-active animate-pulse" />
           ))}
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function PropertyTypesPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-text">Property Types</h1>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${searchTerm ? "bg-primary-50 text-primary-600" : "bg-surface-active text-text-muted"}`}>
+          <span className={`text-sm font-semibold px-3 py-1 rounded-[20px] ${searchTerm ? "bg-primary-50 text-primary-600" : "bg-surface-active text-text-muted"}`}>
             {searchTerm ? `${filtered.length} of ${types.length}` : `${types.length} types`}
           </span>
         </div>
@@ -105,7 +105,7 @@ export default function PropertyTypesPage() {
             <Link
               key={pt.slug}
               to={`/app/property-types/${pt.slug}`}
-              className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-border bg-white no-underline text-text hover:border-primary-200 hover:shadow-sm hover:bg-primary-50/30 transition-all group"
+              className="flex items-center justify-between px-4 py-3.5 rounded-[10px] border border-border bg-white no-underline text-[#334155] hover:border-primary-200 hover:shadow-sm hover:bg-primary-50/30 hover:border-l-primary-600 hover:border-l-2 transition-all group"
             >
               <div className="min-w-0">
                 <div className="text-sm font-medium" dangerouslySetInnerHTML={{ __html: highlight(pt.name, searchTerm) }} />

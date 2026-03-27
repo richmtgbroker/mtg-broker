@@ -85,8 +85,8 @@ export default function ProductDetailPage() {
       {/* Header */}
       <div className="bg-white rounded-2xl border border-border p-6 mb-6">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 flex items-center justify-center text-white text-2xl shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7">
+          <div className="w-[80px] h-[80px] rounded-xl bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] border border-[#BFDBFE] flex items-center justify-center text-primary-600 text-[32px] shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
             </svg>
           </div>
@@ -95,12 +95,12 @@ export default function ProductDetailPage() {
             <div className="flex items-start justify-between gap-3">
               <h1 className="text-2xl font-bold text-text">{product.name}</h1>
               <div className="flex items-center gap-2 shrink-0">
-                <button onClick={handleCopyUrl} title="Copy link" className="w-9 h-9 rounded-lg border border-border bg-white flex items-center justify-center cursor-pointer hover:bg-surface-hover transition-colors text-text-muted">
+                <button onClick={handleCopyUrl} title="Copy link" className="w-9 h-9 rounded-lg border border-border bg-white flex items-center justify-center cursor-pointer hover:bg-[#EFF6FF] hover:border-[#93C5FD] hover:text-primary-600 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all text-text-muted">
                   {copied ? <span className="text-green-600 text-sm">&#10003;</span> : (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
                   )}
                 </button>
-                <button onClick={handleShare} title="Share" className="w-9 h-9 rounded-lg border border-border bg-white flex items-center justify-center cursor-pointer hover:bg-surface-hover transition-colors text-text-muted">
+                <button onClick={handleShare} title="Share" className="w-9 h-9 rounded-lg border border-border bg-white flex items-center justify-center cursor-pointer hover:bg-[#EFF6FF] hover:border-[#93C5FD] hover:text-primary-600 hover:-translate-y-px hover:shadow-[0_2px_6px_rgba(37,99,235,0.12)] transition-all text-text-muted">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
                 </button>
               </div>
@@ -120,7 +120,7 @@ export default function ProductDetailPage() {
 
         return (
           <div key={i} className={`bg-white rounded-2xl border border-border p-6 mb-4 ${isNexaSection ? "border-primary-600 bg-gradient-to-br from-primary-50 to-white" : ""}`}>
-            <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+            <h2 className="text-sm font-bold text-text uppercase tracking-[0.04em] pb-2.5 border-b-2 border-[#E2E8F0] mb-4 flex items-center gap-2">
               {isNexaSection && <span className="text-primary-600">&#9733;</span>}
               {section.name}
             </h2>
@@ -182,9 +182,9 @@ function FieldRenderer({ field }) {
 
     case "notes":
       return (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
-          <p className="text-xs font-semibold text-amber-800 uppercase mb-2">{displayName}</p>
-          <div className="text-sm text-amber-900" dangerouslySetInnerHTML={{ __html: parseMarkdown(String(value)) }} />
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] border-l-4 border-l-primary-600 rounded-lg px-5 py-4 mb-3">
+          <p className="text-xs font-semibold text-text-muted uppercase mb-2">{displayName}</p>
+          <div className="text-sm text-text" dangerouslySetInnerHTML={{ __html: parseMarkdown(String(value)) }} />
         </div>
       );
 
@@ -215,8 +215,8 @@ function LendersSection({ product }) {
 
   return (
     <div className="bg-white rounded-2xl border border-border p-6 mb-4">
-      <h2 className="text-lg font-bold text-text mb-1">Available Lenders ({lenderNames.length})</h2>
-      <p className="text-sm text-text-muted mb-4">{product.name}</p>
+      <h2 className="text-sm font-bold text-text uppercase tracking-[0.04em] pb-2.5 border-b-2 border-[#E2E8F0] mb-4">Available Lenders ({lenderNames.length})</h2>
+      <p className="text-[13px] text-[#94a3b8] pb-3 border-b border-[#e2e8f0] mb-4">{product.name}</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {lenderNames.map((name) => (
           <Link
