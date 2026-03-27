@@ -65,7 +65,7 @@ export default function AppLayout() {
           paddingRight: "32px",
         }}
       >
-        <div className="max-w-[1200px] mx-auto">
+        <div className="w-full">
           {!authChecked ? (
             /* Loading state while checking auth */
             <div className="flex items-center justify-center py-20">

@@ -29,7 +29,10 @@ export default function PipelinePage() {
     : PIPELINE_URL;
 
   return (
-    <div style={{ margin: "-24px -32px 0", height: "calc(100vh - 77px)" }}>
+    <div style={{
+      margin: "-24px -32px 0",
+      height: "calc(100vh - 77px)",
+    }}>
       <iframe
         src={iframeUrl}
         title="Pipeline"
