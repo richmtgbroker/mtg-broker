@@ -131,8 +131,7 @@ function LenderUpdatesSection() {
   };
 
   return (
-    <div className="mt-10">
-      <h2 className="text-lg font-bold text-text mb-1">Lender Email Updates</h2>
+    <div>
       <p className="text-sm text-text-muted mb-5">
         Paste lender emails to add them to the AI Guideline Search database.
       </p>
@@ -523,19 +522,13 @@ function AddLenderSection() {
   };
 
   return (
-    <div className="mt-10">
-      <h2 className="text-lg font-bold text-text mb-1 flex items-center gap-2">
-        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-        Add Lender from URL
-      </h2>
+    <div>
       <p className="text-sm text-text-muted mb-5">
         Paste a lender's website URL — AI will scrape the site and create an Airtable record with extracted details.
       </p>
 
       {/* URL Input Form */}
-      <div className="bg-surface border border-border-light rounded-xl p-6 mb-6 shadow-sm">
+      <div className="mb-6">
         <form onSubmit={handleSubmit} className="flex gap-3 items-stretch">
           <div className="flex-1 relative">
             <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -972,6 +965,7 @@ function SyncButton({ label, url }) {
 
 export default function AdminHub() {
   const [authorized, setAuthorized] = useState(false);
+  const [activeTab, setActiveTab] = useState("add-lender");
 
   useEffect(() => {
     setAuthorized(isAdmin());
@@ -981,7 +975,7 @@ export default function AdminHub() {
     <div className="min-h-screen bg-white">
       <Navbar />
 
-      <main className="max-w-[800px] mx-auto px-6 py-16">
+      <main className="max-w-6xl mx-auto px-8 py-16">
         {!authorized ? (
           <div className="text-center py-16">
             <h1 className="text-2xl font-bold text-text mb-2">Access Denied</h1>
@@ -995,61 +989,96 @@ export default function AdminHub() {
             <h1 className="text-2xl font-bold text-text mb-2">Admin Hub</h1>
             <p className="text-text-muted mb-8">Platform administration tools.</p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <a
-                href="https://dash.cloudflare.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-5 bg-surface border border-border-light rounded-xl no-underline hover:border-primary-200 transition-colors"
-              >
-                <h3 className="text-sm font-bold text-text mb-1">Cloudflare Dashboard</h3>
-                <p className="text-xs text-text-muted">Workers, Pages, DNS</p>
-              </a>
-              <a
-                href="https://mtgbroker.outseta.com/nocode"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-5 bg-surface border border-border-light rounded-xl no-underline hover:border-primary-200 transition-colors"
-              >
-                <h3 className="text-sm font-bold text-text mb-1">Outseta</h3>
-                <p className="text-xs text-text-muted">Users, billing, auth</p>
-              </a>
-              <a
-                href="https://supabase.com/dashboard/project/tcmahfwhdknxhhdvqpum"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-5 bg-surface border border-border-light rounded-xl no-underline hover:border-primary-200 transition-colors"
-              >
-                <h3 className="text-sm font-bold text-text mb-1">Supabase</h3>
-                <p className="text-xs text-text-muted">Database, tables, queries</p>
-              </a>
-              <a
-                href="https://airtable.com/appuJgI9X93OLaf0u"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-5 bg-surface border border-border-light rounded-xl no-underline hover:border-primary-200 transition-colors"
-              >
-                <h3 className="text-sm font-bold text-text mb-1">Airtable</h3>
-                <p className="text-xs text-text-muted">Loan products, lenders</p>
-              </a>
-            </div>
+            {/* Quick Links & Sync */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+              {/* Quick Links Card */}
+              <div className="bg-surface border border-border-light rounded-xl p-6 shadow-sm">
+                <h2 className="text-base font-bold text-text mb-4 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Quick Links
+                </h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { href: "https://dash.cloudflare.com", title: "Cloudflare", desc: "Workers, Pages, DNS" },
+                    { href: "https://mtgbroker.outseta.com/#/app/dashboard", title: "Outseta", desc: "Users, billing, auth" },
+                    { href: "https://supabase.com/dashboard/project/tcmahfwhdknxhhdvqpum", title: "Supabase", desc: "Database, tables, queries" },
+                    { href: "https://airtable.com/appuJgI9X93OLaf0u", title: "Airtable", desc: "Loan products, lenders" },
+                  ].map((link) => (
+                    <a
+                      key={link.title}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 bg-white border border-border-light rounded-lg no-underline hover:border-primary-200 hover:bg-primary-50/30 transition-colors"
+                    >
+                      <h3 className="text-sm font-bold text-text mb-0.5">{link.title}</h3>
+                      <p className="text-xs text-text-muted">{link.desc}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
 
-            {/* Airtable → Supabase Sync */}
-            <div className="mt-8">
-              <h2 className="text-lg font-bold text-text mb-1">Airtable → Supabase Sync</h2>
-              <p className="text-xs text-text-muted mb-4">Auto-syncs daily at 3 AM UTC. Use these buttons to trigger a manual sync immediately.</p>
-              <div className="flex flex-wrap gap-3">
-                <SyncButton label="Sync Lenders" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/lenders" />
-                <SyncButton label="Sync Products" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/products" />
-                <SyncButton label="Sync All" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/" />
+              {/* Sync Card */}
+              <div className="bg-surface border border-border-light rounded-xl p-6 shadow-sm">
+                <h2 className="text-base font-bold text-text mb-1 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Airtable → Supabase Sync
+                </h2>
+                <p className="text-xs text-text-muted mb-5">Auto-syncs daily at 3 AM UTC. Trigger a manual sync below.</p>
+                <div className="flex flex-wrap gap-3">
+                  <SyncButton label="Sync Lenders" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/lenders" />
+                  <SyncButton label="Sync Products" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/products" />
+                  <SyncButton label="Sync All" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/" />
+                </div>
               </div>
             </div>
 
-            {/* Add Lender from URL */}
-            <AddLenderSection />
+            {/* Tabbed Section: Add Lender / Lender Email Updates */}
+            <div className="bg-surface border border-border-light rounded-xl shadow-sm overflow-hidden">
+              {/* Tab Bar */}
+              <div className="flex border-b border-border-light">
+                <button
+                  onClick={() => setActiveTab("add-lender")}
+                  className={`flex-1 px-6 py-3.5 text-sm font-semibold transition-colors cursor-pointer ${
+                    activeTab === "add-lender"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
+                      : "text-text-muted hover:text-text hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Add Lender
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("email-updates")}
+                  className={`flex-1 px-6 py-3.5 text-sm font-semibold transition-colors cursor-pointer ${
+                    activeTab === "email-updates"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
+                      : "text-text-muted hover:text-text hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Lender Email Updates
+                  </span>
+                </button>
+              </div>
 
-            {/* Lender Email Updates Section */}
-            <LenderUpdatesSection />
+              {/* Tab Content */}
+              <div className="p-6">
+                {activeTab === "add-lender" && <AddLenderSection />}
+                {activeTab === "email-updates" && <LenderUpdatesSection />}
+              </div>
+            </div>
           </>
         )}
       </main>
