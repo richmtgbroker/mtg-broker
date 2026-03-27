@@ -51,22 +51,22 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">
+          <h1 className="text-[32px] font-extrabold tracking-[-0.5px] text-text">
             {userName ? `Welcome back, ${userName}!` : "Welcome back!"}
           </h1>
-          <p className="text-text-muted text-sm mt-1">Your mortgage toolkit at a glance</p>
+          <p className="text-text-muted text-base mt-1">Your mortgage toolkit at a glance</p>
         </div>
         <CalendarChip dateStr={dateStr} closings={closings} />
       </header>
 
       {/* Top Row: Quick Actions + Rates */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-7">
         <QuickActions lenderCount={lenderCount} />
         <RatesSection rates={rates} />
       </div>
 
       {/* Bottom Row: Tasks + Leads + Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
         <TasksSection tasks={tasks} />
         <LeadsSection leads={leads} />
         <PipelineOverview stats={pipelineStats} />
@@ -90,23 +90,23 @@ function QuickActions({ lenderCount }) {
 
   return (
     <DashSection title="Quick Actions">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {actions.map((a) => (
           <Link
             key={a.href}
             to={a.href}
-            className={`flex items-center gap-3 p-3 rounded-xl border no-underline transition-all hover:shadow-md ${
+            className={`group flex flex-col items-center text-center px-3 py-4 rounded-[16px] border no-underline transition-all ${
               a.highlight
-                ? "bg-primary-50 border-primary-200 hover:border-primary-600"
-                : "bg-white border-border hover:border-text-muted"
+                ? "bg-[#F0F7FF] border-2 border-[#2563EB] shadow-[0_4px_16px_rgba(37,99,235,0.2)]"
+                : "bg-[#F8FAFC] border-[#E2E8F0] hover:border-text-muted"
             }`}
           >
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${a.highlight ? "bg-primary-600 text-white" : "bg-surface-active text-text-muted"}`}>
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group-hover:bg-[#2563EB] group-hover:text-white group-hover:scale-105 ${a.highlight ? "bg-primary-600 text-white" : "bg-white text-text-muted"}`}>
               <NavIcon paths={a.icon} size={18} />
             </div>
             <div className="min-w-0">
-              <div className={`text-sm font-semibold ${a.highlight ? "text-primary-600" : "text-text"}`}>{a.label}</div>
-              <div className="text-xs text-text-faint truncate">{a.sub}</div>
+              <div className={`text-[13px] font-bold ${a.highlight ? "text-primary-600" : "text-text"}`}>{a.label}</div>
+              <div className="text-[11px] text-text-faint truncate">{a.sub}</div>
             </div>
           </Link>
         ))}
@@ -135,12 +135,12 @@ function RatesSection({ rates }) {
           const data = rates?.[key];
           const change = data ? parseFloat(data.change) : 0;
           return (
-            <div key={key} className="bg-surface-hover rounded-xl p-3">
-              <div className="text-xs text-text-faint font-medium mb-1">{label}</div>
+            <div key={key} className="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-[14px] p-3 shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
+              <div className="text-xs text-white/85 font-medium mb-1 uppercase">{label}</div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-text">{data ? `${data.rate}%` : "--%"}</span>
+                <span className="text-lg font-extrabold text-white">{data ? `${data.rate}%` : "--%"}</span>
                 {data && (
-                  <span className={`text-xs font-semibold flex items-center gap-0.5 ${change > 0 ? "text-red-500" : change < 0 ? "text-green-600" : "text-text-muted"}`}>
+                  <span className={`text-xs font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded ${change > 0 ? "bg-red-500/20 text-red-300" : change < 0 ? "bg-green-500/20 text-green-300" : "bg-white/15 text-white/70"}`}>
                     {change > 0 && <span>&#9650;</span>}
                     {change < 0 && <span>&#9660;</span>}
                     {change >= 0 ? "+" : ""}{change.toFixed(2)}
@@ -155,20 +155,20 @@ function RatesSection({ rates }) {
       {/* Pricing Engines */}
       <div className="mt-4">
         <div className="text-[11px] font-bold text-text-faint uppercase tracking-wide mb-2">Pricing Engines</div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { name: "LenderPrice", url: "https://marketplace.digitallending.com/#/login", domain: "lenderprice.com" },
             { name: "LoanNEX", url: "https://web.loannex.com/", domain: "loannex.com" },
             { name: "LoanSifter", url: "https://loansifternow.optimalblue.com/", domain: null },
             { name: "Polly", url: "https://lx.pollyex.com/accounts/login/", domain: "polly.io" },
           ].map((engine) => (
-            <a key={engine.name} href={engine.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-border text-xs font-medium text-text-secondary no-underline hover:border-primary-600 hover:text-primary-600 transition-colors">
+            <a key={engine.name} href={engine.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-[10px] bg-white border border-[#E2E8F0] text-xs font-medium text-text-secondary no-underline hover:border-primary-600 hover:text-primary-600 transition-colors">
               {engine.domain ? (
                 <img src={`https://www.google.com/s2/favicons?domain=${engine.domain}&sz=32`} alt="" className="w-4 h-4 rounded" />
               ) : (
                 <svg className="w-4 h-4" viewBox="0 0 32 32"><rect width="32" height="32" rx="6" fill="#0066CC" /><text x="16" y="21" textAnchor="middle" fontFamily="Arial" fontWeight="700" fontSize="14" fill="#fff">LS</text></svg>
               )}
-              {engine.name}
+              <span className="flex-1">{engine.name}</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
             </a>
           ))}
@@ -187,17 +187,17 @@ function TasksSection({ tasks }) {
       {tasks.length === 0 ? (
         <EmptyState icon={`<path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>`} text="No pending tasks." linkHref="/app/pipeline" linkText="Go to Pipeline" />
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           {tasks.slice(0, 8).map((task, i) => {
             const isOverdue = task.dueMeta === "Overdue";
             return (
-              <Link key={i} to={task.link} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg no-underline transition-colors hover:bg-surface-hover ${isOverdue ? "bg-red-50" : ""}`}>
+              <Link key={i} to={task.link} className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] border no-underline transition-colors hover:bg-surface-hover ${isOverdue ? "bg-red-50 border-red-200" : "bg-[#F8FAFC] border-[#E2E8F0]"}`}>
                 <div className={`w-5 h-5 shrink-0 ${isOverdue ? "text-red-500" : "text-text-faint"}`}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /></svg>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-text truncate">{task.name}</div>
-                  {task.meta && <div className={`text-xs ${isOverdue ? "text-red-500 font-semibold" : "text-text-faint"}`}>{task.meta}</div>}
+                  {task.meta && <div className={`text-xs ${isOverdue ? "text-[#DC2626] font-semibold" : "text-text-faint"}`}>{task.meta}</div>}
                 </div>
               </Link>
             );
@@ -217,11 +217,11 @@ function LeadsSection({ leads }) {
       {leads.length === 0 ? (
         <EmptyState icon={`<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>`} text="No leads in pipeline." linkHref="/app/pipeline" linkText="Add a new lead" />
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           {leads.slice(0, 5).map((lead, i) => (
-            <Link key={i} to="/app/pipeline" className="flex items-center gap-3 px-3 py-2.5 rounded-lg no-underline text-text hover:bg-surface-hover transition-colors">
-              <div className="w-8 h-8 rounded-full bg-surface-active flex items-center justify-center shrink-0 text-text-muted">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+            <Link key={i} to="/app/pipeline" className="flex items-center gap-3 px-4 py-3.5 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] no-underline text-text hover:bg-surface-hover transition-colors">
+              <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-[#10B981] to-[#059669] flex items-center justify-center shrink-0 text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium truncate">{lead.borrower}</div>
@@ -243,34 +243,34 @@ function PipelineOverview({ stats }) {
   return (
     <DashSection title="Pipeline Overview" linkHref="/app/pipeline" linkText="View All">
       <div className="flex flex-col gap-3">
-        <Link to="/app/pipeline" className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 text-white no-underline hover:shadow-lg transition-shadow">
-          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+        <Link to="/app/pipeline" className="flex items-center gap-4 px-5 py-4 rounded-[14px] bg-gradient-to-br from-primary-600 to-primary-700 text-white no-underline hover:shadow-lg transition-shadow border border-[#E2E8F0]">
+          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
           </div>
           <div>
             <div className="text-xs font-medium text-white/80">Pipeline Loans</div>
-            <div className="text-2xl font-bold">{stats.loans}</div>
+            <div className="text-2xl font-extrabold tracking-[-0.5px]">{stats.loans}</div>
             <div className="text-xs text-white/60">Active in pipeline</div>
           </div>
         </Link>
 
-        <Link to="/app/pipeline" className="flex items-center gap-4 p-4 rounded-xl bg-white border border-border no-underline text-text hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-green-600">
+        <Link to="/app/pipeline" className="flex items-center gap-4 px-5 py-4 rounded-[14px] bg-[#F8FAFC] border border-[#E2E8F0] no-underline text-text hover:shadow-md transition-shadow">
+          <div className="w-11 h-11 rounded-xl bg-[#D1FAE5] flex items-center justify-center text-[#059669]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
           </div>
           <div>
             <div className="text-xs font-medium text-text-muted">Pipeline Volume</div>
-            <div className="text-xl font-bold">{formatCurrency(stats.volume)}</div>
+            <div className="text-2xl font-extrabold tracking-[-0.5px]">{formatCurrency(stats.volume)}</div>
           </div>
         </Link>
 
-        <Link to="/app/pipeline" className="flex items-center gap-4 p-4 rounded-xl bg-white border border-border no-underline text-text hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+        <Link to="/app/pipeline" className="flex items-center gap-4 px-5 py-4 rounded-[14px] bg-[#F8FAFC] border border-[#E2E8F0] no-underline text-text hover:shadow-md transition-shadow">
+          <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#D97706]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           </div>
           <div>
             <div className="text-xs font-medium text-text-muted">Upcoming Closings</div>
-            <div className="text-xl font-bold">{stats.closings}</div>
+            <div className="text-2xl font-extrabold tracking-[-0.5px]">{stats.closings}</div>
             <div className="text-xs text-text-faint">Next 14 days</div>
           </div>
         </Link>
@@ -409,9 +409,9 @@ function CalendarChip({ dateStr, closings }) {
 // ============================================================
 function DashSection({ title, icon, linkHref, linkText, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-border p-5">
+    <div className="bg-white rounded-[20px] border border-border p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-text flex items-center gap-2">
+        <h3 className="text-lg font-bold text-text flex items-center gap-2">
           {icon && <NavIcon paths={icon} size={16} className="text-text-muted" />}
           {title}
         </h3>
