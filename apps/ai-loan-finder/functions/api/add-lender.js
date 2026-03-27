@@ -35,13 +35,13 @@ const EXTRACTABLE_FIELDS = [
   'VA ID',
   'USDA ID',
   'Licensed States',
+  'Licensed States URL',
   'Scenario Desk',
   'Facebook',
   'LinkedIn',
   'Instagram',
   'X (Twitter)',
   'YouTube',
-  'Lender or Broker',
 ]
 
 // All writable fields in the table (for reporting what's missing)
@@ -205,35 +205,51 @@ async function extractLenderDetails(pageTexts, url, apiKey) {
       max_tokens: 2000,
       messages: [{
         role: 'user',
-        content: `You are extracting information about a wholesale mortgage lender from their website content.
+        content: `You are a Data Architect for a wholesale mortgage broker platform.
+You are extracting information about a wholesale mortgage lender from their website content.
+
 The website URL is: ${url}
 
 Here is the text content from their website pages:
 
 ${combined}
 
-Extract the following fields. Return ONLY a JSON object with these exact keys. Use null for any field you cannot find. Do not guess or make up values — only include data you can clearly identify from the content.
+## Extraction Rules
+
+1. **Only use data clearly found in the content.** Use null for anything you cannot confidently identify. Never guess or fabricate values.
+2. **Lender Name:** Use the official company name, not the domain name.
+3. **NMLS:** Look in the footer, "About Us", or licensing pages. Digits only.
+4. **Social Media:** Prioritize "Wholesale" or "TPO" specific channels when available. Only include verified business accounts found on the site.
+5. **Licensed States:** Look for a "State Licensing," "Availability," or "Where We Lend" page link.
+   - If you find a list of states, return comma-separated abbreviations (e.g., "AL, FL, TX").
+   - If the site says "All 50 States" or equivalent, return "All 50 States".
+   - If no licensing info is found, return null.
+   - For the licensed_states_url, ONLY use a URL from the lender's corporate website. NEVER use third-party sites (FREEandCLEAR, loanbase.com, NMLS Consumer Access, etc.).
+6. **TPO/Broker Portal:** Look for a wholesale login, TPO portal, or broker portal URL.
+7. **Description:** Extract 1-2 paragraphs from the About section. Keep it factual.
+
+## Required Output
+
+Return ONLY a JSON object with these exact keys. No other text.
 
 {
-  "lender_name": "Official company name (not the domain name)",
+  "lender_name": "Official company name",
   "description": "1-2 paragraph company description/about section",
   "corporate_website": "Clean main corporate URL (no tracking params)",
   "tpo_broker_portal": "Wholesale/TPO/broker portal login URL if found",
-  "nmls": "NMLS ID number (digits only, often in footer)",
+  "nmls": "NMLS ID number (digits only)",
   "fha_id": "FHA lender ID if found",
   "va_id": "VA lender ID if found",
   "usda_id": "USDA lender ID if found",
   "licensed_states": "Comma-separated state abbreviations, or 'All 50 States'",
+  "licensed_states_url": "URL of the licensing/availability page on the lender's corporate website ONLY",
   "scenario_desk": "Scenario desk email address if found",
   "facebook": "Facebook page URL",
   "linkedin": "LinkedIn company page URL",
   "instagram": "Instagram profile URL",
   "youtube": "YouTube channel URL",
-  "x_twitter": "X/Twitter profile URL",
-  "lender_or_broker": "Either 'Lender' or 'Broker' — default to 'Lender' if unclear"
-}
-
-Return ONLY the JSON object, no other text.`,
+  "x_twitter": "X/Twitter profile URL"
+}`,
       }],
     }),
   })
@@ -307,13 +323,13 @@ function mapToAirtableFields(extracted, originalUrl) {
   if (extracted.va_id) fields['VA ID'] = String(extracted.va_id)
   if (extracted.usda_id) fields['USDA ID'] = String(extracted.usda_id)
   if (extracted.licensed_states) fields['Licensed States'] = extracted.licensed_states
+  if (extracted.licensed_states_url) fields['Licensed States URL'] = extracted.licensed_states_url
   if (extracted.scenario_desk) fields['Scenario Desk'] = extracted.scenario_desk
   if (extracted.facebook) fields['Facebook'] = extracted.facebook
   if (extracted.linkedin) fields['LinkedIn'] = extracted.linkedin
   if (extracted.instagram) fields['Instagram'] = extracted.instagram
   if (extracted.youtube) fields['YouTube'] = extracted.youtube
   if (extracted.x_twitter) fields['X (Twitter)'] = extracted.x_twitter
-  if (extracted.lender_or_broker) fields['Lender or Broker'] = extracted.lender_or_broker
 
   return fields
 }
@@ -366,12 +382,13 @@ export async function onRequestPost(context) {
     }
 
     // Fetch main page and common sub-pages in parallel
-    const [mainPage, aboutPage, wholesalePage, tpoPage, contactPage] = await Promise.all([
+    const [mainPage, aboutPage, wholesalePage, tpoPage, contactPage, licensingPage] = await Promise.all([
       fetchPage(url),
       fetchPage(`${baseUrl}/about`),
       fetchPage(`${baseUrl}/wholesale`),
       fetchPage(`${baseUrl}/tpo`),
       fetchPage(`${baseUrl}/contact`),
+      fetchPage(`${baseUrl}/licensing`),
     ])
 
     const pageTexts = {
@@ -380,6 +397,7 @@ export async function onRequestPost(context) {
       'Wholesale Page': wholesalePage,
       'TPO Page': tpoPage,
       'Contact Page': contactPage,
+      'Licensing Page': licensingPage,
     }
 
     // ── Step 2: Extract details with Claude ──────────────────────────
