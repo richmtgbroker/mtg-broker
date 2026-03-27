@@ -201,8 +201,8 @@ export default function Home() {
       </section>
 
       {/* ===== BOTTOM CTA ===== */}
-      <section className="bg-[#0f172a] py-20">
-        <div className="max-w-[1280px] mx-auto px-6 text-center">
+      <section className="py-20">
+        <div className="max-w-[1080px] mx-auto px-6 bg-[#0f172a] rounded-3xl py-16 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
             Instant answers for every scenario.
           </h2>

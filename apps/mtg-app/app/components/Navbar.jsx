@@ -111,6 +111,14 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Marketing Nav Links (shown when not logged in) */}
+          {!loggedIn && (
+            <nav className="flex items-center gap-6 max-md:hidden">
+              <a href="#features" className="text-[15px] font-semibold text-text-secondary no-underline hover:text-primary-600 transition-colors">Features</a>
+              <Link to="/pricing" className="text-[15px] font-semibold text-text-secondary no-underline hover:text-primary-600 transition-colors">Pricing</Link>
+            </nav>
+          )}
+
           {/* Actions */}
           <div className="flex items-center gap-3 justify-end flex-none">
             {loggedIn ? (
