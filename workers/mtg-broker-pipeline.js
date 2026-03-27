@@ -40,7 +40,7 @@
  *   1.1: Renamed "Report #" label to "Report / File #" in credit section (DOM enhancement in initPipeline).
  *   1.2: Converted Credit Pull Type from text input to dropdown with Hard Pull, Soft Pull, Estimated options.
  *   1.4: Added "Requested HOI from Borrower" checklist item above "HOI Quotes Requested" in Homeowners Insurance group.
- *   Checklist now has 51 items (was 50). Order numbers bumped for HOI and Closing groups.
+ *   Checklist now has 54 items (was 51). Added Update LOS, Reprice, Run AUS/GUS (Post Contract) to Purchase Agreement group.
  *
  * PREVIOUS: March 23, 2026 - v7.29 — CRIT-1 security fix: JWT signature verification.
  *   Client now sends raw JWT instead of plain email in Authorization header.
@@ -4478,58 +4478,61 @@ async function getPipelineChecklistJS(request) {
 
     // GROUP 5: Purchase Agreement (conditionally shown based on Purpose)
     { id: 'pur-agreement',        label: 'Purchase Agreement Rcvd',   group: 'Purchase Agreement',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 17 },
+    { id: 'pur-update-los',       label: 'Update LOS',                group: 'Purchase Agreement',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 18 },
+    { id: 'pur-reprice',          label: 'Reprice',                   group: 'Purchase Agreement',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 19 },
+    { id: 'pur-aus-post',         label: 'Run AUS/GUS (Post Contract)', group: 'Purchase Agreement',        inputType: 'date', na: false, checked: false, date: '', value: '', order: 20 },
 
     // GROUP 6: Lender Disclosures (renamed from Disclosures)
-    { id: 'disc-requested',       label: 'Disclosures Requested',     group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 18 },
-    { id: 'disc-sent',            label: 'Disclosures Sent',          group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 19 },
-    { id: 'disc-lo-signed',       label: 'Signed by LO',             group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 20 },
-    { id: 'disc-borrower-signed', label: 'Signed by Borrowers',      group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 21 },
+    { id: 'disc-requested',       label: 'Disclosures Requested',     group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 21 },
+    { id: 'disc-sent',            label: 'Disclosures Sent',          group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 22 },
+    { id: 'disc-lo-signed',       label: 'Signed by LO',             group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 23 },
+    { id: 'disc-borrower-signed', label: 'Signed by Borrowers',      group: 'Lender Disclosures',          inputType: 'date', na: false, checked: false, date: '', value: '', order: 24 },
 
     // GROUP 7: Processing
-    { id: 'proc-sent',            label: 'Sent to Processing',        group: 'Processing',                  inputType: 'date', na: false, checked: false, date: '', value: '', order: 22 },
-    { id: 'proc-accepted',        label: 'Processing Accepted',       group: 'Processing',                  inputType: 'date', na: false, checked: false, date: '', value: '', order: 23 },
+    { id: 'proc-sent',            label: 'Sent to Processing',        group: 'Processing',                  inputType: 'date', na: false, checked: false, date: '', value: '', order: 25 },
+    { id: 'proc-accepted',        label: 'Processing Accepted',       group: 'Processing',                  inputType: 'date', na: false, checked: false, date: '', value: '', order: 26 },
 
     // GROUP 8: Appraisal
-    { id: 'apr-requested',        label: 'Requested Processing to Order', group: 'Appraisal',               inputType: 'date', na: false, checked: false, date: '', value: '', order: 24 },
-    { id: 'apr-ordered',          label: 'Appraisal Order Placed',    group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 25 },
-    { id: 'apr-paid',             label: 'Appraisal Paid',            group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 26 },
-    { id: 'apr-assigned',         label: 'Appraisal Assigned',        group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 27 },
-    { id: 'apr-received',         label: 'Appraisal Received',        group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 28 },
-    { id: 'apr-cleared',          label: 'Appraisal Cleared',         group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 29 },
+    { id: 'apr-requested',        label: 'Requested Processing to Order', group: 'Appraisal',               inputType: 'date', na: false, checked: false, date: '', value: '', order: 27 },
+    { id: 'apr-ordered',          label: 'Appraisal Order Placed',    group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 28 },
+    { id: 'apr-paid',             label: 'Appraisal Paid',            group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 29 },
+    { id: 'apr-assigned',         label: 'Appraisal Assigned',        group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 30 },
+    { id: 'apr-received',         label: 'Appraisal Received',        group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 31 },
+    { id: 'apr-cleared',          label: 'Appraisal Cleared',         group: 'Appraisal',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 32 },
 
     // GROUP 9: Reports & Certs
-    { id: 'insp-wir',             label: 'WIR / Pest Inspection',     group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 30 },
-    { id: 'insp-flood',           label: 'Flood Cert Ordered',        group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 31 },
-    { id: 'insp-hoa',             label: 'HOA Certs',                 group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 32 },
+    { id: 'insp-wir',             label: 'WIR / Pest Inspection',     group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 33 },
+    { id: 'insp-flood',           label: 'Flood Cert Ordered',        group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 34 },
+    { id: 'insp-hoa',             label: 'HOA Certs',                 group: 'Reports & Certs',             inputType: 'date', na: false, checked: false, date: '', value: '', order: 35 },
 
     // GROUP 10: Title
-    { id: 'title-ordered',        label: 'Title Ordered',             group: 'Title',                       inputType: 'date', na: false, checked: false, date: '', value: '', order: 33 },
-    { id: 'title-received',       label: 'Title Received',            group: 'Title',                       inputType: 'date', na: false, checked: false, date: '', value: '', order: 34 },
+    { id: 'title-ordered',        label: 'Title Ordered',             group: 'Title',                       inputType: 'date', na: false, checked: false, date: '', value: '', order: 36 },
+    { id: 'title-received',       label: 'Title Received',            group: 'Title',                       inputType: 'date', na: false, checked: false, date: '', value: '', order: 37 },
 
     // GROUP 11: Rate Lock
-    { id: 'lock-locked',          label: 'Rate Locked',               group: 'Rate Lock',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 35 },
-    { id: 'lock-email',           label: 'Rate Lock Sent to Processing', group: 'Rate Lock',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 36 },
+    { id: 'lock-locked',          label: 'Rate Locked',               group: 'Rate Lock',                   inputType: 'date', na: false, checked: false, date: '', value: '', order: 38 },
+    { id: 'lock-email',           label: 'Rate Lock Sent to Processing', group: 'Rate Lock',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 39 },
 
     // GROUP 12: Underwriting
-    { id: 'uw-sent',              label: 'Submitted to Underwriting', group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 37 },
-    { id: 'uw-accepted',          label: 'Underwriting Accepted',     group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 38 },
-    { id: 'uw-conditional',       label: 'Conditional Approval',      group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 39 },
+    { id: 'uw-sent',              label: 'Submitted to Underwriting', group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 40 },
+    { id: 'uw-accepted',          label: 'Underwriting Accepted',     group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 41 },
+    { id: 'uw-conditional',       label: 'Conditional Approval',      group: 'Underwriting',                inputType: 'date', na: false, checked: false, date: '', value: '', order: 42 },
 
     // GROUP 13: Homeowners Insurance (HOI)
-    { id: 'hoi-requested',        label: 'Requested HOI from Borrower',      group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 40 },
-    { id: 'hoi-quotes',           label: 'HOI Quotes Requested',             group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 41 },
-    { id: 'hoi-sent-buyer',       label: 'Quotes Sent to Borrower',          group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 42 },
-    { id: 'hoi-decision',         label: 'HOI Decision Made',                group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 43 },
-    { id: 'hoi-sent-processing',  label: 'HOI Choice Sent to Processing',   group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 44 },
+    { id: 'hoi-requested',        label: 'Requested HOI from Borrower',      group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 43 },
+    { id: 'hoi-quotes',           label: 'HOI Quotes Requested',             group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 44 },
+    { id: 'hoi-sent-buyer',       label: 'Quotes Sent to Borrower',          group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 45 },
+    { id: 'hoi-decision',         label: 'HOI Decision Made',                group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 46 },
+    { id: 'hoi-sent-processing',  label: 'HOI Choice Sent to Processing',   group: 'Homeowners Insurance',  inputType: 'date', na: false, checked: false, date: '', value: '', order: 47 },
 
     // GROUP 14: Closing (Funded → Closed → Purchased)
-    { id: 'close-cd-sent',        label: 'Initial CD Sent',           group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 45 },
-    { id: 'close-cd-signed',      label: 'Initial CD Signed',         group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 46 },
-    { id: 'close-conditions',     label: 'Conditions Cleared',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 47 },
-    { id: 'close-final',          label: 'Final Approval / CTC',      group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 48 },
-    { id: 'close-funded',         label: 'Funded',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 49 },
-    { id: 'close-closed',         label: 'Closed',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 50 },
-    { id: 'close-purchased',      label: 'Purchased (NonDel)',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 51 }
+    { id: 'close-cd-sent',        label: 'Initial CD Sent',           group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 48 },
+    { id: 'close-cd-signed',      label: 'Initial CD Signed',         group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 49 },
+    { id: 'close-conditions',     label: 'Conditions Cleared',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 50 },
+    { id: 'close-final',          label: 'Final Approval / CTC',      group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 51 },
+    { id: 'close-funded',         label: 'Funded',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 52 },
+    { id: 'close-closed',         label: 'Closed',                    group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 53 },
+    { id: 'close-purchased',      label: 'Purchased (NonDel)',        group: 'Closing',                     inputType: 'date', na: false, checked: false, date: '', value: '', order: 54 }
   ];
 
   // Group metadata — icon + display color for each group header
@@ -11555,7 +11558,7 @@ async function getPipelineBootstrapHTML(request) {
 </script>
 
 <!-- ============================================================
-     Custom Address Autocomplete
+     Custom Address Autocomplete (v13.9 — legacy API fallback)
      ============================================================ -->
 <script>
 (function() {
@@ -11569,6 +11572,8 @@ async function getPipelineBootstrapHTML(request) {
   var placesLib = null, sessionToken = null, dropdown = null;
   var debounceTimer = null, activeIndex = -1, currentSuggestions = [];
   var isInteractingWithDropdown = false; /* v13.5: prevents blur from closing dropdown during selection */
+  var useLegacyApi = false; /* v13.9: fallback flag for legacy AutocompleteService */
+  var legacyService = null, legacyPlacesService = null, legacyAttrDiv = null;
 
   function debounce(fn, ms) {
     return function() {
@@ -11579,7 +11584,10 @@ async function getPipelineBootstrapHTML(request) {
   }
 
   function newSession() {
-    if (placesLib && placesLib.AutocompleteSessionToken) {
+    if (useLegacyApi) {
+      /* Legacy API uses google.maps.places.AutocompleteSessionToken */
+      try { sessionToken = new google.maps.places.AutocompleteSessionToken(); } catch(e) { sessionToken = null; }
+    } else if (placesLib && placesLib.AutocompleteSessionToken) {
       sessionToken = new placesLib.AutocompleteSessionToken();
     }
   }
@@ -11626,28 +11634,52 @@ async function getPipelineBootstrapHTML(request) {
     });
   }
 
+  /* v13.9: Populate address fields from address_components array */
+  function populateFromComponents(comps) {
+    var get = function(type) {
+      var c = comps.find(function(comp) { return comp.types && comp.types.indexOf(type) !== -1; });
+      if (!c) return '';
+      /* Support both new API (shortText/text/longText) and legacy API (short_name/long_name) */
+      if (type === 'administrative_area_level_1') return c.shortText || c.short_name || c.text || '';
+      return c.text || c.long_name || c.longText || '';
+    };
+    var streetNum = get('street_number');
+    var route = get('route');
+    var streetFull = streetNum ? streetNum + ' ' + route : route;
+    document.getElementById('property-street').value = streetFull;
+    document.getElementById('property-city').value = get('locality') || get('sublocality') || get('administrative_area_level_2') || '';
+    document.getElementById('property-state').value = get('administrative_area_level_1');
+    document.getElementById('property-zip').value = get('postal_code');
+    var countyField = document.getElementById('property-county');
+    if (countyField) {
+      var county = get('administrative_area_level_2');
+      countyField.value = county.replace(/ County$/i, '');
+    }
+  }
+
   async function selectSuggestion(index) {
     var item = currentSuggestions[index]; if (!item) return;
     dropdown.classList.remove('open');
     try {
-      var place = new placesLib.Place({ id: item.placeId });
-      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
-      var comps = place.addressComponents || [];
-      var get = function(type) {
-        var c = comps.find(function(comp) { return comp.types && comp.types.indexOf(type) !== -1; });
-        return c ? (type === 'administrative_area_level_1' ? (c.shortText || c.text || '') : (c.text || c.longText || '')) : '';
-      };
-      var streetNum = get('street_number');
-      var route = get('route');
-      var streetFull = streetNum ? streetNum + ' ' + route : route;
-      document.getElementById('property-street').value = streetFull;
-      document.getElementById('property-city').value = get('locality') || get('sublocality') || get('administrative_area_level_2') || '';
-      document.getElementById('property-state').value = get('administrative_area_level_1');
-      document.getElementById('property-zip').value = get('postal_code');
-      var countyField = document.getElementById('property-county');
-      if (countyField) {
-        var county = get('administrative_area_level_2');
-        countyField.value = county.replace(/ County$/i, '');
+      if (useLegacyApi) {
+        /* v13.9: Legacy PlacesService.getDetails for place details */
+        await new Promise(function(resolve, reject) {
+          legacyPlacesService.getDetails(
+            { placeId: item.placeId, fields: ['address_components', 'formatted_address'], sessionToken: sessionToken },
+            function(place, status) {
+              if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+                populateFromComponents(place.address_components || []);
+                resolve();
+              } else {
+                reject(new Error('PlacesService status: ' + status));
+              }
+            }
+          );
+        });
+      } else {
+        var place = new placesLib.Place({ id: item.placeId });
+        await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+        populateFromComponents(place.addressComponents || []);
       }
       newSession();
       /* v13.5: After populating fields, blur input + clear suggestions */
@@ -11658,15 +11690,47 @@ async function getPipelineBootstrapHTML(request) {
     isInteractingWithDropdown = false; /* v13.5: reset flag */
   }
 
+  /* v13.9: Fetch suggestions via new API */
+  async function fetchSuggestionsNew(query) {
+    var request = { input: query, includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'], includedRegionCodes: ['us'], sessionToken: sessionToken };
+    var res = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+    var suggestions = (res.suggestions || []).map(function(s) {
+      var p = s.placePrediction; if (!p) return null;
+      return { placeId: p.placeId, text: p.text ? p.text.text : '', mainText: p.mainText ? p.mainText.text : '', secondaryText: p.secondaryText ? p.secondaryText.text : '' };
+    }).filter(Boolean);
+    return suggestions;
+  }
+
+  /* v13.9: Fetch suggestions via legacy AutocompleteService */
+  function fetchSuggestionsLegacy(query) {
+    return new Promise(function(resolve) {
+      legacyService.getPlacePredictions(
+        { input: query, types: ['address'], componentRestrictions: { country: 'us' }, sessionToken: sessionToken },
+        function(predictions, status) {
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) { resolve([]); return; }
+          var suggestions = predictions.map(function(p) {
+            return {
+              placeId: p.place_id,
+              text: p.description || '',
+              mainText: p.structured_formatting ? p.structured_formatting.main_text : p.description,
+              secondaryText: p.structured_formatting ? p.structured_formatting.secondary_text : ''
+            };
+          });
+          resolve(suggestions);
+        }
+      );
+    });
+  }
+
   async function fetchSuggestions(query) {
     if (!query || query.length < 3) { showDropdown([]); return; }
     try {
-      var request = { input: query, includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'], includedRegionCodes: ['us'], sessionToken: sessionToken };
-      var res = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-      var suggestions = (res.suggestions || []).map(function(s) {
-        var p = s.placePrediction; if (!p) return null;
-        return { placeId: p.placeId, text: p.text ? p.text.text : '', mainText: p.mainText ? p.mainText.text : '', secondaryText: p.secondaryText ? p.secondaryText.text : '' };
-      }).filter(Boolean);
+      var suggestions;
+      if (useLegacyApi) {
+        suggestions = await fetchSuggestionsLegacy(query);
+      } else {
+        suggestions = await fetchSuggestionsNew(query);
+      }
       showDropdown(suggestions);
     } catch (err) { console.warn('Autocomplete error:', err); showDropdown([]); }
   }
@@ -11692,6 +11756,17 @@ async function getPipelineBootstrapHTML(request) {
     if (!streetInput) return;
     try {
       placesLib = await google.maps.importLibrary('places');
+      /* v13.9: Check if the new AutocompleteSuggestion API is available; fall back to legacy if not */
+      if (!placesLib.AutocompleteSuggestion || !placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions) {
+        console.log('Places (New) API not available, using legacy AutocompleteService');
+        useLegacyApi = true;
+        legacyService = new google.maps.places.AutocompleteService();
+        /* Legacy PlacesService needs a DOM node for attribution */
+        legacyAttrDiv = document.createElement('div');
+        legacyAttrDiv.style.display = 'none';
+        document.body.appendChild(legacyAttrDiv);
+        legacyPlacesService = new google.maps.places.PlacesService(legacyAttrDiv);
+      }
       newSession();
       createDropdown(streetInput);
       streetInput.addEventListener('input', function() { debouncedFetch(streetInput.value); });
@@ -11709,6 +11784,7 @@ async function getPipelineBootstrapHTML(request) {
         var val = streetInput.value.trim();
         if (val.length >= 3 && currentSuggestions.length === 0) { debouncedFetch(val); }
       });
+      console.log('Address autocomplete initialized' + (useLegacyApi ? ' (legacy mode)' : ' (new API)'));
     } catch (err) { console.warn('Address autocomplete failed to load:', err); }
   }
 
