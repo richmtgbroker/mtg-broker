@@ -270,20 +270,90 @@ Return ONLY a JSON object with these exact keys. No other text.
 }
 
 
-// ─── Check Airtable for duplicate lender names ──────────────────────────────
-async function checkDuplicate(lenderName, apiKey) {
-  if (!lenderName) return null
+// ─── Extract the core company name (strip legal suffixes, dba, separators) ──
+function extractCoreName(name) {
+  if (!name) return ''
+  return name
+    .toLowerCase()
+    .replace(/\(dba[^)]*\)/gi, '')       // Remove (dba ...)
+    .replace(/\bdba\b.*/gi, '')           // Remove "dba" and everything after
+    .replace(/\b(llc|inc|corp|ltd|co|lp|llp|plc|na|n\.a\.)\b/gi, '') // Legal suffixes
+    .replace(/[|/\\–—-]/g, ' ')           // Separators to spaces
+    .replace(/[^a-z0-9\s]/g, '')          // Strip punctuation
+    .replace(/\s+/g, ' ')                 // Collapse whitespace
+    .trim()
+}
 
-  const formula = encodeURIComponent(`FIND(LOWER("${lenderName.replace(/"/g, '\\"')}"), LOWER({Lender Name}))`)
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}?filterByFormula=${formula}&maxRecords=5&fields%5B%5D=Lender+Name`
+// ─── Extract domain from URL (e.g. "renofi.com" from "https://www.renofi.com/about") ──
+function extractDomain(urlStr) {
+  try {
+    const parsed = new URL(urlStr.startsWith('http') ? urlStr : 'https://' + urlStr)
+    return parsed.hostname.replace(/^www\./, '').toLowerCase()
+  } catch {
+    return null
+  }
+}
 
-  const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${apiKey}` },
-  })
+// ─── Check Airtable for duplicate lenders (by URL domain + name keywords) ───
+async function checkDuplicate(lenderName, websiteUrl, apiKey) {
+  const results = new Map() // recordId → record (deduped)
 
-  if (!res.ok) return null
-  const data = await res.json()
-  return data.records?.length > 0 ? data.records : null
+  // Strategy 1: Match by website domain in Corporate Website field
+  const domain = extractDomain(websiteUrl)
+  if (domain) {
+    const domainFormula = encodeURIComponent(
+      `FIND("${domain}", LOWER({Corporate Website}))`
+    )
+    const domainUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}?filterByFormula=${domainFormula}&maxRecords=5&fields%5B%5D=Lender+Name`
+    try {
+      const res = await fetch(domainUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } })
+      if (res.ok) {
+        const data = await res.json()
+        for (const rec of (data.records || [])) {
+          results.set(rec.id, rec)
+        }
+      }
+    } catch { /* continue to name check */ }
+  }
+
+  // Strategy 2: Match by core name keywords
+  // e.g. "Renovation Finance LLC (dba Renofi)" → search for "renovation finance"
+  if (lenderName) {
+    const coreName = extractCoreName(lenderName)
+    if (coreName.length >= 3) {
+      const nameFormula = encodeURIComponent(
+        `FIND("${coreName.replace(/"/g, '\\"')}", LOWER({Lender Name}))`
+      )
+      const nameUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}?filterByFormula=${nameFormula}&maxRecords=5&fields%5B%5D=Lender+Name`
+      try {
+        const res = await fetch(nameUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } })
+        if (res.ok) {
+          const data = await res.json()
+          for (const rec of (data.records || [])) {
+            results.set(rec.id, rec)
+          }
+        }
+      } catch { /* continue */ }
+    }
+
+    // Strategy 3: Also try the full extracted name as a substring (original behavior)
+    const fullFormula = encodeURIComponent(
+      `FIND(LOWER("${lenderName.replace(/"/g, '\\"')}"), LOWER({Lender Name}))`
+    )
+    const fullUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}?filterByFormula=${fullFormula}&maxRecords=5&fields%5B%5D=Lender+Name`
+    try {
+      const res = await fetch(fullUrl, { headers: { 'Authorization': `Bearer ${apiKey}` } })
+      if (res.ok) {
+        const data = await res.json()
+        for (const rec of (data.records || [])) {
+          results.set(rec.id, rec)
+        }
+      }
+    } catch { /* continue */ }
+  }
+
+  const matches = Array.from(results.values())
+  return matches.length > 0 ? matches : null
 }
 
 
@@ -472,7 +542,7 @@ export async function onRequestPost(context) {
     const airtableKey = env.AIRTABLE_API_KEY
     if (!airtableKey) return jsonError(request, 'AIRTABLE_API_KEY not configured', 500)
 
-    const duplicates = await checkDuplicate(extracted.lender_name, airtableKey)
+    const duplicates = await checkDuplicate(extracted.lender_name, url, airtableKey)
 
     if (duplicates && !force && !update_existing) {
       // Return the extracted data + duplicate warning so the UI can handle it
