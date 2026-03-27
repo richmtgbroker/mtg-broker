@@ -121,9 +121,9 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-2xl bg-surface-active animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div key={i} className="aspect-[3/4] rounded-2xl bg-surface-active animate-pulse" />
           ))}
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
@@ -270,18 +270,18 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       {/* Logo Area */}
       <Link
         to={`/app/lenders/${slug}`}
-        className="relative bg-[#f8fafc] flex items-center justify-center p-6 no-underline"
-        style={{ minHeight: "160px" }}
+        className="relative bg-[#f8fafc] flex items-center justify-center p-4 no-underline"
+        style={{ minHeight: "120px" }}
       >
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={lender.name}
-            className="max-w-[180px] max-h-[100px] object-contain"
+            className="max-w-[130px] max-h-[70px] object-contain"
             onError={() => setLogoError(true)}
           />
         ) : (
-          <div className="text-4xl font-bold text-[#94a3b8]">
+          <div className="text-3xl font-bold text-[#94a3b8]">
             {lender.name.charAt(0).toUpperCase()}
           </div>
         )}
@@ -289,10 +289,10 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
         {/* Favorite heart - top right of logo area */}
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(); }}
-          className="absolute top-3 right-3 bg-transparent border-none cursor-pointer p-0 transition-colors"
+          className="absolute top-2 right-2 bg-transparent border-none cursor-pointer p-0 transition-colors"
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
-          <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "#cbd5e1"} strokeWidth="2" className="w-5 h-5">
+          <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "#cbd5e1"} strokeWidth="2" className="w-4 h-4">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
@@ -301,27 +301,27 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       {/* Lender Name */}
       <Link
         to={`/app/lenders/${slug}`}
-        className="block text-center px-4 pt-4 pb-2 no-underline"
+        className="block text-center px-3 pt-3 pb-1.5 no-underline"
       >
-        <h3 className="text-[15px] font-bold text-[#0f172a] leading-snug m-0">
+        <h3 className="text-[13px] font-bold text-[#0f172a] leading-snug m-0">
           <span dangerouslySetInnerHTML={{ __html: highlightMatch(displayName, searchTerm) }} />
         </h3>
       </Link>
 
       {/* Divider */}
-      <div className="mx-6 border-t border-[#e2e8f0]" />
+      <div className="mx-4 border-t border-[#e2e8f0]" />
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-center gap-3 px-4 py-3">
+      <div className="flex items-center justify-center gap-2 px-3 py-2">
         {lender.website && (
           <a
             href={lender.website}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#93c5fd] text-[#1a56db] text-xs font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
               <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
             </svg>
             Website
@@ -333,9 +333,9 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#93c5fd] text-[#1a56db] text-xs font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
               <path d="M15 3h6v6" /><path d="M10 14L21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
             </svg>
             TPO Portal
@@ -345,7 +345,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
 
       {/* Channel Badges - clickable to filter */}
       {channels.length > 0 && (
-        <div className="flex items-center justify-center gap-2 px-4 pb-4">
+        <div className="flex items-center justify-center gap-1.5 px-3 pb-3">
           {channels.map((ch) => (
             <button
               key={ch}
@@ -354,7 +354,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
                 e.stopPropagation();
                 onChannelFilter(channelFilter === ch ? null : ch);
               }}
-              className={`text-[11px] font-bold px-3 py-1 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
             >
               {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
             </button>
