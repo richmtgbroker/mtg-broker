@@ -456,6 +456,35 @@ function AddLenderSection() {
     }
   };
 
+  // Handler: update existing record (merge blank fields only)
+  const handleUpdateExisting = async (recordId) => {
+    if (!result?.extracted) return;
+    setIsSubmitting(true);
+    setError(null);
+    setProgress("Updating existing record (filling blank fields)...");
+
+    try {
+      const token = getAccessToken();
+      const res = await fetch(ADD_LENDER_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url: url.trim(), update_existing: recordId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update record");
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+      setProgress("");
+    }
+  };
+
   // Friendly labels for extracted field keys
   const fieldLabels = {
     lender_name: "Lender Name",
@@ -467,13 +496,13 @@ function AddLenderSection() {
     va_id: "VA ID",
     usda_id: "USDA ID",
     licensed_states: "Licensed States",
+    licensed_states_url: "Licensed States URL",
     scenario_desk: "Scenario Desk",
     facebook: "Facebook",
     linkedin: "LinkedIn",
     instagram: "Instagram",
     youtube: "YouTube",
     x_twitter: "X (Twitter)",
-    lender_or_broker: "Lender or Broker",
   };
 
   return (
@@ -577,10 +606,24 @@ function AddLenderSection() {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {/* Update Existing — fills blank fields on the first matching record */}
+              {result.existing_records?.length > 0 && (
+                <button
+                  onClick={() => handleUpdateExisting(result.existing_records[0].id)}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Update Existing
+                </button>
+              )}
               <button
                 onClick={handleForceCreate}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-primary-600 bg-white border-2 border-primary-600 rounded-lg hover:bg-primary-50 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-primary-600 bg-white border-2 border-primary-600 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -611,14 +654,18 @@ function AddLenderSection() {
           </div>
         )}
 
-        {/* Success Result */}
+        {/* Success Result — handles both "created" and "updated" */}
         {result && result.success && (
           <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
             <div className="flex items-center gap-2 font-bold text-emerald-800 mb-3">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              Lender Added Successfully
+              {result.updated
+                ? result.no_changes
+                  ? "No New Data to Add"
+                  : "Existing Record Updated"
+                : "Lender Added Successfully"}
             </div>
 
             <div className="flex items-center gap-3 mb-4 flex-wrap">
@@ -636,24 +683,71 @@ function AddLenderSection() {
               </a>
             </div>
 
-            {/* Fields populated */}
-            <div className="mb-3">
-              <h4 className="text-xs font-bold text-emerald-700 mb-1.5 flex items-center gap-1">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Fields Populated ({result.fields_populated?.length || 0})
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {result.fields_populated?.map((f) => (
-                  <span key={f} className="px-2 py-0.5 text-[0.6875rem] font-medium bg-emerald-100 text-emerald-800 rounded-full">
-                    {f}
-                  </span>
-                ))}
-              </div>
-            </div>
+            {/* Updated record: show what was filled vs skipped */}
+            {result.updated && !result.no_changes && (
+              <>
+                <div className="mb-3">
+                  <h4 className="text-xs font-bold text-emerald-700 mb-1.5 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Fields Filled In ({result.fields_updated?.length || 0})
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.fields_updated?.map((f) => (
+                      <span key={f} className="px-2 py-0.5 text-[0.6875rem] font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {result.fields_skipped?.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-xs font-bold text-gray-500 mb-1.5 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Already Had Data — Not Overwritten ({result.fields_skipped.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.fields_skipped?.map((f) => (
+                        <span key={f} className="px-2 py-0.5 text-[0.6875rem] font-medium bg-blue-50 text-blue-700 rounded-full">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
-            {/* Fields still needed */}
+            {/* Updated record: no changes needed */}
+            {result.updated && result.no_changes && (
+              <p className="text-sm text-emerald-700 mb-3">
+                All extractable fields already have data — nothing new to add.
+              </p>
+            )}
+
+            {/* New record: show fields populated */}
+            {!result.updated && (
+              <div className="mb-3">
+                <h4 className="text-xs font-bold text-emerald-700 mb-1.5 flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Fields Populated ({result.fields_populated?.length || 0})
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {result.fields_populated?.map((f) => (
+                    <span key={f} className="px-2 py-0.5 text-[0.6875rem] font-medium bg-emerald-100 text-emerald-800 rounded-full">
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fields still needed (shown for both create and update) */}
             {result.fields_missing?.length > 0 && (
               <div className="mb-3">
                 <h4 className="text-xs font-bold text-gray-500 mb-1.5 flex items-center gap-1">

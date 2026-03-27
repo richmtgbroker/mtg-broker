@@ -309,6 +309,63 @@ async function createAirtableRecord(fields, apiKey) {
 }
 
 
+// ─── Update existing Airtable record (only fill blank fields) ───────────────
+async function updateAirtableRecord(recordId, newFields, apiKey) {
+  // First, fetch the existing record to see which fields are already populated
+  const getUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${recordId}`
+  const getRes = await fetch(getUrl, {
+    headers: { 'Authorization': `Bearer ${apiKey}` },
+  })
+
+  if (!getRes.ok) {
+    const err = await getRes.text()
+    throw new Error(`Airtable get error: ${getRes.status} — ${err}`)
+  }
+
+  const existing = await getRes.json()
+  const existingFields = existing.fields || {}
+
+  // Only include fields that are currently blank/empty on the existing record
+  const fieldsToUpdate = {}
+  const skippedFields = [] // Already had data — not overwritten
+  const updatedFields = [] // Were blank — now filled
+
+  for (const [key, value] of Object.entries(newFields)) {
+    const existingValue = existingFields[key]
+    const isEmpty = existingValue === undefined || existingValue === null || existingValue === ''
+    if (isEmpty && value) {
+      fieldsToUpdate[key] = value
+      updatedFields.push(key)
+    } else if (!isEmpty) {
+      skippedFields.push(key)
+    }
+  }
+
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return { record: existing, updatedFields: [], skippedFields, noChanges: true }
+  }
+
+  // PATCH the record with only the blank fields
+  const patchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${recordId}`
+  const patchRes = await fetch(patchUrl, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields: fieldsToUpdate }),
+  })
+
+  if (!patchRes.ok) {
+    const err = await patchRes.text()
+    throw new Error(`Airtable update error: ${patchRes.status} — ${err}`)
+  }
+
+  const updated = await patchRes.json()
+  return { record: updated, updatedFields, skippedFields, noChanges: false }
+}
+
+
 // ─── Map Claude's extracted fields to Airtable field names ──────────────────
 function mapToAirtableFields(extracted, originalUrl) {
   const fields = {}
@@ -361,7 +418,8 @@ export async function onRequestPost(context) {
 
     // ── Parse input ──────────────────────────────────────────────────
     const body = await request.json()
-    let { url, force } = body
+    let { url, force, update_existing } = body
+    // update_existing: if set, should be the Airtable record ID to merge into
 
     if (!url || typeof url !== 'string') {
       return jsonError(request, 'url is required', 400)
@@ -416,7 +474,7 @@ export async function onRequestPost(context) {
 
     const duplicates = await checkDuplicate(extracted.lender_name, airtableKey)
 
-    if (duplicates && !force) {
+    if (duplicates && !force && !update_existing) {
       // Return the extracted data + duplicate warning so the UI can handle it
       return jsonSuccess(request, {
         success: false,
@@ -430,7 +488,28 @@ export async function onRequestPost(context) {
       })
     }
 
-    // ── Step 4: Create the Airtable record ───────────────────────────
+    // ── Step 4a: Update existing record (merge blank fields only) ────
+    if (update_existing) {
+      const airtableFields = mapToAirtableFields(extracted, url)
+      const { record, updatedFields, skippedFields, noChanges } = await updateAirtableRecord(
+        update_existing, airtableFields, airtableKey
+      )
+
+      return jsonSuccess(request, {
+        success: true,
+        updated: true,
+        no_changes: noChanges,
+        lender_name: extracted.lender_name,
+        record_id: record.id,
+        airtable_url: `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`,
+        fields_updated: updatedFields,
+        fields_skipped: skippedFields,
+        fields_missing: ALL_KEY_FIELDS.filter(f => !updatedFields.includes(f) && !skippedFields.includes(f)),
+        extracted,
+      })
+    }
+
+    // ── Step 4b: Create new Airtable record ──────────────────────────
     const airtableFields = mapToAirtableFields(extracted, url)
     const record = await createAirtableRecord(airtableFields, airtableKey)
 
