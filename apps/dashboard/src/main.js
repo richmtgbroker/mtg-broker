@@ -598,19 +598,37 @@ const DASHBOARD_HTML = `
   // USER NAME
   // ============================================================
   async function loadUserName() {
-    try {
-      var user = null;
-      if (typeof window.getCachedOutsetaUser === 'function') user = await window.getCachedOutsetaUser();
-      else if (typeof Outseta !== 'undefined' && Outseta.getUser) user = await Outseta.getUser();
+    var firstName = '';
 
-      if (user) {
-        var firstName = user.FirstName || (user.FullName ? user.FullName.split(' ')[0] : '');
-        if (firstName) {
-          var el = document.querySelector('.dash-title');
-          if (el) el.textContent = 'Welcome back, ' + firstName + '!';
-        }
+    // Try JWT first — always available, no SDK dependency
+    try {
+      var token = localStorage.getItem('Outseta.nocode.accessToken');
+      if (token) {
+        var payload = JSON.parse(atob(token.split('.')[1]));
+        firstName = payload.given_name || payload.name || '';
+        // If name contains a space, take only the first name
+        if (firstName && firstName.indexOf(' ') > -1) firstName = firstName.split(' ')[0];
       }
     } catch (e) {}
+
+    // Fallback to Outseta SDK if JWT didn't have a name
+    if (!firstName) {
+      try {
+        var user = null;
+        if (typeof window.getCachedOutsetaUser === 'function') user = await window.getCachedOutsetaUser();
+        else if (typeof Outseta !== 'undefined' && Outseta.getUser) user = await Outseta.getUser();
+
+        if (user) {
+          firstName = user.FirstName || (user.FullName ? user.FullName.split(' ')[0] : '');
+        }
+      } catch (e) {}
+    }
+
+    // Update the title
+    if (firstName) {
+      var el = document.querySelector('.dash-title');
+      if (el) el.textContent = 'Welcome back, ' + firstName + '!';
+    }
   }
 
   // ============================================================

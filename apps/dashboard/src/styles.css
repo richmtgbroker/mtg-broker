@@ -332,8 +332,8 @@
 /* ===== SECTION CARD ===== */
 .dash-section {
   background: #fff;
-  border-radius: 20px;
-  padding: 28px;
+  border-radius: 18px;
+  padding: 22px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
   border: 1px solid #E2E8F0;
 }
@@ -342,7 +342,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .section-title {
@@ -386,14 +386,14 @@
 .action-card {
   background: #F8FAFC;
   border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 24px 20px;
+  border-radius: 14px;
+  padding: 18px 14px;
   text-decoration: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
+  gap: 10px;
   transition: all 0.2s ease;
 }
 
@@ -405,10 +405,10 @@
 }
 
 .action-icon {
-  width: 56px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
   background: #fff;
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -417,7 +417,7 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.action-icon svg { width: 28px; height: 28px; }
+.action-icon svg { width: 24px; height: 24px; }
 
 .action-card:hover .action-icon {
   background: #2563EB;
@@ -426,8 +426,8 @@
 }
 
 .action-text { display: flex; flex-direction: column; gap: 2px; }
-.action-text strong { font-size: 15px; color: #0F172A; font-weight: 700; }
-.action-text span { font-size: 13px; color: #64748B; }
+.action-text strong { font-size: 13px; color: #0F172A; font-weight: 700; }
+.action-text span { font-size: 11px; color: #64748B; }
 
 .action-card.highlight-card {
   border: 2px solid #2563EB;
@@ -481,13 +481,13 @@
 }
 
 .rate-card {
-  padding: 16px;
+  padding: 12px;
   background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .rate-label {
@@ -506,7 +506,7 @@
 }
 
 .rate-value {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 800;
   color: #fff;
   letter-spacing: -0.5px;
@@ -567,41 +567,41 @@
 .ppe-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #F1F5F9;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 12px;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .ppe-chip:hover {
   border-color: #2563EB;
-  background: #F0F7FF;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+  background: #EFF6FF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
 }
 
 .ppe-chip-logo {
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .ppe-chip-logo-svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .ppe-chip-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1E293B;
   flex: 1;
 }
 
@@ -610,13 +610,13 @@
 }
 
 .ppe-chip-arrow {
-  opacity: 0.3;
-  color: #64748B;
+  opacity: 0.5;
+  color: #475569;
   flex-shrink: 0;
 }
 
 .ppe-chip:hover .ppe-chip-arrow {
-  opacity: 0.8;
+  opacity: 0.9;
   color: #2563EB;
 }
 
@@ -985,11 +985,11 @@
 }
 
 .rates-grid-compact .rate-card {
-  padding: 12px;
+  padding: 10px;
 }
 
 .rates-grid-compact .rate-value {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* ===== COMPACT ACTIONS (for 3-col layout) ===== */
@@ -999,27 +999,27 @@
 }
 
 .actions-grid-compact .action-card {
-  padding: 16px 12px;
+  padding: 14px 10px;
   gap: 8px;
 }
 
 .actions-grid-compact .action-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
 }
 
 .actions-grid-compact .action-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .actions-grid-compact .action-text strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .actions-grid-compact .action-text span {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 /* ===== PIPELINE STATS ===== */
