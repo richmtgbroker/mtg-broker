@@ -5,7 +5,7 @@ const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
 const CACHE_TTL = 30 * 60 * 1000;
 
-export function meta({ params }) {
+export function meta() {
   return [{ title: "Lender Detail — MtgBroker" }];
 }
 
@@ -56,7 +56,8 @@ export default function LenderDetailPage() {
           setError("Lender not found");
         }
       } catch (e) {
-        if (!background) setError("Failed to load lender");
+        // CORS or network error — show helpful message
+        if (!background) setError("Unable to load lender data. This page requires the production domain (mtg.broker) to fetch lender details.");
       }
       if (!background) setLoading(false);
     }

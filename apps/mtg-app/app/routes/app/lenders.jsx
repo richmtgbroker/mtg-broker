@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router";
 
-const LENDERS_API = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
-const CACHE_KEY = "mtg_lenders_v1";
+const LENDERS_API_PRIMARY = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
+const LENDERS_API_FALLBACK = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
+const CACHE_KEY = "mtg_lenders_v2";
 const CACHE_TTL = 30 * 60 * 1000;
 const FAVORITES_KEY = "mtg_lender_favorites";
 
@@ -50,10 +51,25 @@ export default function LendersPage() {
       } catch {}
 
       try {
-        const res = await fetch(LENDERS_API);
-        if (!res.ok) throw new Error("API error");
-        const data = await res.json();
-        const sorted = (Array.isArray(data) ? data : []).sort((a, b) => a.name.localeCompare(b.name));
+        // Try primary API (richer data with logos, channels, loan types)
+        let lenderList = null;
+        try {
+          const res = await fetch(LENDERS_API_PRIMARY);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.lenders)) lenderList = data.lenders;
+          }
+        } catch {}
+
+        // Fallback to pipeline API (basic data)
+        if (!lenderList) {
+          const res = await fetch(LENDERS_API_FALLBACK);
+          if (!res.ok) throw new Error("API error");
+          const data = await res.json();
+          lenderList = Array.isArray(data) ? data : [];
+        }
+
+        const sorted = lenderList.sort((a, b) => a.name.localeCompare(b.name));
         try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: sorted })); } catch {}
         setLenders(sorted);
       } catch {
@@ -215,16 +231,38 @@ export default function LendersPage() {
 function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
   const [logoError, setLogoError] = useState(false);
 
-  // Build favicon URL from lender website
-  let faviconUrl = null;
-  if (!logoError && lender.website_url) {
-    try {
-      faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(lender.website_url).hostname}&sz=32`;
-    } catch {}
+  // Use logo from API, fall back to Google favicon
+  let logoUrl = null;
+  if (!logoError) {
+    if (lender.logo) {
+      logoUrl = lender.logo;
+    } else {
+      const website = lender.website_url || lender.website;
+      if (website) {
+        try { logoUrl = `https://www.google.com/s2/favicons?domain=${new URL(website).hostname}&sz=32`; } catch {}
+      }
+    }
   }
 
-  // Link to detail page using lender name as slug
   const slug = lender.slug || lender.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  // Channel badges from richer API data
+  const channels = [];
+  if (lender.nexaWholesale || lender.channels?.includes?.("Wholesale")) channels.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
+  if (lender.nexaNondel || lender.channels?.includes?.("NonDel")) channels.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
+  if (lender.nexaOnly) channels.push({ label: "NEXA Only", cls: "bg-[#EDE9FE] text-[#6D28D9]" });
+  // Fallback: use channel_types array from pipeline API
+  if (channels.length === 0 && (lender.channel_types || lender.channels)) {
+    const ch = lender.channel_types || lender.channels || [];
+    if (Array.isArray(ch)) {
+      ch.forEach(c => {
+        if (c.toLowerCase().includes("broker")) channels.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
+        else if (c.toLowerCase().includes("nondel")) channels.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
+        else if (c.toLowerCase().includes("nexa")) channels.push({ label: "NEXA", cls: "bg-[#EDE9FE] text-[#6D28D9]" });
+        else if (c.toLowerCase().includes("corr")) channels.push({ label: "Corr", cls: "bg-[#FEF3C7] text-[#92400E]" });
+      });
+    }
+  }
 
   return (
     <Link
@@ -234,20 +272,29 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
       {/* Blue left border */}
       <div className="absolute top-0 left-0 bottom-0 w-1 rounded-l-[10px]" style={{ background: "linear-gradient(180deg, #2563eb, #3b82f6)" }} />
 
-      {/* Favicon */}
-      {faviconUrl && (
+      {/* Logo */}
+      {logoUrl && (
         <img
-          src={faviconUrl}
+          src={logoUrl}
           alt=""
-          className="w-4 h-4 rounded-[3px] object-contain shrink-0"
+          className="w-5 h-5 rounded object-contain shrink-0"
           onError={() => setLogoError(true)}
         />
       )}
 
-      {/* Name */}
-      <span className="flex-1 text-[13px] font-semibold text-[#0f172a] leading-[1.3] truncate">
-        <span dangerouslySetInnerHTML={{ __html: highlightMatch(lender.name, searchTerm) }} />
-      </span>
+      {/* Name + badges */}
+      <div className="flex-1 min-w-0">
+        <span className="block text-[13px] font-semibold text-[#0f172a] leading-[1.3] truncate">
+          <span dangerouslySetInnerHTML={{ __html: highlightMatch(lender.name, searchTerm) }} />
+        </span>
+        {channels.length > 0 && (
+          <div className="flex gap-1 mt-0.5 flex-wrap">
+            {channels.map((ch) => (
+              <span key={ch.label} className={`text-[9px] font-bold uppercase px-1.5 py-px rounded ${ch.cls}`}>{ch.label}</span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Favorite */}
       <button

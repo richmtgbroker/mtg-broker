@@ -80,7 +80,7 @@ export default function DashboardPage() {
 // ============================================================
 function QuickActions({ lenderCount }) {
   const actions = [
-    { href: "/app/ai-search", label: "AI Loan Finder", sub: "AI-powered search", highlight: true, icon: `<path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22"></path><path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93"></path><path d="M16 16c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"></path><path d="M8 16c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"></path>` },
+    { href: "/app/ai-search", label: "AI Loan Finder", sub: "AI-powered search", highlight: true, icon: `<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path>` },
     { href: "/app/loan-search", label: "Loan Search", sub: "630+ products", icon: `<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>` },
     { href: "/app/lenders", label: "Lenders", sub: `${lenderCount} in directory`, icon: `<path d="M3 21h18M5 21v-7M19 21v-7M9 21v-7M15 21v-7M3 10h18M12 3L2 10h20L12 3z"></path>` },
     { href: "/app/calculators", label: "Calculators", sub: "Mortgage tools", icon: `<rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" x2="16" y1="6" y2="6"></line><path d="M16 10h.01M12 10h.01M8 10h.01M16 14h.01M12 14h.01M8 14h.01M16 18h.01M12 18h.01M8 18h.01"></path>` },
@@ -245,13 +245,13 @@ function PipelineOverview({ stats }) {
       <div className="flex flex-col gap-3">
         {/* Pipeline Loans — blue gradient highlight card */}
         <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 no-underline text-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all" style={{ background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" }}>
-          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
           </div>
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-white/70 mb-0.5">Pipeline Loans</div>
-            <div className="text-[24px] font-bold leading-tight">{stats.loans}</div>
-            <div className="text-[11px] text-white/60">Active in pipeline</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-white mb-0.5">Pipeline Loans</div>
+            <div className="text-[24px] font-bold leading-tight text-white">{stats.loans}</div>
+            <div className="text-[11px] text-white/80">Active in pipeline</div>
           </div>
         </Link>
 
@@ -414,7 +414,7 @@ function DashSection({ title, icon, linkHref, linkText, children }) {
   return (
     <div className="bg-white rounded-[20px] border border-border p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-text flex items-center gap-2">
+        <h3 className="text-sm font-bold text-text flex items-center gap-2 uppercase tracking-wide">
           {icon && <NavIcon paths={icon} size={16} className="text-text-muted" />}
           {title}
         </h3>
