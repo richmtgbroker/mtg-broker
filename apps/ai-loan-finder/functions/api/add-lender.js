@@ -625,12 +625,18 @@ export async function onRequestPost(context) {
         }
       }
 
+      // Use the interface URL from the existing record, or fall back to generic
+      const interfaceUrl = existingFields['Link to this Airtable LENDER (Formula)'] || null
+
       return jsonSuccess(request, {
         success: false,
         duplicate: true,
         existing_records: duplicates.map(r => ({
           id: r.id,
           name: r.fields?.['Lender Name'],
+          airtable_url: r.id === firstDupe.id && interfaceUrl
+            ? interfaceUrl
+            : `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${r.id}`,
         })),
         extracted,
         comparison,
@@ -657,13 +663,18 @@ export async function onRequestPost(context) {
         update_existing, airtableFields, airtableKey
       )
 
+      // Fetch the interface URL from the updated record
+      const updatedRecordFields = record.fields || {}
+      const updatedInterfaceUrl = updatedRecordFields['Link to this Airtable LENDER (Formula)']
+        || `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`
+
       return jsonSuccess(request, {
         success: true,
         updated: true,
         no_changes: noChanges,
         lender_name: extracted.lender_name,
         record_id: record.id,
-        airtable_url: `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`,
+        airtable_url: updatedInterfaceUrl,
         fields_updated: updatedFields,
         fields_skipped: skippedFields,
         fields_missing: ALL_KEY_FIELDS.filter(f => !updatedFields.includes(f) && !skippedFields.includes(f)),
@@ -675,6 +686,20 @@ export async function onRequestPost(context) {
     const airtableFields = mapToAirtableFields(extracted, url)
     const record = await createAirtableRecord(airtableFields, airtableKey)
 
+    // Fetch the interface URL from the newly created record (formula field needs a re-fetch)
+    let newRecordUrl = `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`
+    try {
+      const refetchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`
+      const refetchRes = await fetch(refetchUrl, {
+        headers: { 'Authorization': `Bearer ${airtableKey}` },
+      })
+      if (refetchRes.ok) {
+        const refetched = await refetchRes.json()
+        const formulaUrl = refetched.fields?.['Link to this Airtable LENDER (Formula)']
+        if (formulaUrl) newRecordUrl = formulaUrl
+      }
+    } catch { /* use fallback URL */ }
+
     // ── Step 5: Report results ───────────────────────────────────────
     const populatedFields = Object.keys(airtableFields)
     const missingFields = ALL_KEY_FIELDS.filter(f => !populatedFields.includes(f))
@@ -683,7 +708,7 @@ export async function onRequestPost(context) {
       success: true,
       lender_name: extracted.lender_name,
       record_id: record.id,
-      airtable_url: `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${record.id}`,
+      airtable_url: newRecordUrl,
       fields_populated: populatedFields,
       fields_missing: missingFields,
       extracted,

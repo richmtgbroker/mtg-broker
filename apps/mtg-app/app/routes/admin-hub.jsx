@@ -610,7 +610,7 @@ function AddLenderSection() {
               {result.existing_records?.map((rec) => (
                 <a
                   key={rec.id}
-                  href={`https://airtable.com/appuJgI9X93OLaf0u/tbl1mpg3KFakZsFK7/${rec.id}`}
+                  href={rec.airtable_url || `https://airtable.com/appuJgI9X93OLaf0u/tbl1mpg3KFakZsFK7/${rec.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-800 bg-white border border-amber-300 rounded-lg no-underline hover:bg-amber-100 transition-colors"
