@@ -125,10 +125,24 @@ export async function onRequestPost(context) {
     const supabaseUrl = env.SUPABASE_URL || 'https://tcmahfwhdknxhhdvqpum.supabase.co'
     const supabaseKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_ANON_KEY
 
+    // Debug: log which key we're using (first 10 chars only)
+    console.log('Supabase key source:', env.SUPABASE_SERVICE_KEY ? 'SERVICE_KEY' : (env.SUPABASE_ANON_KEY ? 'ANON_KEY' : 'NONE'))
+    console.log('Supabase URL:', supabaseUrl)
+
+    if (!supabaseKey) {
+      return jsonError(request, 'Server misconfiguration: no Supabase key available. Add SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY to Cloudflare Pages env vars.', 500)
+    }
+
     // ── Step 1: Classify the email with Claude ──────────────────────
     console.log('Classifying email:', subject)
+    console.log('Anthropic key available:', !!env.ANTHROPIC_API_KEY)
     const classification = await classifyEmail(subject, emailBody, sender_email, env.ANTHROPIC_API_KEY)
     console.log('Classification:', JSON.stringify(classification))
+
+    // If classification hit fallback, include a warning in the response
+    if (classification._fallback) {
+      console.warn('Classification used fallback — Claude API may have failed:', classification._fallbackReason)
+    }
 
     // ── Step 2: Store raw email in lender_updates ───────────────────
     const updateRecord = {
@@ -155,8 +169,8 @@ export async function onRequestPost(context) {
 
     if (!insertRes.ok) {
       const err = await insertRes.text()
-      console.error('Failed to store lender update:', err)
-      return jsonError(request, 'Failed to store email record', 500)
+      console.error('Failed to store lender update:', insertRes.status, err)
+      return jsonError(request, 'Failed to store email record: ' + err, 500)
     }
 
     const [savedUpdate] = await insertRes.json()
@@ -229,8 +243,8 @@ export async function onRequestPost(context) {
 
     if (!chunkInsertRes.ok) {
       const err = await chunkInsertRes.text()
-      console.error('Failed to insert chunks:', err)
-      return jsonError(request, 'Failed to store guideline chunks', 500)
+      console.error('Failed to insert chunks:', chunkInsertRes.status, err)
+      return jsonError(request, 'Failed to store guideline chunks: ' + err, 500)
     }
 
     const insertedChunks = await chunkInsertRes.json()
@@ -252,7 +266,7 @@ export async function onRequestPost(context) {
     })
 
     // ── Return success ──────────────────────────────────────────────
-    return jsonResponse(request, {
+    const result = {
       success: true,
       lender: classification.lender_name,
       topic: classification.topic_tag,
@@ -262,7 +276,15 @@ export async function onRequestPost(context) {
       superseded_count: supersededCount,
       expires_at: expiresAt.toISOString(),
       update_id: savedUpdate.id,
-    })
+    }
+
+    // Surface classification issues to the caller
+    if (classification._fallback) {
+      result.warning = 'Classification used fallback defaults — Claude API issue'
+      result.fallback_reason = classification._fallbackReason
+    }
+
+    return jsonResponse(request, result)
 
   } catch (err) {
     console.error('Email ingestion error:', err)
@@ -276,24 +298,39 @@ export async function onRequestPost(context) {
 // from the email subject + body.
 
 async function classifyEmail(subject, body, senderEmail, apiKey) {
-  const systemPrompt = `You are a mortgage industry email classifier. Given an email from a wholesale lender or account executive, extract:
+  const systemPrompt = `You are a mortgage industry email classifier. You will be given an email from a wholesale lender or account executive. Extract 4 fields as JSON.
 
-1. "lender_name" — The wholesale lender company name (e.g., "UWM", "Acra Lending", "Angel Oak"). Normalize to the common short name. If unclear, use "Unknown".
-2. "topic_tag" — A short, normalized tag describing what the update is about. Use consistent tags like:
+RULES FOR EACH FIELD:
+
+1. "lender_name" — The wholesale lender company name. This is CRITICAL — try hard to find it.
+   - Check the email subject first (e.g., "UWM — FHA Update" → "UWM")
+   - Check the sender email domain (e.g., "@uwm.com" → "UWM", "@angeloakms.com" → "Angel Oak")
+   - Check the email body signature block
+   - Normalize to the common short name used in the industry:
+     UWM, Acra Lending, Angel Oak, NewFi, Kiavi, A&D Mortgage, Deephaven,
+     Finance of America, Plaza Home, Flagstar, AmeriHome, Caliber, loanDepot,
+     Pennymac, Freedom Mortgage, Rocket Pro TPO, PRMG, Homepoint, etc.
+   - Only use "Unknown" as an absolute last resort if the lender truly cannot be identified anywhere.
+
+2. "topic_tag" — A SHORT normalized tag (2-5 words) describing the topic. Examples:
    - "FHA FICO minimum", "VA funding fee", "DSCR pricing", "jumbo LTV limits"
-   - "conventional overlay removal", "bank statement requirements", "ITIN program"
+   - "conventional overlays", "bank statement requirements", "ITIN program"
    - "rate special", "pricing promotion", "comp adjustment"
-   - "new program launch", "program suspension", "program discontinuation"
-   - Keep it short (2-5 words), lowercase-ish, specific enough to match future updates on the same topic.
+   - "new program launch", "program suspension"
+   - Do NOT repeat the lender name in the tag. Do NOT use the full email subject as the tag.
+
 3. "update_type" — One of: "rate_special", "guideline_change", "new_program", "program_suspension", "pricing_promo", "general_announcement"
-4. "ttl_days" — How long this information stays relevant:
+   - If the email mentions specific guideline changes (FICO, LTV, DTI, eligibility), use "guideline_change"
+   - If it mentions temporary rate/pricing specials, use "rate_special" or "pricing_promo"
+
+4. "ttl_days" — How many days this info stays relevant:
    - rate_special / pricing_promo: 7-14 days
    - guideline_change: 90 days
    - new_program: 90 days
    - program_suspension / discontinuation: 90 days
    - general_announcement: 30 days
 
-Return ONLY valid JSON, no markdown, no explanation.`
+Return ONLY a valid JSON object. No markdown fences, no explanation, no extra text.`
 
   const userMessage = `Email subject: ${subject}
 Sender: ${senderEmail || 'unknown'}
@@ -319,21 +356,27 @@ ${body.slice(0, 4000)}`  // Cap at 4000 chars to stay within token budget
   if (!response.ok) {
     const err = await response.text()
     console.error('Classification API error:', response.status, err)
-    // Return safe defaults if classification fails
     return {
       lender_name: 'Unknown',
       topic_tag: subject.slice(0, 50).toLowerCase(),
       update_type: 'general_announcement',
       ttl_days: 30,
+      _fallback: true,
+      _fallbackReason: `Anthropic API returned ${response.status}: ${err.slice(0, 200)}`,
     }
   }
 
   const data = await response.json()
   const text = data.content[0].text.trim()
+  console.log('Claude raw classification response:', text)
 
   try {
-    // Parse Claude's JSON response
-    const parsed = JSON.parse(text)
+    // Parse Claude's JSON response — handle markdown fences if Claude wraps it
+    let jsonStr = text
+    if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+    }
+    const parsed = JSON.parse(jsonStr)
     return {
       lender_name: parsed.lender_name || 'Unknown',
       topic_tag: parsed.topic_tag || subject.slice(0, 50).toLowerCase(),
@@ -341,7 +384,7 @@ ${body.slice(0, 4000)}`  // Cap at 4000 chars to stay within token budget
       ttl_days: parsed.ttl_days || 30,
     }
   } catch (e) {
-    console.error('Failed to parse classification JSON:', text)
+    console.error('Failed to parse classification JSON:', text, 'Error:', e.message)
     return {
       lender_name: 'Unknown',
       topic_tag: subject.slice(0, 50).toLowerCase(),
