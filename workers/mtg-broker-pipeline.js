@@ -11677,9 +11677,26 @@ async function getPipelineBootstrapHTML(request) {
           );
         });
       } else {
-        var place = new placesLib.Place({ id: item.placeId });
-        await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
-        populateFromComponents(place.addressComponents || []);
+        try {
+          var place = new placesLib.Place({ id: item.placeId });
+          await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+          populateFromComponents(place.addressComponents || []);
+        } catch (newErr) {
+          /* New API failed for place details — switch to legacy and retry */
+          console.warn('New Places API place details failed, switching to legacy:', newErr);
+          switchToLegacy();
+          await new Promise(function(resolve, reject) {
+            legacyPlacesService.getDetails(
+              { placeId: item.placeId, fields: ['address_components', 'formatted_address'], sessionToken: sessionToken },
+              function(p2, st2) {
+                if (st2 === google.maps.places.PlacesServiceStatus.OK && p2) {
+                  populateFromComponents(p2.address_components || []);
+                  resolve();
+                } else { reject(new Error('PlacesService status: ' + st2)); }
+              }
+            );
+          });
+        }
       }
       newSession();
       /* v13.5: After populating fields, blur input + clear suggestions */
@@ -11722,6 +11739,21 @@ async function getPipelineBootstrapHTML(request) {
     });
   }
 
+  /* v13.9: Switch to legacy mode at runtime (initializes services if needed) */
+  function switchToLegacy() {
+    if (useLegacyApi) return;
+    console.log('Switching to legacy AutocompleteService (new API failed at runtime)');
+    useLegacyApi = true;
+    if (!legacyService) legacyService = new google.maps.places.AutocompleteService();
+    if (!legacyPlacesService) {
+      legacyAttrDiv = document.createElement('div');
+      legacyAttrDiv.style.display = 'none';
+      document.body.appendChild(legacyAttrDiv);
+      legacyPlacesService = new google.maps.places.PlacesService(legacyAttrDiv);
+    }
+    newSession();
+  }
+
   async function fetchSuggestions(query) {
     if (!query || query.length < 3) { showDropdown([]); return; }
     try {
@@ -11729,7 +11761,14 @@ async function getPipelineBootstrapHTML(request) {
       if (useLegacyApi) {
         suggestions = await fetchSuggestionsLegacy(query);
       } else {
-        suggestions = await fetchSuggestionsNew(query);
+        try {
+          suggestions = await fetchSuggestionsNew(query);
+        } catch (newErr) {
+          /* New API failed (likely Places API (New) not enabled) — switch to legacy and retry */
+          console.warn('New Places API failed, switching to legacy:', newErr);
+          switchToLegacy();
+          suggestions = await fetchSuggestionsLegacy(query);
+        }
       }
       showDropdown(suggestions);
     } catch (err) { console.warn('Autocomplete error:', err); showDropdown([]); }
