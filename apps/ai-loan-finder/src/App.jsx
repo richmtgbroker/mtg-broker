@@ -4,11 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 const API_URL              = 'https://mtg-loan-finder.pages.dev/api/search'
 const GUIDELINE_API_URL    = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
 const PRODUCT_LOOKUP_URL   = 'https://mtg-loan-finder.pages.dev/api/product-lookup'
-const INGEST_EMAIL_URL     = 'https://mtg-loan-finder.pages.dev/api/ingest-email'
-const MANAGE_EMAILS_URL    = 'https://mtg-loan-finder.pages.dev/api/manage-emails'
-
-// Admin emails that can see the "Add Update" tab
-const ADMIN_EMAILS = ['rich@mtg.broker', 'rich@prestonlending.com']
 
 // Get Outseta JWT from localStorage (set by Outseta auth on the Webflow page)
 function getOutsetaToken() {
@@ -17,23 +12,6 @@ function getOutsetaToken() {
   } catch (e) {
     return null
   }
-}
-
-// Decode JWT payload to check if user is admin (no verification — just for UI gating)
-function getTokenEmail() {
-  try {
-    const token = getOutsetaToken()
-    if (!token) return null
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return (payload.email || payload.sub || '').toLowerCase()
-  } catch (e) {
-    return null
-  }
-}
-
-function isAdminUser() {
-  const email = getTokenEmail()
-  return email && ADMIN_EMAILS.includes(email)
 }
 
 // ─── CONSTANTS — FIND A LOAN MODE ─────────────────────────────────────────────
@@ -311,8 +289,8 @@ function findRawProduct(match, rawProducts) {
 
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
-// Tab switcher between "Find a Loan", "Search Guidelines", and admin "Add Update" modes
-function ModeSwitcher({ activeMode, onChange, showAdmin }) {
+// Tab switcher between "Find a Loan" and "Search Guidelines" modes
+function ModeSwitcher({ activeMode, onChange }) {
   return (
     <div className="mode-tabs">
       <button
@@ -329,15 +307,6 @@ function ModeSwitcher({ activeMode, onChange, showAdmin }) {
         <i className="fas fa-book-open"></i>
         Search Guidelines
       </button>
-      {showAdmin && (
-        <button
-          className={`mode-tab ${activeMode === 'admin' ? 'active' : ''}`}
-          onClick={() => onChange('admin')}
-        >
-          <i className="fas fa-envelope-open-text"></i>
-          Add Update
-        </button>
-      )}
     </div>
   )
 }
@@ -819,305 +788,6 @@ function GuidelineResults({ data, onOpenProduct }) {
   )
 }
 
-// ─── ADMIN: ADD LENDER UPDATE ─────────────────────────────────────────────────
-// Admin-only form for pasting lender email content. Sends to /api/ingest-email
-// which classifies, chunks, embeds, and stores the email for guideline search.
-
-function AdminAddUpdate() {
-  const [subject, setSubject] = useState('')
-  const [body, setBody] = useState('')
-  const [senderEmail, setSenderEmail] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState(null)
-  const [stats, setStats] = useState(null)
-  const [recentUpdates, setRecentUpdates] = useState(null)
-
-  // Load stats on mount
-  useEffect(() => {
-    loadStats()
-    loadRecent()
-  }, [])
-
-  const loadStats = async () => {
-    try {
-      const token = getOutsetaToken()
-      const res = await fetch(`${MANAGE_EMAILS_URL}?action=stats`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-      if (res.ok) setStats(await res.json())
-    } catch (e) { /* stats are optional */ }
-  }
-
-  const loadRecent = async () => {
-    try {
-      const token = getOutsetaToken()
-      const res = await fetch(`${MANAGE_EMAILS_URL}?action=list`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setRecentUpdates(data.updates || [])
-      }
-    } catch (e) { /* recent list is optional */ }
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!subject.trim() || !body.trim()) return
-
-    setIsSubmitting(true)
-    setResult(null)
-    setError(null)
-
-    try {
-      const token = getOutsetaToken()
-      const res = await fetch(INGEST_EMAIL_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          subject: subject.trim(),
-          body: body.trim(),
-          sender_email: senderEmail.trim() || null,
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Ingestion failed')
-
-      setResult(data)
-      // Clear form on success
-      setSubject('')
-      setBody('')
-      setSenderEmail('')
-      // Refresh stats and recent list
-      loadStats()
-      loadRecent()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleAction = async (action, lender) => {
-    if (action === 'purge_all' && !confirm('Delete ALL email-sourced data? This cannot be undone. PDF data is not affected.')) return
-    if (action === 'disable_all' && !confirm('Disable all email data in search results?')) return
-
-    try {
-      const token = getOutsetaToken()
-      const res = await fetch(MANAGE_EMAILS_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action, lender }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Action failed')
-      alert(data.message)
-      loadStats()
-      loadRecent()
-    } catch (err) {
-      alert('Error: ' + err.message)
-    }
-  }
-
-  return (
-    <div className="admin-container">
-      {/* Stats bar */}
-      {stats && (
-        <div className="admin-stats">
-          <div className="admin-stat">
-            <span className="admin-stat-value">{stats.email_chunks_active}</span>
-            <span className="admin-stat-label">Active Email Chunks</span>
-          </div>
-          <div className="admin-stat">
-            <span className="admin-stat-value">{stats.email_chunks_inactive}</span>
-            <span className="admin-stat-label">Inactive / Expired</span>
-          </div>
-          <div className="admin-stat">
-            <span className="admin-stat-value">{stats.pdf_chunks}</span>
-            <span className="admin-stat-label">PDF Chunks</span>
-          </div>
-          <div className="admin-stat">
-            <span className="admin-stat-value">{stats.total_lender_updates}</span>
-            <span className="admin-stat-label">Emails Ingested</span>
-          </div>
-        </div>
-      )}
-
-      {/* Add Update Form */}
-      <div className="admin-form-card">
-        <h3 className="admin-form-title">
-          <i className="fas fa-envelope-open-text"></i>
-          Paste Lender Email
-        </h3>
-        <p className="admin-form-desc">
-          Paste the subject and body of a lender email. It will be automatically classified,
-          chunked, and added to the guideline search — searchable within seconds.
-        </p>
-
-        <form onSubmit={handleSubmit} className="admin-form">
-          <div className="admin-field">
-            <label htmlFor="admin-sender">Sender Email <span className="admin-optional">(optional)</span></label>
-            <input
-              id="admin-sender"
-              type="email"
-              value={senderEmail}
-              onChange={(e) => setSenderEmail(e.target.value)}
-              placeholder="ae@lender.com"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="admin-field">
-            <label htmlFor="admin-subject">Email Subject <span className="admin-required">*</span></label>
-            <input
-              id="admin-subject"
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="UWM — FHA Minimum FICO Reduced to 580"
-              disabled={isSubmitting}
-              required
-            />
-          </div>
-
-          <div className="admin-field">
-            <label htmlFor="admin-body">Email Body <span className="admin-required">*</span></label>
-            <textarea
-              id="admin-body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Paste the full email body here..."
-              rows={10}
-              disabled={isSubmitting}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="search-button admin-submit"
-            disabled={!subject.trim() || !body.trim() || isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <i className="fas fa-circle-notch fa-spin"></i>
-                Processing...
-              </>
-            ) : (
-              <>
-                <i className="fas fa-bolt"></i>
-                Ingest Email
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Success result */}
-        {result && (
-          <div className="admin-result success">
-            <div className="admin-result-header">
-              <i className="fas fa-circle-check"></i>
-              Email Ingested Successfully
-            </div>
-            <div className="admin-result-details">
-              <div className="admin-result-row">
-                <span>Lender</span><strong>{result.lender}</strong>
-              </div>
-              <div className="admin-result-row">
-                <span>Topic</span><strong>{result.topic}</strong>
-              </div>
-              <div className="admin-result-row">
-                <span>Type</span><strong>{result.update_type}</strong>
-              </div>
-              <div className="admin-result-row">
-                <span>Chunks Created</span><strong>{result.chunks_created}</strong>
-              </div>
-              <div className="admin-result-row">
-                <span>Superseded</span><strong>{result.superseded_count} old chunk{result.superseded_count !== 1 ? 's' : ''}</strong>
-              </div>
-              <div className="admin-result-row">
-                <span>Expires</span><strong>{new Date(result.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="admin-result error">
-            <i className="fas fa-circle-xmark"></i>
-            {error}
-          </div>
-        )}
-      </div>
-
-      {/* Recent Updates */}
-      {recentUpdates && recentUpdates.length > 0 && (
-        <div className="admin-recent">
-          <h3 className="admin-section-title">
-            <i className="fas fa-clock-rotate-left"></i>
-            Recent Lender Updates
-          </h3>
-          <div className="admin-recent-list">
-            {recentUpdates.slice(0, 15).map((update) => (
-              <div key={update.id} className="admin-recent-item">
-                <div className="admin-recent-main">
-                  <span className="admin-recent-lender">{update.lender_name || 'Unknown'}</span>
-                  <span className="admin-recent-subject">{update.subject}</span>
-                </div>
-                <div className="admin-recent-meta">
-                  <span className={`admin-recent-type type-${update.update_type}`}>{update.update_type}</span>
-                  <span className="admin-recent-chunks">{update.chunks_created} chunk{update.chunks_created !== 1 ? 's' : ''}</span>
-                  <span className="admin-recent-date">{new Date(update.received_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Admin Actions */}
-      <div className="admin-actions">
-        <h3 className="admin-section-title">
-          <i className="fas fa-shield-halved"></i>
-          Manage Email Data
-        </h3>
-        <div className="admin-action-buttons">
-          <button className="admin-action-btn cleanup" onClick={() => handleAction('cleanup_expired')}>
-            <i className="fas fa-broom"></i>
-            Cleanup Expired
-          </button>
-          <button className="admin-action-btn disable" onClick={() => handleAction('disable_all')}>
-            <i className="fas fa-eye-slash"></i>
-            Disable All
-          </button>
-          <button className="admin-action-btn enable" onClick={() => handleAction('enable_all')}>
-            <i className="fas fa-eye"></i>
-            Enable All
-          </button>
-          <button className="admin-action-btn purge" onClick={() => handleAction('purge_all')}>
-            <i className="fas fa-trash"></i>
-            Purge All Email Data
-          </button>
-        </div>
-        <p className="admin-actions-note">
-          <i className="fas fa-circle-info"></i>
-          These actions only affect email-sourced data. PDF guideline data is never modified.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 // Note: Navbar, sidebar, and footer are handled by Webflow (Navbar_App,
 // Sidebar_App, Footer_App components). Auth gating is handled by Outseta.
@@ -1271,15 +941,14 @@ function App() {
             AI Loan Finder
             <span className="beta-badge">BETA</span>
           </h1>
-          <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} showAdmin={isAdminUser()} />
+          <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} />
         </div>
         <p className="hero-tagline">
-          {activeMode === 'find' && 'Describe a borrower scenario to instantly find matching wholesale loan products.'}
-          {activeMode === 'guidelines' && 'Ask any question about lender guidelines — answers sourced from lender matrices and guidelines.'}
-          {activeMode === 'admin' && 'Paste lender emails to add their updates to the guideline search database.'}
-          {activeMode !== 'admin' && (
-            <span className="hero-disclaimer">Always verify with the lender before presenting to borrowers.</span>
-          )}
+          {activeMode === 'find'
+            ? 'Describe a borrower scenario to instantly find matching wholesale loan products.'
+            : 'Ask any question about lender guidelines — answers sourced from lender matrices and guidelines.'
+          }
+          <span className="hero-disclaimer">Always verify with the lender before presenting to borrowers.</span>
         </p>
       </div>
 
@@ -1357,11 +1026,6 @@ function App() {
             )}
           </div>
         </>
-      )}
-
-      {/* ── Admin: Add Lender Update Mode ── */}
-      {activeMode === 'admin' && isAdminUser() && (
-        <AdminAddUpdate />
       )}
 
       {/* Product Detail Modal — only used in Find a Loan mode */}

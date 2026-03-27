@@ -13,7 +13,7 @@ export const PLAN_MAP = {
 };
 
 // Admin emails
-export const ADMIN_EMAILS = ["rich@prestonlending.com"];
+export const ADMIN_EMAILS = ["rich@prestonlending.com", "rich@mtg.broker"];
 
 // NEXA email domains
 export const NEXA_DOMAINS = ["@nexamortgage.com", "@nexalending.com"];
