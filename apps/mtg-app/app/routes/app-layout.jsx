@@ -15,26 +15,39 @@ import { isLoggedIn } from "../lib/auth";
  * instead of the page content. Uses Outseta's #o-anonymous hash to
  * trigger the auth widget on the current page.
  */
+const SIDEBAR_KEY = "sidebar-collapsed";
+
 export default function AppLayout() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
     setAuthChecked(true);
+    setSidebarCollapsed(localStorage.getItem(SIDEBAR_KEY) === "true");
   }, [location.pathname]);
 
-  // Listen for Outseta auth events — re-check login state when token changes
+  // Listen for sidebar collapse changes via localStorage
   useEffect(() => {
     function onStorageChange(e) {
       if (e.key === "Outseta.nocode.accessToken") {
         setLoggedIn(isLoggedIn());
       }
+      if (e.key === SIDEBAR_KEY) {
+        setSidebarCollapsed(e.newValue === "true");
+      }
     }
     window.addEventListener("storage", onStorageChange);
 
-    // Also poll briefly after mount in case Outseta sets the token async
+    // Also poll for sidebar state changes (same-tab writes don't fire storage event)
+    const sidebarTimer = setInterval(() => {
+      const val = localStorage.getItem(SIDEBAR_KEY) === "true";
+      setSidebarCollapsed(prev => prev !== val ? val : prev);
+    }, 200);
+
+    // Poll briefly after mount for Outseta token
     const timer = setInterval(() => {
       if (isLoggedIn()) {
         setLoggedIn(true);
@@ -46,9 +59,12 @@ export default function AppLayout() {
     return () => {
       window.removeEventListener("storage", onStorageChange);
       clearInterval(timer);
+      clearInterval(sidebarTimer);
       clearTimeout(cleanup);
     };
   }, []);
+
+  const sidebarWidth = sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,7 +75,7 @@ export default function AppLayout() {
       <main
         className="flex-1 transition-[margin] duration-300 ease-in-out max-[991px]:ml-0 pb-20 max-[991px]:pb-24"
         style={{
-          marginLeft: "var(--sidebar-width)",
+          marginLeft: sidebarWidth,
           paddingTop: "24px",
           paddingLeft: "32px",
           paddingRight: "32px",
@@ -101,7 +117,7 @@ export default function AppLayout() {
 
       <div
         className="transition-[margin] duration-300 ease-in-out max-[991px]:ml-0"
-        style={{ marginLeft: "var(--sidebar-width)" }}
+        style={{ marginLeft: sidebarWidth }}
       >
         <Footer />
       </div>
