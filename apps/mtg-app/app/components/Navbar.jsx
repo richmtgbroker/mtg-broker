@@ -158,7 +158,7 @@ export default function Navbar() {
                         </span>
                         <span className="flex flex-col gap-px"><span className="text-sm font-semibold">Knowledge Base</span><span className="text-xs text-text-faint">Browse help articles</span></span>
                       </a>
-                      <a href={`https://${OUTSETA_DOMAIN}/support/cases/new`} target="_blank" rel="noopener noreferrer" onClick={() => setHelpOpen(false)} className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors">
+                      <a href={`https://${OUTSETA_DOMAIN}/support/kb`} onClick={() => setHelpOpen(false)} className="flex items-center gap-3 px-4 py-2.5 no-underline text-text hover:bg-surface-hover transition-colors cursor-pointer">
                         <span className="w-[34px] h-[34px] rounded-[10px] bg-surface-active flex items-center justify-center shrink-0 text-text-secondary">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                         </span>
