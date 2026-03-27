@@ -130,8 +130,8 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {Array.from({ length: 18 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
+          {Array.from({ length: 21 }).map((_, i) => (
             <div key={i} className="aspect-[3/4] rounded-2xl bg-surface-active animate-pulse" />
           ))}
         </div>
@@ -227,7 +227,7 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
@@ -280,13 +280,13 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       <Link
         to={`/app/lenders/${slug}`}
         className="relative bg-[#f8fafc] flex items-center justify-center p-4 no-underline"
-        style={{ minHeight: "120px" }}
+        style={{ minHeight: "130px" }}
       >
         {logoUrl ? (
           <img
             src={logoUrl}
             alt={lender.name}
-            className="max-w-[130px] max-h-[70px] object-contain"
+            className="max-w-[85%] max-h-[90px] object-contain"
             onError={() => setLogoError(true)}
           />
         ) : (
