@@ -7,18 +7,6 @@ const CACHE_KEY = "mtg_lenders_v2";
 const CACHE_TTL = 30 * 60 * 1000;
 const FAVORITES_KEY = "mtg_lender_favorites";
 
-// Color palette for avatar circles
-const AVATAR_COLORS = [
-  "#2563eb", "#7c3aed", "#0891b2", "#059669", "#d97706",
-  "#dc2626", "#c026d3", "#4f46e5", "#0d9488", "#ea580c",
-];
-
-function getAvatarColor(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
 export function meta() {
   return [{ title: "Lender Directory — MtgBroker" }];
 }
@@ -51,7 +39,6 @@ export default function LendersPage() {
       } catch {}
 
       try {
-        // Try primary API (richer data with logos, channels, loan types)
         let lenderList = null;
         try {
           const res = await fetch(LENDERS_API_PRIMARY);
@@ -61,7 +48,6 @@ export default function LendersPage() {
           }
         } catch {}
 
-        // Fallback to pipeline API (basic data)
         if (!lenderList) {
           const res = await fetch(LENDERS_API_FALLBACK);
           if (!res.ok) throw new Error("API error");
@@ -80,7 +66,6 @@ export default function LendersPage() {
     load();
   }, []);
 
-  // Save favorites to localStorage
   useEffect(() => {
     try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); } catch {}
   }, [favorites]);
@@ -89,13 +74,34 @@ export default function LendersPage() {
     setFavorites((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
   }
 
+  // Build channel tags for a lender
+  function getChannels(lender) {
+    const channels = [];
+    // Primary API fields
+    if (lender.nexaWholesale || lender.tpoPortal) channels.push("Broker");
+    if (lender.nexaNondel) channels.push("NonDel");
+    if (lender.nexa100) channels.push("NEXA");
+    // Fallback: channel_types array from pipeline API
+    if (channels.length === 0 && (lender.channel_types || lender.channels)) {
+      const ch = lender.channel_types || lender.channels || [];
+      if (Array.isArray(ch)) {
+        ch.forEach(c => {
+          if (c.toLowerCase().includes("broker") && !channels.includes("Broker")) channels.push("Broker");
+          else if (c.toLowerCase().includes("nondel") && !channels.includes("NonDel")) channels.push("NonDel");
+          else if (c.toLowerCase().includes("nexa") && !channels.includes("NEXA")) channels.push("NEXA");
+        });
+      }
+    }
+    return channels;
+  }
+
   const filtered = useMemo(() => {
     const term = searchTerm.toLowerCase();
     return lenders.filter((l) => {
       if (term && !l.name.toLowerCase().includes(term)) return false;
       if (channelFilter) {
-        const channels = l.channel_types || l.channels || [];
-        if (!channels.some((c) => c.toLowerCase().includes(channelFilter.toLowerCase()))) return false;
+        const channels = getChannels(l);
+        if (!channels.includes(channelFilter)) return false;
       }
       if (showFavoritesOnly && !favorites.includes(l.name)) return false;
       return true;
@@ -115,9 +121,9 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-2">
-          {Array.from({ length: 24 }).map((_, i) => (
-            <div key={i} className="h-10 rounded-[10px] bg-surface-active animate-pulse mb-2 break-inside-avoid" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="aspect-square rounded-2xl bg-surface-active animate-pulse" />
           ))}
         </div>
       </div>
@@ -168,7 +174,7 @@ export default function LendersPage() {
                 : "bg-white text-text-secondary border-border hover:border-text-muted"
             }`}
           >
-            {ch}
+            {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
           </button>
         ))}
 
@@ -212,14 +218,17 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
               lender={lender}
+              channels={getChannels(lender)}
               isFavorite={favorites.includes(lender.name)}
               onToggleFavorite={() => toggleFavorite(lender.name)}
               searchTerm={searchTerm}
+              channelFilter={channelFilter}
+              onChannelFilter={setChannelFilter}
             />
           ))}
         </div>
@@ -228,10 +237,17 @@ export default function LendersPage() {
   );
 }
 
-function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
+// Badge color config
+const BADGE_STYLES = {
+  Broker: "bg-[#DBEAFE] text-[#1D4ED8]",
+  NonDel: "bg-[#DCFCE7] text-[#15803D]",
+  NEXA: "bg-[#EDE9FE] text-[#6D28D9]",
+};
+
+function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm, channelFilter, onChannelFilter }) {
   const [logoError, setLogoError] = useState(false);
 
-  // Use logo from API, fall back to Google favicon
+  // Logo: API logo → Google favicon → null
   let logoUrl = null;
   if (!logoError) {
     if (lender.logo) {
@@ -239,77 +255,113 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
     } else {
       const website = lender.website_url || lender.website;
       if (website) {
-        try { logoUrl = `https://www.google.com/s2/favicons?domain=${new URL(website).hostname}&sz=32`; } catch {}
+        try { logoUrl = `https://www.google.com/s2/favicons?domain=${new URL(website).hostname}&sz=128`; } catch {}
       }
     }
   }
 
   const slug = lender.slug || lender.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  // Channel badges from richer API data
-  const channels = [];
-  if (lender.nexaWholesale || lender.channels?.includes?.("Wholesale")) channels.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
-  if (lender.nexaNondel || lender.channels?.includes?.("NonDel")) channels.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
-  if (lender.nexaOnly) channels.push({ label: "NEXA Only", cls: "bg-[#EDE9FE] text-[#6D28D9]" });
-  // Fallback: use channel_types array from pipeline API
-  if (channels.length === 0 && (lender.channel_types || lender.channels)) {
-    const ch = lender.channel_types || lender.channels || [];
-    if (Array.isArray(ch)) {
-      ch.forEach(c => {
-        if (c.toLowerCase().includes("broker")) channels.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
-        else if (c.toLowerCase().includes("nondel")) channels.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
-        else if (c.toLowerCase().includes("nexa")) channels.push({ label: "NEXA", cls: "bg-[#EDE9FE] text-[#6D28D9]" });
-        else if (c.toLowerCase().includes("corr")) channels.push({ label: "Corr", cls: "bg-[#FEF3C7] text-[#92400E]" });
-      });
-    }
-  }
+  // Display name: show abbreviation in parens if present
+  const displayName = lender.name;
 
   return (
-    <Link
-      to={`/app/lenders/${slug}`}
-      className="group relative flex items-center gap-2.5 bg-white border border-[#cbd5e1] rounded-[10px] py-2.5 pr-3.5 pl-[18px] mb-2 break-inside-avoid no-underline text-inherit cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:bg-[#f8fafc] hover:border-[#93c5fd] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(37,99,235,0.15)]"
-    >
-      {/* Blue left border */}
-      <div className="absolute top-0 left-0 bottom-0 w-1 rounded-l-[10px]" style={{ background: "linear-gradient(180deg, #2563eb, #3b82f6)" }} />
-
-      {/* Logo */}
-      {logoUrl && (
-        <img
-          src={logoUrl}
-          alt=""
-          className="w-5 h-5 rounded object-contain shrink-0"
-          onError={() => setLogoError(true)}
-        />
-      )}
-
-      {/* Name + badges */}
-      <div className="flex-1 min-w-0">
-        <span className="block text-[13px] font-semibold text-[#0f172a] leading-[1.3] truncate">
-          <span dangerouslySetInnerHTML={{ __html: highlightMatch(lender.name, searchTerm) }} />
-        </span>
-        {channels.length > 0 && (
-          <div className="flex gap-1 mt-0.5 flex-wrap">
-            {channels.map((ch) => (
-              <span key={ch.label} className={`text-[9px] font-bold uppercase px-1.5 py-px rounded ${ch.cls}`}>{ch.label}</span>
-            ))}
+    <div className="relative bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.12)] hover:border-[#93c5fd] transition-all hover:-translate-y-0.5 flex flex-col">
+      {/* Logo Area */}
+      <Link
+        to={`/app/lenders/${slug}`}
+        className="relative bg-[#f8fafc] flex items-center justify-center p-6 no-underline"
+        style={{ minHeight: "160px" }}
+      >
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={lender.name}
+            className="max-w-[180px] max-h-[100px] object-contain"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <div className="text-4xl font-bold text-[#94a3b8]">
+            {lender.name.charAt(0).toUpperCase()}
           </div>
+        )}
+
+        {/* Favorite heart - top right of logo area */}
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(); }}
+          className="absolute top-3 right-3 bg-transparent border-none cursor-pointer p-0 transition-colors"
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "#cbd5e1"} strokeWidth="2" className="w-5 h-5">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+        </button>
+      </Link>
+
+      {/* Lender Name */}
+      <Link
+        to={`/app/lenders/${slug}`}
+        className="block text-center px-4 pt-4 pb-2 no-underline"
+      >
+        <h3 className="text-[15px] font-bold text-[#0f172a] leading-snug m-0">
+          <span dangerouslySetInnerHTML={{ __html: highlightMatch(displayName, searchTerm) }} />
+        </h3>
+      </Link>
+
+      {/* Divider */}
+      <div className="mx-6 border-t border-[#e2e8f0]" />
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-center gap-3 px-4 py-3">
+        {lender.website && (
+          <a
+            href={lender.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#93c5fd] text-[#1a56db] text-xs font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+              <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            Website
+          </a>
+        )}
+        {lender.tpoPortal && (
+          <a
+            href={lender.tpoPortal}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#93c5fd] text-[#1a56db] text-xs font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+              <path d="M15 3h6v6" /><path d="M10 14L21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            </svg>
+            TPO Portal
+          </a>
         )}
       </div>
 
-      {/* Favorite */}
-      <button
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(); }}
-        className="bg-transparent border-none cursor-pointer p-0 text-text-faint hover:text-red-500 transition-colors shrink-0"
-        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-      >
-        <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "currentColor"} strokeWidth="2" className="w-4 h-4">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-        </svg>
-      </button>
-
-      {/* Chevron */}
-      <span className="text-[18px] text-[#94A3B8] font-light ml-1 shrink-0 transition-all group-hover:text-primary-600 group-hover:translate-x-0.5">&rsaquo;</span>
-    </Link>
+      {/* Channel Badges - clickable to filter */}
+      {channels.length > 0 && (
+        <div className="flex items-center justify-center gap-2 px-4 pb-4">
+          {channels.map((ch) => (
+            <button
+              key={ch}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onChannelFilter(channelFilter === ch ? null : ch);
+              }}
+              className={`text-[11px] font-bold px-3 py-1 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
+            >
+              {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
