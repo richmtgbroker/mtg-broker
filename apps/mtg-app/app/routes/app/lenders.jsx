@@ -177,7 +177,7 @@ export default function LendersPage() {
           <button
             key={ch}
             onClick={() => setChannelFilter(channelFilter === ch ? null : ch)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-colors ${
               channelFilter === ch
                 ? "bg-primary-600 text-white border-primary-600"
                 : "bg-white text-text-secondary border-border hover:border-text-muted"
@@ -187,23 +187,23 @@ export default function LendersPage() {
           </button>
         ))}
 
-        {nexaAuthorized && <div className="w-px h-8 bg-border hidden md:block" />}
+        {nexaAuthorized && <div className="w-px h-10 bg-border hidden md:block" />}
 
         {/* Favorites Toggle */}
         <button
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+          className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-colors ${
             showFavoritesOnly
               ? "bg-red-50 text-red-600 border-red-200"
               : "bg-white text-text-secondary border-border hover:border-text-muted"
           }`}
         >
-          <svg viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+          <svg viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" className="w-4 h-4">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
           Favorites
           {favorites.length > 0 && (
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${showFavoritesOnly ? "bg-red-100 text-red-600" : "bg-surface-active text-text-muted"}`}>
+            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${showFavoritesOnly ? "bg-red-100 text-red-600" : "bg-surface-active text-text-muted"}`}>
               {favorites.length}
             </span>
           )}
@@ -211,8 +211,8 @@ export default function LendersPage() {
 
         {/* Clear Filters */}
         {isFiltered && (
-          <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary-600 bg-primary-50 border border-primary-200 cursor-pointer hover:bg-primary-100 transition-colors">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+          <button onClick={clearFilters} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium text-primary-600 bg-primary-50 border border-primary-200 cursor-pointer hover:bg-primary-100 transition-colors">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
             Clear Filters
           </button>
         )}
@@ -320,41 +320,9 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       {/* Divider */}
       <div className="mx-4 border-t border-[#e2e8f0]" />
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-center gap-2 px-3 py-2">
-        {lender.website && (
-          <a
-            href={lender.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-              <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-            Website
-          </a>
-        )}
-        {lender.tpoPortal && (
-          <a
-            href={lender.tpoPortal}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-              <path d="M15 3h6v6" /><path d="M10 14L21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            </svg>
-            TPO Portal
-          </a>
-        )}
-      </div>
-
       {/* Channel Badges - clickable to filter */}
       {channels.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 px-3 pb-3">
+        <div className="flex items-center justify-center gap-1.5 px-3 py-2">
           {channels.map((ch) => (
             <button
               key={ch}
@@ -370,6 +338,38 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
           ))}
         </div>
       )}
+
+      {/* Action Buttons — pinned to bottom */}
+      <div className="flex items-center justify-center gap-2 px-3 py-2 mt-auto">
+        {lender.website && (
+          <a
+            href={lender.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+              <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            Website
+          </a>
+        )}
+        {lender.tpoPortal && (
+          <a
+            href={lender.tpoPortal}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#93c5fd] text-[#1a56db] text-[10px] font-semibold no-underline hover:bg-[#eff6ff] transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+              <path d="M15 3h6v6" /><path d="M10 14L21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            </svg>
+            TPO Portal
+          </a>
+        )}
+      </div>
     </div>
   );
 }
