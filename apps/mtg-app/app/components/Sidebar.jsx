@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { isProUser, isNexaUser } from "../lib/auth";
+import { isProUser, isNexaUser, checkNexaAccess } from "../lib/auth";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
 
@@ -17,12 +17,15 @@ export default function Sidebar() {
     setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
     setPro(isProUser());
     setNexa(isNexaUser());
+    // Async NEXA check via Outseta custom field
+    checkNexaAccess().then(isNexa => { if (isNexa) setNexa(true); });
   }, []);
 
   // Re-check auth on route change
   useEffect(() => {
     setPro(isProUser());
     setNexa(isNexaUser());
+    checkNexaAccess().then(isNexa => { if (isNexa) setNexa(true); });
   }, [location.pathname]);
 
   function toggle() {

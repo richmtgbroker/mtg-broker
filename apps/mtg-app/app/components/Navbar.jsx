@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
-import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName, getAvatarUrl, logout } from "../lib/auth";
+import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, checkNexaAccess, getUserEmail, getUserName, getAvatarUrl, logout } from "../lib/auth";
 import { PLAN_MAP, OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
@@ -31,6 +31,8 @@ export default function Navbar() {
     setName(getUserName());
     if (isLoggedIn()) {
       getAvatarUrl().then(url => setAvatarUrl(url));
+      // Async NEXA check via Outseta custom field
+      checkNexaAccess().then(isNexa => { if (isNexa) setNexa(true); });
     }
   }, [location.pathname]);
 
@@ -46,6 +48,7 @@ export default function Navbar() {
         setEmail(getUserEmail());
         setName(getUserName());
         getAvatarUrl().then(url => setAvatarUrl(url));
+        checkNexaAccess().then(isNexa => { if (isNexa) setNexa(true); });
         clearInterval(timer);
       }
     }, 500);

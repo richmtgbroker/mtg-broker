@@ -98,9 +98,9 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {Array.from({ length: 18 }).map((_, i) => (
-            <div key={i} className="h-48 rounded-xl bg-surface-active animate-pulse" />
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-2">
+          {Array.from({ length: 24 }).map((_, i) => (
+            <div key={i} className="h-10 rounded-[10px] bg-surface-active animate-pulse mb-2 break-inside-avoid" />
           ))}
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-2">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
@@ -212,91 +212,60 @@ export default function LendersPage() {
 }
 
 function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
-  const initial = lender.name.charAt(0).toUpperCase();
-  const color = getAvatarColor(lender.name);
-  const channels = lender.channel_types || lender.channels || [];
   const [logoError, setLogoError] = useState(false);
 
   // Build favicon URL from lender website
-  const faviconUrl = !logoError && lender.website_url
-    ? `https://www.google.com/s2/favicons?domain=${new URL(lender.website_url).hostname}&sz=64`
-    : null;
+  let faviconUrl = null;
+  if (!logoError && lender.website_url) {
+    try {
+      faviconUrl = `https://www.google.com/s2/favicons?domain=${new URL(lender.website_url).hostname}&sz=32`;
+    } catch {}
+  }
 
-  const channelColors = {
-    broker: "bg-blue-50 text-blue-700",
-    nondel: "bg-purple-50 text-purple-700",
-    nexa: "bg-emerald-50 text-emerald-700",
-  };
+  const cardUrl = lender.website_url || null;
 
-  return (
-    <div className="bg-white rounded-xl border border-border p-4 hover:border-primary-200 hover:shadow-sm transition-all relative flex flex-col items-center text-center">
-      {/* Favorite button */}
+  const inner = (
+    <>
+      {/* Blue left border */}
+      <div className="absolute top-0 left-0 bottom-0 w-1 rounded-l-[10px]" style={{ background: "linear-gradient(180deg, #2563eb, #3b82f6)" }} />
+
+      {/* Favicon */}
+      {faviconUrl && (
+        <img
+          src={faviconUrl}
+          alt=""
+          className="w-4 h-4 rounded-[3px] object-contain shrink-0"
+          onError={() => setLogoError(true)}
+        />
+      )}
+
+      {/* Name */}
+      <span className="flex-1 text-[13px] font-semibold text-[#0f172a] leading-[1.3] truncate">
+        <span dangerouslySetInnerHTML={{ __html: highlightMatch(lender.name, searchTerm) }} />
+      </span>
+
+      {/* Favorite */}
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(); }}
-        className="absolute top-3 right-3 bg-transparent border-none cursor-pointer p-0 text-text-faint hover:text-red-500 transition-colors"
+        className="bg-transparent border-none cursor-pointer p-0 text-text-faint hover:text-red-500 transition-colors shrink-0"
         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "currentColor"} strokeWidth="2" className="w-5 h-5">
+        <svg viewBox="0 0 24 24" fill={isFavorite ? "#ef4444" : "none"} stroke={isFavorite ? "#ef4444" : "currentColor"} strokeWidth="2" className="w-4 h-4">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
         </svg>
       </button>
 
-      {/* Lender logo or fallback avatar circle */}
-      {faviconUrl ? (
-        <div className="w-[60px] h-[60px] rounded-full flex items-center justify-center bg-white border border-border-light mb-3 shrink-0 overflow-hidden">
-          <img
-            src={faviconUrl}
-            alt={lender.name}
-            className="w-8 h-8 object-contain"
-            onError={() => setLogoError(true)}
-          />
-        </div>
-      ) : (
-        <div
-          className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-white text-xl font-bold mb-3 shrink-0"
-          style={{ backgroundColor: color }}
-        >
-          {initial}
-        </div>
-      )}
-
-      {/* Name */}
-      <div className="text-sm font-semibold text-text mb-2 line-clamp-2">
-        <span dangerouslySetInnerHTML={{ __html: highlightMatch(lender.name, searchTerm) }} />
-      </div>
-
-      {/* Link pill buttons */}
-      <div className="flex flex-wrap gap-1.5 justify-center mb-2">
-        {lender.website_url && (
-          <a href={lender.website_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-600 no-underline px-2.5 py-1 rounded-full bg-primary-50 hover:bg-primary-100 transition-colors">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
-            Website
-          </a>
-        )}
-        {lender.tpo_portal_url && (
-          <a href={lender.tpo_portal_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-600 no-underline px-2.5 py-1 rounded-full bg-primary-50 hover:bg-primary-100 transition-colors">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-            TPO Portal
-          </a>
-        )}
-      </div>
-
-      {/* Channel type badges */}
-      {channels.length > 0 && (
-        <div className="flex flex-wrap gap-1 justify-center">
-          {channels.map((ch) => {
-            const key = ch.toLowerCase().replace(/[^a-z]/g, "");
-            const colorClass = channelColors[key] || "bg-surface-active text-text-muted";
-            return (
-              <span key={ch} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${colorClass}`}>
-                {ch}
-              </span>
-            );
-          })}
-        </div>
-      )}
-    </div>
+      {/* Chevron */}
+      <span className="text-[18px] text-[#94A3B8] font-light ml-1 shrink-0 transition-all group-hover:text-primary-600 group-hover:translate-x-0.5">&rsaquo;</span>
+    </>
   );
+
+  const classes = "group relative flex items-center gap-2.5 bg-white border border-[#cbd5e1] rounded-[10px] py-2.5 pr-3.5 pl-[18px] mb-2 break-inside-avoid no-underline text-inherit cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:bg-[#f8fafc] hover:border-[#93c5fd] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(37,99,235,0.15)]";
+
+  if (cardUrl) {
+    return <a href={cardUrl} target="_blank" rel="noopener noreferrer" className={classes}>{inner}</a>;
+  }
+  return <div className={classes}>{inner}</div>;
 }
 
 function highlightMatch(text, term) {

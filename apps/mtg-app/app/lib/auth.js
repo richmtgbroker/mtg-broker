@@ -68,12 +68,61 @@ export function isAdmin() {
 }
 
 /**
- * Check if user is a NEXA employee (by email domain).
+ * Check if user has NEXA access (sync — checks email domain + sessionStorage cache).
+ * For the async Outseta custom field check, use checkNexaAccess().
  */
 export function isNexaUser() {
+  // Check sessionStorage cache (set by async checkNexaAccess)
+  if (typeof window !== "undefined") {
+    const cached = sessionStorage.getItem("mtg_nexa_access");
+    if (cached === "true") return true;
+  }
+  // Fast path: email domain check
   const email = getUserEmail();
   if (!email) return false;
   return NEXA_DOMAINS.some((domain) => email.endsWith(domain));
+}
+
+/**
+ * Async NEXA access check — checks Outseta NexaAccess custom field.
+ * Caches result in sessionStorage so isNexaUser() picks it up on next call.
+ * Returns true if user has NEXA access.
+ */
+export async function checkNexaAccess() {
+  if (typeof window === "undefined") return false;
+
+  // Already confirmed via email domain
+  if (isNexaUser()) {
+    sessionStorage.setItem("mtg_nexa_access", "true");
+    return true;
+  }
+
+  // Slow path: check Outseta NexaAccess custom field
+  try {
+    let user = null;
+    if (typeof window.getCachedOutsetaUser === "function") {
+      user = await window.getCachedOutsetaUser();
+    } else if (window.Outseta && typeof window.Outseta.getUser === "function") {
+      user = await window.Outseta.getUser();
+    }
+
+    if (user) {
+      // Check direct field
+      if (user.NexaAccess === "true") {
+        sessionStorage.setItem("mtg_nexa_access", "true");
+        return true;
+      }
+      // Check nested in Account.Metadata
+      try {
+        if (user.Account?.Metadata?.NexaAccess?.toLowerCase() === "true") {
+          sessionStorage.setItem("mtg_nexa_access", "true");
+          return true;
+        }
+      } catch {}
+    }
+  } catch {}
+
+  return false;
 }
 
 /**
