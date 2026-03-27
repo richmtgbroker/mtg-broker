@@ -22,7 +22,6 @@ export default function Navbar() {
 
   const helpRef = useRef(null);
   const userRef = useRef(null);
-  const supportRef = useRef(null);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
@@ -76,19 +75,7 @@ export default function Navbar() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // When support modal opens, tell Outseta to mount the support widget
-  useEffect(() => {
-    if (!supportOpen || !supportRef.current) return;
-    const container = supportRef.current;
-    // Clear any previous content and insert a fresh embed target
-    container.innerHTML = '<div data-o-support="1" data-mode="embed"></div>';
-    // Ask Outseta to scan and mount the widget in the new element
-    if (window.Outseta && typeof window.Outseta.init === 'function') {
-      window.Outseta.init();
-    } else if (window.Outseta && typeof window.Outseta.nocode === 'object' && typeof window.Outseta.nocode.init === 'function') {
-      window.Outseta.nocode.init();
-    }
-  }, [supportOpen]);
+
 
   const planColors = {
     LITE: "bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]",
@@ -328,21 +315,21 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* Support Ticket Modal — Outseta embed mounts inside via useEffect */}
-      {supportOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-5">
-          <div className="absolute inset-0 bg-black/50 animate-[fadeIn_0.2s_ease]" onClick={() => setSupportOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col animate-[slideUp_0.25s_ease-out]">
-            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border-light">
-              <h3 className="text-lg font-bold m-0">Submit a Support Ticket</h3>
-              <button onClick={() => setSupportOpen(false)} className="w-9 h-9 rounded-[10px] border-none bg-surface-active flex items-center justify-center cursor-pointer text-text-muted hover:bg-border hover:text-text transition-all">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1" ref={supportRef} />
+      {/* Support Ticket Modal — always in DOM so Outseta can find data-o-support on page load, visibility toggled via CSS */}
+      <div className={`fixed inset-0 z-[99999] flex items-center justify-center p-5 ${supportOpen ? '' : 'hidden'}`}>
+        <div className="absolute inset-0 bg-black/50" onClick={() => setSupportOpen(false)} />
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border-light">
+            <h3 className="text-lg font-bold m-0">Submit a Support Ticket</h3>
+            <button onClick={() => setSupportOpen(false)} className="w-9 h-9 rounded-[10px] border-none bg-surface-active flex items-center justify-center cursor-pointer text-text-muted hover:bg-border hover:text-text transition-all">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          </div>
+          <div className="p-6 overflow-y-auto flex-1">
+            <div data-o-support="1" data-mode="embed" />
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }
