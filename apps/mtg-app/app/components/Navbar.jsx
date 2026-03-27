@@ -88,7 +88,7 @@ export default function Navbar() {
         <div className="w-[90%] max-w-[1280px] mx-auto py-4 flex items-center justify-between gap-4">
           {/* Brand + Plan Tags */}
           <div className="flex items-center gap-3 shrink-0">
-            <a href="/app/dashboard" style={{ display: "flex", alignItems: "center", height: "44px", textDecoration: "none", flexShrink: 0 }} aria-label="MtgBroker dashboard">
+            <a href={loggedIn ? "/app/dashboard" : "/"} style={{ display: "flex", alignItems: "center", height: "44px", textDecoration: "none", flexShrink: 0 }} aria-label="MtgBroker dashboard">
               <Logo height={28} />
             </a>
 
