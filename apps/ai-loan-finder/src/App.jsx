@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 const API_URL              = 'https://mtg-loan-finder.pages.dev/api/search'
 const GUIDELINE_API_URL    = 'https://mtg-loan-finder.pages.dev/api/guideline-search'
 const PRODUCT_LOOKUP_URL   = 'https://mtg-loan-finder.pages.dev/api/product-lookup'
+const ADD_LENDER_API_URL   = 'https://mtg-loan-finder.pages.dev/api/add-lender'
+
+// Admin emails that can see admin-only features
+const ADMIN_EMAILS = ['rich@mtg.broker', 'rich@prestonlending.com']
 
 // Get Outseta JWT from localStorage (set by Outseta auth on the Webflow page)
 function getOutsetaToken() {
@@ -11,6 +15,19 @@ function getOutsetaToken() {
     return localStorage.getItem('Outseta.nocode.accessToken') || null
   } catch (e) {
     return null
+  }
+}
+
+// Check if the current user is an admin by decoding the Outseta JWT
+function isAdmin() {
+  try {
+    const token = getOutsetaToken()
+    if (!token) return false
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    const email = (payload.email || payload.sub || '').toLowerCase()
+    return ADMIN_EMAILS.includes(email)
+  } catch (e) {
+    return false
   }
 }
 
@@ -290,7 +307,7 @@ function findRawProduct(match, rawProducts) {
 // ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
 // Tab switcher between "Find a Loan" and "Search Guidelines" modes
-function ModeSwitcher({ activeMode, onChange }) {
+function ModeSwitcher({ activeMode, onChange, showAdmin }) {
   return (
     <div className="mode-tabs">
       <button
@@ -307,6 +324,15 @@ function ModeSwitcher({ activeMode, onChange }) {
         <i className="fas fa-book-open"></i>
         Search Guidelines
       </button>
+      {showAdmin && (
+        <button
+          className={`mode-tab ${activeMode === 'addLender' ? 'active' : ''}`}
+          onClick={() => onChange('addLender')}
+        >
+          <i className="fas fa-building-circle-arrow-right"></i>
+          Add Lender
+        </button>
+      )}
     </div>
   )
 }
@@ -788,6 +814,302 @@ function GuidelineResults({ data, onOpenProduct }) {
   )
 }
 
+// ─── ADD LENDER (ADMIN-ONLY) ─────────────────────────────────────────────────
+
+function AddLenderPanel() {
+  const [url, setUrl] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState('')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  const PROGRESS_MSGS = [
+    'Fetching lender website...',
+    'Checking sub-pages (about, wholesale, contact)...',
+    'Extracting lender details with AI...',
+    'Checking for duplicates in Airtable...',
+    'Creating lender record...',
+  ]
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!url.trim() || loading) return
+
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    let msgIdx = 0
+    setProgress(PROGRESS_MSGS[0])
+    const interval = setInterval(() => {
+      msgIdx = Math.min(msgIdx + 1, PROGRESS_MSGS.length - 1)
+      setProgress(PROGRESS_MSGS[msgIdx])
+    }, 3000)
+
+    try {
+      const token = getOutsetaToken()
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const response = await fetch(ADD_LENDER_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: url.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed with status ${response.status}`)
+      }
+
+      setResult(data)
+      if (data.success) setUrl('') // Clear input on success
+    } catch (err) {
+      console.error('Add lender error:', err)
+      setError(err.message || 'Failed to add lender. Please try again.')
+    } finally {
+      clearInterval(interval)
+      setLoading(false)
+      setProgress('')
+    }
+  }
+
+  // Handle "Create Anyway" when a duplicate is found
+  const handleForceCreate = async () => {
+    if (!result?.extracted) return
+
+    setLoading(true)
+    setError(null)
+    setProgress('Creating lender record (override)...')
+
+    try {
+      const token = getOutsetaToken()
+      const headers = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
+
+      const response = await fetch(ADD_LENDER_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: url.trim(), force: true }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to create record')
+      setResult(data)
+      if (data.success) setUrl('')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+      setProgress('')
+    }
+  }
+
+  return (
+    <div className="add-lender-panel">
+      <div className="add-lender-header">
+        <h2>
+          <i className="fas fa-building-circle-arrow-right"></i>
+          Add New Lender
+        </h2>
+        <p>Paste a lender's website URL and AI will extract their details and create an Airtable record.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="add-lender-form">
+        <div className="add-lender-input-row">
+          <div className="add-lender-input-wrap">
+            <i className="fas fa-globe add-lender-input-icon"></i>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://www.lendername.com"
+              className="add-lender-input"
+              disabled={loading}
+            />
+          </div>
+          <button type="submit" className="add-lender-btn" disabled={!url.trim() || loading}>
+            {loading ? (
+              <>
+                <i className="fas fa-circle-notch fa-spin"></i>
+                Processing...
+              </>
+            ) : (
+              <>
+                <i className="fas fa-wand-magic-sparkles"></i>
+                Fetch &amp; Add
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Loading progress */}
+      {loading && (
+        <div className="add-lender-loading">
+          <div className="loading-spinner"></div>
+          <p className="loading-message">{progress}</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="add-lender-error">
+          <i className="fas fa-circle-exclamation"></i>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Duplicate warning */}
+      {result && result.duplicate && (
+        <div className="add-lender-duplicate">
+          <div className="add-lender-duplicate-header">
+            <i className="fas fa-triangle-exclamation"></i>
+            <h3>Possible Duplicate Found</h3>
+          </div>
+          <p>{result.message}</p>
+          <div className="add-lender-duplicate-list">
+            {result.existing_records?.map((rec) => (
+              <a
+                key={rec.id}
+                href={`https://airtable.com/appuJgI9X93OLaf0u/tbl1mpg3KFakZsFK7/${rec.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="add-lender-duplicate-link"
+              >
+                <i className="fas fa-arrow-up-right-from-square"></i>
+                {rec.name}
+              </a>
+            ))}
+          </div>
+          <div className="add-lender-duplicate-actions">
+            <button onClick={handleForceCreate} className="add-lender-btn add-lender-btn-secondary">
+              <i className="fas fa-plus"></i>
+              Create Anyway
+            </button>
+            <button onClick={() => setResult(null)} className="add-lender-btn add-lender-btn-ghost">
+              Cancel
+            </button>
+          </div>
+
+          {/* Show what was extracted */}
+          {result.extracted && (
+            <div className="add-lender-preview">
+              <h4><i className="fas fa-eye"></i> Extracted Details</h4>
+              <ExtractedFieldsTable extracted={result.extracted} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Success result */}
+      {result && result.success && (
+        <div className="add-lender-success">
+          <div className="add-lender-success-header">
+            <i className="fas fa-circle-check"></i>
+            <h3>Lender Added Successfully</h3>
+          </div>
+
+          <div className="add-lender-success-meta">
+            <span className="add-lender-lender-name">{result.lender_name}</span>
+            <a
+              href={result.airtable_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="add-lender-airtable-link"
+            >
+              <i className="fas fa-arrow-up-right-from-square"></i>
+              Open in Airtable
+            </a>
+          </div>
+
+          {/* Fields populated */}
+          <div className="add-lender-fields-section">
+            <h4>
+              <i className="fas fa-check"></i>
+              Fields Populated ({result.fields_populated?.length || 0})
+            </h4>
+            <div className="add-lender-field-tags">
+              {result.fields_populated?.map((f) => (
+                <span key={f} className="add-lender-field-tag populated">{f}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Fields still needed */}
+          {result.fields_missing?.length > 0 && (
+            <div className="add-lender-fields-section">
+              <h4>
+                <i className="fas fa-pen"></i>
+                Still Needs Manual Entry ({result.fields_missing.length})
+              </h4>
+              <div className="add-lender-field-tags">
+                {result.fields_missing?.map((f) => (
+                  <span key={f} className="add-lender-field-tag missing">{f}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Show all extracted values */}
+          {result.extracted && (
+            <div className="add-lender-preview">
+              <h4><i className="fas fa-table"></i> All Extracted Values</h4>
+              <ExtractedFieldsTable extracted={result.extracted} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Table showing what Claude extracted from the website
+function ExtractedFieldsTable({ extracted }) {
+  const rows = Object.entries(extracted).filter(([, v]) => v !== null && v !== '')
+  if (rows.length === 0) return <p>No fields extracted.</p>
+
+  // Friendly labels for the Claude response keys
+  const labels = {
+    lender_name: 'Lender Name',
+    description: 'Description',
+    corporate_website: 'Corporate Website',
+    tpo_broker_portal: 'TPO Broker Portal',
+    nmls: 'NMLS',
+    fha_id: 'FHA ID',
+    va_id: 'VA ID',
+    usda_id: 'USDA ID',
+    licensed_states: 'Licensed States',
+    scenario_desk: 'Scenario Desk',
+    facebook: 'Facebook',
+    linkedin: 'LinkedIn',
+    instagram: 'Instagram',
+    youtube: 'YouTube',
+    x_twitter: 'X (Twitter)',
+    lender_or_broker: 'Lender or Broker',
+  }
+
+  return (
+    <table className="add-lender-table">
+      <tbody>
+        {rows.map(([key, value]) => (
+          <tr key={key}>
+            <td className="add-lender-table-label">{labels[key] || key}</td>
+            <td className="add-lender-table-value">
+              {typeof value === 'string' && value.startsWith('http') ? (
+                <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
+              ) : (
+                String(value).length > 200 ? String(value).slice(0, 200) + '...' : String(value)
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 // Note: Navbar, sidebar, and footer are handled by Webflow (Navbar_App,
 // Sidebar_App, Footer_App components). Auth gating is handled by Outseta.
@@ -795,6 +1117,7 @@ function GuidelineResults({ data, onOpenProduct }) {
 function App() {
   // Which search mode is active
   const [activeMode, setActiveMode] = useState('find')
+  const [showAdmin] = useState(() => isAdmin())
 
   // ── Find a Loan state ──
   const [scenario, setScenario] = useState('')
@@ -941,12 +1264,14 @@ function App() {
             AI Loan Finder
             <span className="beta-badge">BETA</span>
           </h1>
-          <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} />
+          <ModeSwitcher activeMode={activeMode} onChange={setActiveMode} showAdmin={showAdmin} />
         </div>
         <p className="hero-tagline">
           {activeMode === 'find'
             ? 'Describe a borrower scenario to instantly find matching wholesale loan products.'
-            : 'Ask any question about lender guidelines — answers sourced from lender matrices and guidelines.'
+            : activeMode === 'guidelines'
+            ? 'Ask any question about lender guidelines — answers sourced from lender matrices and guidelines.'
+            : 'Paste a lender URL to auto-populate a new Airtable record.'
           }
           <span className="hero-disclaimer">Always verify with the lender before presenting to borrowers.</span>
         </p>
@@ -1026,6 +1351,11 @@ function App() {
             )}
           </div>
         </>
+      )}
+
+      {/* ── Add Lender Mode (Admin Only) ── */}
+      {activeMode === 'addLender' && showAdmin && (
+        <AddLenderPanel />
       )}
 
       {/* Product Detail Modal — only used in Find a Loan mode */}
