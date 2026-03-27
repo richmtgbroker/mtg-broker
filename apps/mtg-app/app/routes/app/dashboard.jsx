@@ -241,25 +241,41 @@ function LeadsSection({ leads }) {
 // ============================================================
 function PipelineOverview({ stats }) {
   return (
-    <DashSection title="Pipeline Overview" linkHref="/app/pipeline" linkText="View All">
-      <div className="grid grid-cols-1 gap-3">
-        {/* Pipeline Loans — highlight card */}
-        <Link to="/app/pipeline" className="rounded-[10px] px-4 py-3 no-underline text-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all" style={{ background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" }}>
-          <div className="text-[24px] font-bold mb-0.5">{stats.loans}</div>
-          <div className="text-[13px] opacity-80">Pipeline Loans</div>
+    <DashSection title="PIPELINE OVERVIEW" linkHref="/app/pipeline" linkText="View All">
+      <div className="flex flex-col gap-3">
+        {/* Pipeline Loans — blue gradient highlight card */}
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 no-underline text-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all" style={{ background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" }}>
+          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-white/70 mb-0.5">Pipeline Loans</div>
+            <div className="text-[24px] font-bold leading-tight">{stats.loans}</div>
+            <div className="text-[11px] text-white/60">Active in pipeline</div>
+          </div>
         </Link>
 
         {/* Pipeline Volume */}
-        <Link to="/app/pipeline" className="rounded-[10px] px-4 py-3 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
-          <div className="text-[24px] font-bold mb-0.5 text-primary-600">{formatCurrency(stats.volume)}</div>
-          <div className="text-[13px] text-text-muted opacity-80">Pipeline Volume</div>
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 bg-white border border-[#E2E8F0] shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
+          <div className="w-11 h-11 rounded-xl bg-[#D1FAE5] flex items-center justify-center text-[#059669] shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-text-faint mb-0.5">Pipeline Volume</div>
+            <div className="text-[24px] font-bold leading-tight text-text">{formatCurrency(stats.volume)}</div>
+          </div>
         </Link>
 
         {/* Upcoming Closings */}
-        <Link to="/app/pipeline" className="rounded-[10px] px-4 py-3 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
-          <div className="text-[24px] font-bold mb-0.5 text-text">{stats.closings}</div>
-          <div className="text-[13px] text-text-muted opacity-80">Upcoming Closings</div>
-          <div className="text-xs text-text-faint mt-0.5">Next 14 days</div>
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 bg-white border border-[#E2E8F0] shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
+          <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+          </div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-text-faint mb-0.5">Upcoming Closings</div>
+            <div className="text-[24px] font-bold leading-tight text-text">{stats.closings}</div>
+            <div className="text-[11px] text-text-faint">Next 14 days</div>
+          </div>
         </Link>
       </div>
     </DashSection>

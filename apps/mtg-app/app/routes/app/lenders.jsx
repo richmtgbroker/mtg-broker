@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Link } from "react-router";
 
 const LENDERS_API = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
 const CACHE_KEY = "mtg_lenders_v1";
@@ -222,10 +223,14 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
     } catch {}
   }
 
-  const cardUrl = lender.website_url || null;
+  // Link to detail page using lender name as slug
+  const slug = lender.slug || lender.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-  const inner = (
-    <>
+  return (
+    <Link
+      to={`/app/lenders/${slug}`}
+      className="group relative flex items-center gap-2.5 bg-white border border-[#cbd5e1] rounded-[10px] py-2.5 pr-3.5 pl-[18px] mb-2 break-inside-avoid no-underline text-inherit cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:bg-[#f8fafc] hover:border-[#93c5fd] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(37,99,235,0.15)]"
+    >
       {/* Blue left border */}
       <div className="absolute top-0 left-0 bottom-0 w-1 rounded-l-[10px]" style={{ background: "linear-gradient(180deg, #2563eb, #3b82f6)" }} />
 
@@ -257,15 +262,8 @@ function LenderCard({ lender, isFavorite, onToggleFavorite, searchTerm }) {
 
       {/* Chevron */}
       <span className="text-[18px] text-[#94A3B8] font-light ml-1 shrink-0 transition-all group-hover:text-primary-600 group-hover:translate-x-0.5">&rsaquo;</span>
-    </>
+    </Link>
   );
-
-  const classes = "group relative flex items-center gap-2.5 bg-white border border-[#cbd5e1] rounded-[10px] py-2.5 pr-3.5 pl-[18px] mb-2 break-inside-avoid no-underline text-inherit cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all hover:bg-[#f8fafc] hover:border-[#93c5fd] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgba(37,99,235,0.15)]";
-
-  if (cardUrl) {
-    return <a href={cardUrl} target="_blank" rel="noopener noreferrer" className={classes}>{inner}</a>;
-  }
-  return <div className={classes}>{inner}</div>;
 }
 
 function highlightMatch(text, term) {

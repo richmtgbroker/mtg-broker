@@ -19,6 +19,7 @@ export default [
     route("/app/loan-search", "routes/app/loan-search.jsx"),
     route("/app/ai-search", "routes/app/ai-search.jsx"),
     route("/app/lenders", "routes/app/lenders.jsx"),
+    route("/app/lenders/:slug", "routes/app/lender-detail.jsx"),
     route("/app/products", "routes/app/products.jsx"),
     route("/app/products/:slug", "routes/app/product-detail.jsx"),
     route("/app/property-types", "routes/app/property-types.jsx"),
