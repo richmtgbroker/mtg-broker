@@ -316,10 +316,10 @@ export default function LoanSearchPage() {
           <button
             key={cat.id}
             onClick={() => handleCategoryChange(cat.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+            className={`h-[38px] px-4 rounded-full text-[13px] font-semibold cursor-pointer transition-colors ${
               activeCategory === cat.id
-                ? "bg-primary-600 text-white border-primary-600"
-                : "bg-white text-text-secondary border-border hover:border-text-muted"
+                ? "bg-primary-600 text-white border-[1.5px] border-primary-600 shadow-[0_2px_8px_rgba(37,99,235,.25)]"
+                : "bg-white text-text-secondary border-[1.5px] border-[#e2e8f0] hover:border-text-muted"
             }`}
           >
             {cat.label} <span className="opacity-70">({categoryCounts[cat.id] || 0})</span>
@@ -330,25 +330,25 @@ export default function LoanSearchPage() {
         <div className="relative" ref={moreRef}>
           <button
             onClick={(e) => { e.stopPropagation(); setMoreOpen(!moreOpen); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${
+            className={`h-[38px] px-4 rounded-full text-[13px] font-semibold cursor-pointer transition-colors ${
               MORE_CATEGORIES.some((c) => c.id === activeCategory)
-                ? "bg-primary-600 text-white border-primary-600"
-                : "bg-white text-text-secondary border-border hover:border-text-muted"
+                ? "bg-primary-600 text-white border-[1.5px] border-primary-600 shadow-[0_2px_8px_rgba(37,99,235,.25)]"
+                : "bg-[#f8fafc] text-text-secondary border-[1.5px] border-dashed border-[#cbd5e1] hover:border-text-muted"
             }`}
           >
             {MORE_CATEGORIES.find((c) => c.id === activeCategory)?.label || "More"} &gt;
           </button>
           {moreOpen && (
-            <div className="absolute top-[calc(100%+4px)] left-0 bg-white border border-border rounded-xl shadow-lg z-50 py-1 min-w-[160px]">
+            <div className="absolute top-[calc(100%+4px)] left-0 bg-white border border-border rounded-xl shadow-[0_8px_24px_rgba(0,0,0,.12)] z-50 p-1.5 min-w-[240px]">
               {MORE_CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => handleCategoryChange(cat.id)}
-                  className={`w-full text-left px-4 py-2 text-sm cursor-pointer border-none bg-transparent hover:bg-surface-hover transition-colors ${
-                    activeCategory === cat.id ? "text-primary-600 font-semibold" : "text-text-secondary"
+                  className={`w-full text-left px-3.5 py-2.5 text-sm cursor-pointer border-none rounded-lg transition-colors ${
+                    activeCategory === cat.id ? "bg-primary-600 text-white font-semibold" : "bg-transparent text-text-secondary hover:bg-surface-hover"
                   }`}
                 >
-                  {cat.label} <span className="text-text-faint">({categoryCounts[cat.id] || 0})</span>
+                  {cat.label} <span className={activeCategory === cat.id ? "text-white/70" : "text-text-faint"}>({categoryCounts[cat.id] || 0})</span>
                 </button>
               ))}
             </div>
@@ -370,7 +370,7 @@ export default function LoanSearchPage() {
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             onKeyDown={(e) => e.key === "Escape" && setSearchTerm("")}
-            className="w-full pl-10 pr-8 py-2 rounded-lg border border-border bg-white text-sm text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
+            className="w-full h-[38px] pl-10 pr-8 rounded-[10px] border border-[#cbd5e1] bg-white text-[13px] text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 shadow-[0_1px_4px_rgba(15,23,42,0.04)] transition-colors"
           />
           {searchTerm && (
             <button onClick={() => { setSearchTerm(""); searchRef.current?.focus(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-faint hover:text-text cursor-pointer text-sm bg-transparent border-none">&#10005;</button>
@@ -378,60 +378,72 @@ export default function LoanSearchPage() {
         </div>
 
         {/* Min FICO */}
-        <input
-          type="text"
-          placeholder="Min FICO"
-          value={minFico}
-          onChange={(e) => { setMinFico(e.target.value.replace(/\D/g, "")); setCurrentPage(1); }}
-          className="w-[100px] px-3 py-2 rounded-lg border border-border bg-white text-sm text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
-        />
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold text-[#64748b] uppercase tracking-wide">Min FICO</label>
+          <input
+            type="text"
+            placeholder="660"
+            value={minFico}
+            onChange={(e) => { setMinFico(e.target.value.replace(/\D/g, "")); setCurrentPage(1); }}
+            className="w-[100px] h-[38px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-[13px] text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
+          />
+        </div>
 
         {/* Loan Amount */}
-        <input
-          type="text"
-          placeholder="Loan Amount"
-          value={loanAmount}
-          onChange={(e) => { setLoanAmount(e.target.value); setCurrentPage(1); }}
-          className="w-[130px] px-3 py-2 rounded-lg border border-border bg-white text-sm text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
-        />
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold text-[#64748b] uppercase tracking-wide">Loan Amount</label>
+          <input
+            type="text"
+            placeholder="$350,000"
+            value={loanAmount}
+            onChange={(e) => { setLoanAmount(e.target.value); setCurrentPage(1); }}
+            className="w-[130px] h-[38px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-[13px] text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
+          />
+        </div>
 
         {/* Purpose Dropdown */}
-        <select
-          value={purpose}
-          onChange={(e) => { setPurpose(e.target.value); setCurrentPage(1); }}
-          className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-text focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
-        >
-          <option value="">Purpose</option>
-          {purposeOptions.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold text-[#64748b] uppercase tracking-wide">Purpose</label>
+          <select
+            value={purpose}
+            onChange={(e) => { setPurpose(e.target.value); setCurrentPage(1); }}
+            className="h-[38px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-[13px] text-text focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
+          >
+            <option value="">All</option>
+            {purposeOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
 
         {/* Occupancy Dropdown */}
-        <select
-          value={occupancy}
-          onChange={(e) => { setOccupancy(e.target.value); setCurrentPage(1); }}
-          className="px-3 py-2 rounded-lg border border-border bg-white text-sm text-text focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
-        >
-          <option value="">Occupancy</option>
-          {occupancyOptions.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] font-bold text-[#64748b] uppercase tracking-wide">Occupancy</label>
+          <select
+            value={occupancy}
+            onChange={(e) => { setOccupancy(e.target.value); setCurrentPage(1); }}
+            className="h-[38px] px-3 rounded-[10px] border border-[#cbd5e1] bg-white text-[13px] text-text focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors cursor-pointer"
+          >
+            <option value="">All</option>
+            {occupancyOptions.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Action Buttons */}
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => {}}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white border border-primary-600 cursor-pointer hover:bg-primary-700 transition-colors"
+          className="flex items-center gap-1.5 h-[38px] px-3 rounded-[10px] text-xs font-bold bg-[#dbeafe] text-[#1d4ed8] border border-[#bfdbfe] cursor-pointer hover:bg-[#bfdbfe] transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>
           Filters
         </button>
         <button
           onClick={() => {}}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white text-text-secondary border border-border cursor-pointer hover:bg-surface-hover transition-colors"
+          className="flex items-center gap-1.5 h-[38px] px-3 rounded-[10px] text-xs font-medium bg-white text-text-secondary border border-[#cbd5e1] cursor-pointer hover:bg-surface-hover shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-colors"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M12 3v18M3 12h18" /></svg>
           Columns
@@ -455,21 +467,21 @@ export default function LoanSearchPage() {
           <button onClick={clearAllFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Reset filters</button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-border overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-primary-600 border-b border-primary-700">
+                <tr className="bg-[#0f172a]">
                   {visibleCols.map((col) => (
                     <th
                       key={col}
                       onClick={() => handleSort(col)}
-                      className="px-4 py-3 text-left text-xs font-semibold text-white uppercase tracking-wide cursor-pointer hover:text-primary-100 transition-colors whitespace-nowrap select-none"
+                      className="px-2.5 py-1.5 text-left text-[11px] font-semibold text-white uppercase tracking-wide cursor-pointer hover:bg-[#1e293b] border-r border-[#1e293b] last:border-r-0 transition-colors whitespace-nowrap select-none"
                     >
                       <span className="inline-flex items-center gap-1">
                         {getLabel(col)}
                         {sortKey === col && (
-                          <span className="text-primary-200">{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>
+                          <span className="text-white/60">{sortDir === "asc" ? "\u25B2" : "\u25BC"}</span>
                         )}
                       </span>
                     </th>
@@ -481,14 +493,16 @@ export default function LoanSearchPage() {
                   <tr
                     key={i}
                     onClick={() => setSelectedProduct(product)}
-                    className="border-b border-border last:border-b-0 hover:bg-primary-50/30 cursor-pointer transition-colors"
+                    className={`border-b border-border last:border-b-0 hover:bg-[#eff6ff] cursor-pointer transition-colors ${
+                      i % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"
+                    }`}
                   >
                     {visibleCols.map((col) => {
                       const val = product[col];
                       const isLender = col.toLowerCase().replace(/[^a-z]/g, "") === "lender";
                       const logoUrl = isLender ? lenderLogos[val] : null;
                       return (
-                        <td key={col} className="px-4 py-3 text-text whitespace-nowrap max-w-[250px] truncate">
+                        <td key={col} className="px-2 py-[3px] text-[12px] text-text whitespace-nowrap max-w-[250px] truncate">
                           {isLender && logoUrl ? (
                             <span className="inline-flex items-center gap-2">
                               <img src={logoUrl} alt="" className="w-5 h-5 rounded object-contain" />
