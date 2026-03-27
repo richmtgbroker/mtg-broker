@@ -116,10 +116,10 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-text mb-6">Loan Product Types</h1>
-        <div className="grid grid-cols-2 gap-4">
+        <h1 className="text-[24px] font-bold text-[#334155] mb-4 tracking-[-0.01em]">Loan Product Types</h1>
+        <div className="grid grid-cols-2 gap-1.5">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="h-14 rounded-xl bg-surface-active animate-pulse" />
+            <div key={i} className="h-12 rounded-[10px] bg-surface-active animate-pulse" />
           ))}
         </div>
       </div>
@@ -137,15 +137,15 @@ export default function ProductsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-text">Loan Product Types</h1>
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isFiltered ? "bg-primary-50 text-primary-600" : "bg-surface-active text-text-muted"}`}>
+      <div className="flex items-baseline justify-between mb-4 flex-wrap gap-2.5">
+        <div className="flex items-baseline gap-2.5">
+          <h1 className="text-[24px] font-bold text-[#334155] tracking-[-0.01em] m-0">Loan Product Types</h1>
+          <span className={`text-[14px] font-semibold px-3 py-1 rounded-[20px] inline-block transition-all ${isFiltered ? "bg-[#dbeafe] text-[#2563eb]" : "bg-[#f1f5f9] text-[#64748b]"}`}>
             {isFiltered ? `${filtered.length} of ${products.length}` : `${products.length} products`}
           </span>
         </div>
-        <button onClick={handlePrint} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-white text-sm font-medium text-text-secondary hover:bg-surface-hover cursor-pointer transition-colors print:hidden">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+        <button onClick={handlePrint} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg border border-[#e2e8f0] bg-white text-[13px] font-semibold text-[#64748b] hover:bg-[#f1f5f9] hover:border-[#cbd5e1] hover:text-[#334155] active:bg-[#e2e8f0] cursor-pointer whitespace-nowrap transition-all self-center print:hidden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 shrink-0">
             <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
           </svg>
           Print List
@@ -153,10 +153,10 @@ export default function ProductsPage() {
       </div>
 
       {/* Toolbar: Search + Alphabet + Reset */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap print:hidden">
+      <div className="flex items-center gap-3 mb-4 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] px-3.5 py-2.5 flex-nowrap print:hidden">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint pointer-events-none">
+        <div className="relative w-[220px] min-w-[160px] shrink-0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 w-[15px] h-[15px] pointer-events-none">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
@@ -166,23 +166,23 @@ export default function ProductsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setSearchTerm("")}
-            className="w-full pl-10 pr-8 py-2.5 rounded-xl border border-border bg-white text-sm text-text placeholder:text-text-faint focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-100 transition-colors"
+            className="w-full h-[38px] pl-9 pr-8 rounded-lg border border-[#CBD5E1] bg-white text-[14px] text-text placeholder:text-text-faint focus:outline-none focus:border-[#2563EB] focus:ring-[3px] focus:ring-[rgba(37,99,235,0.1)] transition-all"
           />
           {searchTerm && (
-            <button onClick={() => { setSearchTerm(""); searchRef.current?.focus(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-faint hover:text-text cursor-pointer text-sm bg-transparent border-none">
+            <button onClick={() => { setSearchTerm(""); searchRef.current?.focus(); }} className="absolute right-2 top-1/2 -translate-y-1/2 w-[22px] h-[22px] rounded-full bg-[#e2e8f0] hover:bg-[#cbd5e1] text-[#64748b] hover:text-[#334155] cursor-pointer text-[13px] font-bold flex items-center justify-center border-none transition-all z-[2]">
               &#10005;
             </button>
           )}
         </div>
 
         {/* Divider */}
-        <div className="w-px h-8 bg-border hidden md:block" />
+        <div className="w-px h-6 bg-[#e2e8f0] shrink-0 hidden md:block" />
 
         {/* Alphabet nav */}
-        <div className="flex flex-wrap gap-0.5 items-center">
+        <div className="flex items-center gap-px flex-1 min-w-0 flex-nowrap overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveLetter(null)}
-            className={`px-2 py-1 text-[11px] font-semibold rounded-md cursor-pointer border-none transition-colors ${activeLetter === null ? "bg-primary-600 text-white" : "bg-surface-active text-text-muted hover:bg-surface-section"}`}
+            className={`w-7 h-7 text-[12px] font-bold rounded-md cursor-pointer border-none transition-all shrink-0 flex items-center justify-center ${activeLetter === null ? "bg-[#0f172a] text-white" : "bg-transparent text-[#475569] hover:bg-[#e2e8f0] hover:text-[#2563eb]"}`}
           >
             All
           </button>
@@ -193,8 +193,8 @@ export default function ProductsPage() {
                 key={letter}
                 onClick={() => has && handleLetterClick(letter)}
                 disabled={!has}
-                className={`w-7 h-7 text-[11px] font-semibold rounded-md border-none transition-colors ${
-                  activeLetter === letter ? "bg-primary-600 text-white cursor-pointer" : has ? "bg-surface-active text-text-secondary hover:bg-surface-section cursor-pointer" : "bg-transparent text-text-faint/40 cursor-default"
+                className={`w-7 h-7 text-[12px] font-bold rounded-md border-none transition-all shrink-0 flex items-center justify-center select-none p-0 ${
+                  activeLetter === letter ? "bg-[#0f172a] text-white cursor-pointer" : has ? "bg-transparent text-[#475569] hover:bg-[#e2e8f0] hover:text-[#2563eb] cursor-pointer" : "bg-transparent text-[#d1d5db] cursor-default pointer-events-none"
                 }`}
               >
                 {letter}
@@ -205,8 +205,8 @@ export default function ProductsPage() {
 
         {/* Reset */}
         {isFiltered && (
-          <button onClick={resetAll} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-primary-600 bg-primary-50 border border-primary-200 cursor-pointer hover:bg-primary-100 transition-colors">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+          <button onClick={resetAll} className="inline-flex items-center gap-1.5 h-[38px] px-3.5 rounded-lg text-[13px] font-semibold text-[#64748b] bg-white border border-[#e2e8f0] cursor-pointer hover:bg-[#f1f5f9] hover:border-[#cbd5e1] hover:text-[#334155] whitespace-nowrap shrink-0 transition-all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
             Reset
           </button>
         )}
@@ -214,20 +214,20 @@ export default function ProductsPage() {
 
       {/* Category pills */}
       {Object.keys(tagCounts).length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6 print:hidden">
+        <div className="flex gap-2 py-3 pb-2 mb-4 overflow-x-auto scrollbar-none print:hidden">
           <button
             onClick={() => setActiveCategories([])}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${activeCategories.length === 0 ? "bg-primary-600 text-white border-primary-600" : "bg-white text-text-secondary border-border hover:border-text-muted"}`}
+            className={`inline-flex items-center gap-1.5 px-4 py-[7px] rounded-full text-[14px] font-bold border cursor-pointer whitespace-nowrap shrink-0 transition-all select-none ${activeCategories.length === 0 ? "bg-[#2563eb] text-white border-[#2563eb] shadow-[0_2px_6px_rgba(37,99,235,0.25)]" : "bg-white text-[#475569] border-[#e2e8f0] hover:bg-[#f1f5f9] hover:border-[#cbd5e1]"}`}
           >
-            All <span className="opacity-60 ml-1">{products.length}</span>
+            All <span className="text-[12px] font-bold opacity-65">{products.length}</span>
           </button>
           {Object.keys(tagCounts).sort().map((tag) => (
             <button
               key={tag}
               onClick={() => toggleCategory(tag)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border cursor-pointer transition-colors ${activeCategories.includes(tag) ? "bg-primary-600 text-white border-primary-600" : "bg-white text-text-secondary border-border hover:border-text-muted"}`}
+              className={`inline-flex items-center gap-1.5 px-4 py-[7px] rounded-full text-[14px] font-semibold border cursor-pointer whitespace-nowrap shrink-0 transition-all select-none ${activeCategories.includes(tag) ? "bg-[#2563eb] text-white border-[#2563eb] shadow-[0_2px_6px_rgba(37,99,235,0.25)] hover:bg-[#1d4ed8] hover:border-[#1d4ed8]" : "bg-white text-[#475569] border-[#e2e8f0] hover:bg-[#f1f5f9] hover:border-[#cbd5e1]"}`}
             >
-              {tag} <span className="opacity-60 ml-1">{tagCounts[tag]}</span>
+              {tag} <span className={`text-[12px] font-bold ${activeCategories.includes(tag) ? "opacity-90" : "opacity-65"}`}>{tagCounts[tag]}</span>
             </button>
           ))}
         </div>
@@ -236,16 +236,16 @@ export default function ProductsPage() {
       {/* Results */}
       <div ref={resultsRef}>
         {filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-4xl mb-3">&#128269;</div>
-            <div className="text-lg font-semibold text-text mb-1">No products found</div>
-            <div className="text-sm text-text-muted mb-4">Try a different search or adjust your filters</div>
-            <button onClick={resetAll} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">
+          <div className="text-center py-10 px-5 rounded-2xl bg-white border border-[rgba(15,23,42,0.08)] shadow-[0_4px_12px_rgba(15,23,42,0.04)] mt-3">
+            <div className="text-[40px] mb-3 opacity-40">&#128269;</div>
+            <div className="text-[18px] font-bold text-text m-0 mb-1.5">No products found</div>
+            <div className="text-[15px] text-[rgba(15,23,42,0.55)] m-0">Try a different search or adjust your filters</div>
+            <button onClick={resetAll} className="inline-block mt-3.5 text-[15px] font-semibold text-[#2563eb] cursor-pointer bg-transparent border-none hover:text-[#1d4ed8] hover:underline">
               Reset all filters
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
             {Object.keys(groupedProducts).sort().map((letter) => (
               <LetterGroup key={letter} letter={letter} products={groupedProducts[letter]} searchTerm={searchTerm} />
             ))}
@@ -262,20 +262,18 @@ export default function ProductsPage() {
 function LetterGroup({ letter, products, searchTerm }) {
   return (
     <>
-      <div className="col-span-full flex items-center gap-3 mt-6 mb-2 first:mt-0">
-        <span className="text-lg font-bold text-text">{letter}</span>
-        <div className="flex-1 h-px bg-border" />
+      <div className="col-span-full flex items-center gap-2.5 pt-3.5 pb-1 first:pt-0.5">
+        <span className="text-[14px] font-extrabold text-[#94a3b8] shrink-0 tracking-[0.5px]">{letter}</span>
+        <div className="flex-1 h-px bg-[#f1f5f9]" />
       </div>
       {products.map((product) => (
         <Link
           key={product.href}
           to={product.href}
-          className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-border bg-white no-underline text-text hover:border-primary-200 hover:shadow-sm hover:bg-primary-50/30 transition-all group"
+          className="relative overflow-hidden flex items-center gap-2 px-4 py-3.5 rounded-[10px] border border-[#E2E8F0] bg-white no-underline text-inherit min-h-[48px] hover:bg-[#f8fafc] hover:border-[#cbd5e1] hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] active:bg-[#f1f5f9] transition-all group before:content-[''] before:absolute before:top-0 before:left-0 before:bottom-0 before:w-[3px] before:bg-[#2563eb] before:opacity-0 before:transition-opacity hover:before:opacity-100"
         >
-          <span className="text-sm font-medium" dangerouslySetInnerHTML={{ __html: highlightMatch(product.name, searchTerm) }} />
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-text-faint group-hover:text-primary-600 transition-colors shrink-0">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          <span className="text-[15px] font-semibold text-[#0f172a] flex-1 leading-[1.3] min-w-0" dangerouslySetInnerHTML={{ __html: highlightMatch(product.name, searchTerm) }} />
+          <span className="text-[22px] font-light text-[#cbd5e1] shrink-0 transition-all group-hover:text-[#2563eb] group-hover:translate-x-0.5">&#8250;</span>
         </Link>
       ))}
     </>
