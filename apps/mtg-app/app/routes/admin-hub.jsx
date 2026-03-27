@@ -920,6 +920,54 @@ function ExtractedTable({ data, labels }) {
 }
 
 
+// ─── Sync Button ─────────────────────────────────────────────────────────────
+
+function SyncButton({ label, url }) {
+  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [message, setMessage] = useState("");
+
+  const handleSync = async () => {
+    setStatus("loading");
+    setMessage("");
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const text = await res.text();
+        setStatus("success");
+        setMessage(text.length > 100 ? "Sync completed successfully" : text);
+      } else {
+        setStatus("error");
+        setMessage(`Error: ${res.status} ${res.statusText}`);
+      }
+    } catch (e) {
+      setStatus("error");
+      setMessage(`Failed: ${e.message}`);
+    }
+    setTimeout(() => setStatus("idle"), 5000);
+  };
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <button
+        onClick={handleSync}
+        disabled={status === "loading"}
+        className={`px-5 py-2.5 rounded-xl font-bold text-sm border transition-all cursor-pointer ${
+          status === "loading"
+            ? "bg-gray-100 text-gray-400 border-gray-200 cursor-wait"
+            : status === "success"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+            : status === "error"
+            ? "bg-red-50 text-red-700 border-red-200"
+            : "bg-primary-50 text-primary-600 border-primary-200 hover:bg-primary-100"
+        }`}
+      >
+        {status === "loading" ? "Syncing..." : status === "success" ? "✓ Done" : label}
+      </button>
+      {message && <span className="text-xs text-text-muted">{message}</span>}
+    </div>
+  );
+}
+
 // ─── Main Admin Hub Page ──────────────────────────────────────────────────────
 
 export default function AdminHub() {
@@ -984,6 +1032,17 @@ export default function AdminHub() {
                 <h3 className="text-sm font-bold text-text mb-1">Airtable</h3>
                 <p className="text-xs text-text-muted">Loan products, lenders</p>
               </a>
+            </div>
+
+            {/* Airtable → Supabase Sync */}
+            <div className="mt-8">
+              <h2 className="text-lg font-bold text-text mb-1">Airtable → Supabase Sync</h2>
+              <p className="text-xs text-text-muted mb-4">Auto-syncs daily at 3 AM UTC. Use these buttons to trigger a manual sync immediately.</p>
+              <div className="flex flex-wrap gap-3">
+                <SyncButton label="Sync Lenders" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/lenders" />
+                <SyncButton label="Sync Products" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/products" />
+                <SyncButton label="Sync All" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/" />
+              </div>
             </div>
 
             {/* Add Lender from URL */}
