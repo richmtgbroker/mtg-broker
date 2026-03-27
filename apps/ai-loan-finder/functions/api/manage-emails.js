@@ -16,12 +16,27 @@
 //
 // Required env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY (or SUPABASE_ANON_KEY)
 
-const ALLOWED_ORIGINS = ['https://mtg.broker', 'https://www.mtg.broker']
+const ALLOWED_ORIGINS = [
+  'https://mtg.broker',
+  'https://www.mtg.broker',
+  'https://mtg-app.pages.dev',
+  'https://mtg-app-staging.pages.dev',
+]
 const ADMIN_EMAILS = ['rich@mtg.broker', 'rich@prestonlending.com']
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+  // Allow Cloudflare Pages preview deployments (random subdomain pattern)
+  if (/^https:\/\/[a-f0-9]+\.mtg-app-staging\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-loan-finder\.pages\.dev$/.test(origin)) return true
+  return false
+}
 
 function getCorsHeaders(request) {
   const origin = request ? request.headers.get('Origin') : null
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
