@@ -154,7 +154,8 @@ async function verifyOutsetaJWT(token) {
 
 
 // ─── Fetch a URL with timeout and error handling ─────────────────────────────
-async function fetchPage(url, timeoutMs = 10000) {
+async function fetchPageRaw(url, timeoutMs = 10000) {
+  // Returns raw HTML (for link extraction). Returns null on failure.
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -167,18 +168,59 @@ async function fetchPage(url, timeoutMs = 10000) {
     })
     clearTimeout(timer)
     if (!res.ok) return null
-    const html = await res.text()
-    // Strip HTML tags for a rough text extraction (good enough for Claude)
-    return html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 30000) // Cap at 30k chars to stay within Claude context
+    return await res.text()
   } catch (e) {
     return null
   }
+}
+
+function htmlToText(html) {
+  // Strip tags and collapse whitespace for Claude
+  return html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 30000)
+}
+
+async function fetchPage(url, timeoutMs = 10000) {
+  const html = await fetchPageRaw(url, timeoutMs)
+  return html ? htmlToText(html) : null
+}
+
+
+// ─── Extract social media links directly from HTML anchor tags ──────────────
+function extractSocialLinksFromHtml(html) {
+  if (!html) return {}
+  const links = {}
+
+  // Match all href attributes in anchor tags
+  const hrefPattern = /href\s*=\s*["']([^"']+)["']/gi
+  let match
+  while ((match = hrefPattern.exec(html)) !== null) {
+    const href = match[1].toLowerCase()
+
+    // Only match company/page URLs, not share/intent links
+    if (href.includes('facebook.com/') && !href.includes('sharer') && !href.includes('/share')) {
+      if (!links.facebook) links.facebook = match[1]
+    }
+    if (href.includes('linkedin.com/company/') || href.includes('linkedin.com/in/')) {
+      if (!links.linkedin) links.linkedin = match[1]
+    }
+    if (href.includes('instagram.com/') && !href.includes('/share')) {
+      if (!links.instagram) links.instagram = match[1]
+    }
+    if ((href.includes('youtube.com/') || href.includes('youtu.be/')) && !href.includes('/share')) {
+      if (!links.youtube) links.youtube = match[1]
+    }
+    if ((href.includes('twitter.com/') || href.includes('x.com/')) && !href.includes('intent') && !href.includes('/share')) {
+      if (!links.x_twitter) links.x_twitter = match[1]
+    }
+  }
+
+  return links
 }
 
 
@@ -488,8 +530,9 @@ export async function onRequestPost(context) {
 
     // ── Parse input ──────────────────────────────────────────────────
     const body = await request.json()
-    let { url, force, update_existing } = body
+    let { url, force, update_existing, selected_fields } = body
     // update_existing: if set, should be the Airtable record ID to merge into
+    // selected_fields: optional array of field names the user chose to update
 
     if (!url || typeof url !== 'string') {
       return jsonError(request, 'url is required', 400)
@@ -509,15 +552,20 @@ export async function onRequestPost(context) {
       return jsonError(request, 'Invalid URL format', 400)
     }
 
-    // Fetch main page and common sub-pages in parallel
-    const [mainPage, aboutPage, wholesalePage, tpoPage, contactPage, licensingPage] = await Promise.all([
-      fetchPage(url),
+    // Fetch main page as raw HTML (for social link extraction) + sub-pages as text
+    const [mainPageRaw, aboutPage, wholesalePage, tpoPage, contactPage, licensingPage] = await Promise.all([
+      fetchPageRaw(url),
       fetchPage(`${baseUrl}/about`),
       fetchPage(`${baseUrl}/wholesale`),
       fetchPage(`${baseUrl}/tpo`),
       fetchPage(`${baseUrl}/contact`),
       fetchPage(`${baseUrl}/licensing`),
     ])
+
+    // Extract social media links directly from homepage HTML before stripping tags
+    const socialLinksFromHtml = extractSocialLinksFromHtml(mainPageRaw || '')
+
+    const mainPage = mainPageRaw ? htmlToText(mainPageRaw) : null
 
     const pageTexts = {
       'Main Page': mainPage,
@@ -534,6 +582,13 @@ export async function onRequestPost(context) {
 
     const extracted = await extractLenderDetails(pageTexts, url, anthropicKey)
 
+    // Override Claude's social media guesses with verified links from HTML
+    if (socialLinksFromHtml.facebook) extracted.facebook = socialLinksFromHtml.facebook
+    if (socialLinksFromHtml.linkedin) extracted.linkedin = socialLinksFromHtml.linkedin
+    if (socialLinksFromHtml.instagram) extracted.instagram = socialLinksFromHtml.instagram
+    if (socialLinksFromHtml.youtube) extracted.youtube = socialLinksFromHtml.youtube
+    if (socialLinksFromHtml.x_twitter) extracted.x_twitter = socialLinksFromHtml.x_twitter
+
     if (!extracted.lender_name) {
       return jsonError(request, 'Could not determine the lender name from the website', 422)
     }
@@ -545,7 +600,31 @@ export async function onRequestPost(context) {
     const duplicates = await checkDuplicate(extracted.lender_name, url, airtableKey)
 
     if (duplicates && !force && !update_existing) {
-      // Return the extracted data + duplicate warning so the UI can handle it
+      // Fetch full details of the first matching record for comparison
+      const firstDupe = duplicates[0]
+      let existingFields = {}
+      try {
+        const getUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_LENDER_TABLE_ID}/${firstDupe.id}`
+        const getRes = await fetch(getUrl, {
+          headers: { 'Authorization': `Bearer ${airtableKey}` },
+        })
+        if (getRes.ok) {
+          const fullRecord = await getRes.json()
+          existingFields = fullRecord.fields || {}
+        }
+      } catch { /* continue with empty existing fields */ }
+
+      // Build a comparison: for each extractable field, show current vs new
+      const airtableFields = mapToAirtableFields(extracted, url)
+      const comparison = {}
+      for (const field of EXTRACTABLE_FIELDS) {
+        const newVal = airtableFields[field] || null
+        const curVal = existingFields[field] || null
+        if (newVal || curVal) {
+          comparison[field] = { current: curVal, new: newVal }
+        }
+      }
+
       return jsonSuccess(request, {
         success: false,
         duplicate: true,
@@ -554,13 +633,26 @@ export async function onRequestPost(context) {
           name: r.fields?.['Lender Name'],
         })),
         extracted,
+        comparison,
         message: `A lender named "${extracted.lender_name}" may already exist in the database.`,
       })
     }
 
-    // ── Step 4a: Update existing record (merge blank fields only) ────
+    // ── Step 4a: Update existing record with user-selected fields ───
     if (update_existing) {
-      const airtableFields = mapToAirtableFields(extracted, url)
+      let airtableFields = mapToAirtableFields(extracted, url)
+
+      // If user selected specific fields, only include those
+      if (selected_fields && Array.isArray(selected_fields) && selected_fields.length > 0) {
+        const filtered = {}
+        for (const field of selected_fields) {
+          if (airtableFields[field] !== undefined) {
+            filtered[field] = airtableFields[field]
+          }
+        }
+        airtableFields = filtered
+      }
+
       const { record, updatedFields, skippedFields, noChanges } = await updateAirtableRecord(
         update_existing, airtableFields, airtableKey
       )
