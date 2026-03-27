@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router";
-import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName, logout } from "../lib/auth";
+import { isLoggedIn, getUserPlan, isAdmin, isNexaUser, getUserEmail, getUserName, getAvatarUrl, logout } from "../lib/auth";
 import { PLAN_MAP, OUTSETA_DOMAIN, goToLogin, goToSignup } from "../lib/constants";
 import { mainNavItems, secondaryNavItems, toolsNavItems, nexaNavItem, workspaceNavItems } from "../lib/nav-items";
 import NavIcon from "./NavIcon";
@@ -14,6 +14,7 @@ export default function Navbar() {
   const [nexa, setNexa] = useState(false);
   const [email, setEmail] = useState(null);
   const [name, setName] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -28,6 +29,9 @@ export default function Navbar() {
     setNexa(isNexaUser());
     setEmail(getUserEmail());
     setName(getUserName());
+    if (isLoggedIn()) {
+      getAvatarUrl().then(url => setAvatarUrl(url));
+    }
   }, [location.pathname]);
 
   // Poll for auth token changes (handles Outseta redirect setting token async)
@@ -41,6 +45,7 @@ export default function Navbar() {
         setNexa(isNexaUser());
         setEmail(getUserEmail());
         setName(getUserName());
+        getAvatarUrl().then(url => setAvatarUrl(url));
         clearInterval(timer);
       }
     }, 500);
@@ -168,11 +173,13 @@ export default function Navbar() {
                 <div className="relative max-md:hidden" ref={userRef}>
                   <button
                     onClick={() => setUserOpen(!userOpen)}
-                    className="w-11 h-11 rounded-full border border-border-light bg-primary-50 flex items-center justify-center cursor-pointer text-primary-600 font-bold text-sm hover:border-primary-200 transition-all"
+                    className="w-11 h-11 rounded-full border border-border-light bg-primary-50 flex items-center justify-center cursor-pointer text-primary-600 font-bold text-sm hover:border-primary-200 transition-all overflow-hidden p-0"
                     aria-label="User menu"
                     aria-expanded={userOpen}
                   >
-                    {initials}
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="" className="w-full h-full object-cover" onError={() => setAvatarUrl(null)} />
+                    ) : initials}
                   </button>
                   {userOpen && (
                     <div className="absolute top-[calc(100%+10px)] right-0 w-[260px] bg-white border border-border-light rounded-2xl shadow-lg z-[10000] overflow-hidden animate-[fadeIn_0.15s_ease]">
@@ -242,8 +249,10 @@ export default function Navbar() {
             {/* Mobile user info */}
             {loggedIn && (name || email) && (
               <div className="flex items-center gap-3 px-3 py-3 mb-3 bg-surface-active rounded-xl">
-                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-sm shrink-0">
-                  {initials}
+                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-sm shrink-0 overflow-hidden">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ) : initials}
                 </div>
                 <div className="min-w-0">
                   {name && <div className="text-sm font-bold text-text truncate">{name}</div>}

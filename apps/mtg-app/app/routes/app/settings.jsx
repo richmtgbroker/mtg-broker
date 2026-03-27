@@ -490,6 +490,8 @@ export default function SettingsPage() {
       var result = await apiCall('/api/broker-profile/avatar', 'POST', fd)
       setAvatarLoadError(false)
       setAvatarUrl(result.avatarUrl)
+      // Clear navbar avatar cache so it picks up the new photo
+      sessionStorage.removeItem('mtgbroker_avatar_url')
       setStatus('saved', 'Photo uploaded! Click Save to keep it.')
     } catch (err) {
       console.error('Avatar upload error:', err)
@@ -506,6 +508,8 @@ export default function SettingsPage() {
     try {
       await apiCall('/api/broker-profile/avatar', 'DELETE')
       setAvatarUrl('')
+      // Clear navbar avatar cache so it reverts to initials
+      sessionStorage.removeItem('mtgbroker_avatar_url')
       setStatus('saved', 'Photo removed.')
     } catch (err) {
       setStatus('error', 'Failed to remove photo')

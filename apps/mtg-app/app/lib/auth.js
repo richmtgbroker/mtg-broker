@@ -86,6 +86,68 @@ export function getUserName() {
 }
 
 /**
+ * Get the user's avatar URL.
+ * Priority: Airtable/R2 upload → Outseta ProfileImageS3Url → null.
+ * Caches in sessionStorage to avoid repeated API calls across navigations.
+ */
+export async function getAvatarUrl() {
+  if (typeof window === "undefined") return null;
+  const email = getUserEmail();
+  if (!email) return null;
+
+  // Check sessionStorage cache first
+  const cacheKey = "mtgbroker_avatar_url";
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) return cached === "__none__" ? null : cached;
+
+  let avatarUrl = null;
+
+  // 1) Try broker profile from API (R2-stored avatar)
+  try {
+    const resp = await fetch(
+      "https://mtg-broker-api.rich-e00.workers.dev/api/broker-profile",
+      { headers: { Authorization: "Bearer " + email } }
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.profile?.data?.avatarUrl) {
+        avatarUrl = data.profile.data.avatarUrl;
+      }
+    }
+  } catch (e) {
+    // API unavailable — continue to fallback
+  }
+
+  // 2) Fallback: Outseta ProfileImageS3Url
+  if (!avatarUrl) {
+    try {
+      if (typeof window.getCachedOutsetaUser === "function") {
+        const u = await window.getCachedOutsetaUser();
+        if (u?.ProfileImageS3Url) avatarUrl = u.ProfileImageS3Url;
+      } else if (window.Outseta && typeof window.Outseta.getUser === "function") {
+        const u = await window.Outseta.getUser();
+        if (u?.ProfileImageS3Url) avatarUrl = u.ProfileImageS3Url;
+      }
+    } catch (e) {
+      // Outseta not loaded — give up
+    }
+  }
+
+  // Cache result (use "__none__" sentinel so we don't re-fetch on null)
+  sessionStorage.setItem(cacheKey, avatarUrl || "__none__");
+  return avatarUrl;
+}
+
+/**
+ * Clear the cached avatar URL (call after uploading/removing avatar in settings).
+ */
+export function clearAvatarCache() {
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem("mtgbroker_avatar_url");
+  }
+}
+
+/**
  * Logout — clear token, call Outseta logout if available, redirect home.
  */
 export function logout() {
