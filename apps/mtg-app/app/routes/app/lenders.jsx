@@ -346,7 +346,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
+              className="flex-1 text-center py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
             >
               Website
             </a>
@@ -357,7 +357,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
+              className="flex-1 text-center py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
             >
               TPO Portal
             </a>
