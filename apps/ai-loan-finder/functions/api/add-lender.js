@@ -161,30 +161,41 @@ const fetchDiagnostics = []
 
 async function fetchPageRaw(url, timeoutMs = 15000) {
   // Returns raw HTML (for link extraction). Returns null on failure.
-  try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
-    const res = await fetch(url, {
-      signal: controller.signal,
-      redirect: 'follow',
+  // Try up to 2 strategies: bare fetch first (works best for CF-to-CF),
+  // then with browser headers as fallback.
+  const strategies = [
+    { headers: { 'Accept': 'text/html' } },
+    {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
       },
-    })
-    clearTimeout(timer)
-    if (!res.ok) {
-      fetchDiagnostics.push({ url, status: res.status, statusText: res.statusText })
-      return null
+    },
+  ]
+
+  for (const strategy of strategies) {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), timeoutMs)
+      const res = await fetch(url, {
+        signal: controller.signal,
+        redirect: 'follow',
+        headers: strategy.headers,
+      })
+      clearTimeout(timer)
+      if (!res.ok) {
+        fetchDiagnostics.push({ url, status: res.status, statusText: res.statusText })
+        continue // try next strategy
+      }
+      const text = await res.text()
+      fetchDiagnostics.push({ url, status: res.status, bodyLength: text.length })
+      return text
+    } catch (e) {
+      fetchDiagnostics.push({ url, error: e.message || String(e) })
+      continue // try next strategy
     }
-    const text = await res.text()
-    fetchDiagnostics.push({ url, status: res.status, bodyLength: text.length })
-    return text
-  } catch (e) {
-    fetchDiagnostics.push({ url, error: e.message || String(e) })
-    return null
   }
+  return null
 }
 
 function htmlToText(html) {
