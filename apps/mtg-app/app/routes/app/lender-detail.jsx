@@ -1122,23 +1122,47 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
 
   const query = search.toLowerCase().trim();
 
-  /* Category tag color palette — deterministic by category name hash */
-  const TAG_COLORS = [
-    { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },  // blue
-    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },  // green
-    { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },  // orange
-    { bg: "#FDF2F8", text: "#BE185D", border: "#FBCFE8" },  // pink
-    { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },  // purple
-    { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0" },  // emerald
-    { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },  // amber
-    { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },  // sky
-    { bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA" },  // red
-    { bg: "#F8FAFC", text: "#475569", border: "#CBD5E1" },  // slate
+  /* Keyword-based product tags — each product can have multiple tags.
+     Order matters: first match wins for display priority, but ALL matches show.
+     Keywords are tested against the Loan Product type AND the display name. */
+  const TAG_DEFS = [
+    { label: "FHA",              keywords: ["fha"],                         bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+    { label: "VA",               keywords: ["\\bva\\b", "va irrrl"],        bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+    { label: "USDA",             keywords: ["usda"],                        bg: "#ECFDF5", text: "#047857", border: "#A7F3D0" },
+    { label: "Conventional",     keywords: ["conventional", "conforming"],  bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },
+    { label: "DSCR",             keywords: ["dscr"],                        bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+    { label: "Bank Statement",   keywords: ["bank statement"],              bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
+    { label: "1099",             keywords: ["1099"],                        bg: "#FDF2F8", text: "#BE185D", border: "#FBCFE8" },
+    { label: "DPA",              keywords: ["dpa", "down payment assist"],  bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
+    { label: "OTC",              keywords: ["\\botc\\b", "one-time close", "one time close"], bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA" },
+    { label: "Jumbo",            keywords: ["jumbo"],                       bg: "#1a1a1a", text: "#FFFFFF", border: "#404040" },
+    { label: "Non-QM",           keywords: ["non-qm", "nonqm", "non qm"],  bg: "#FDF4FF", text: "#A21CAF", border: "#F0ABFC" },
+    { label: "HELOC",            keywords: ["heloc"],                       bg: "#F0FDFA", text: "#0F766E", border: "#99F6E4" },
+    { label: "Reverse",          keywords: ["reverse", "hecm"],             bg: "#FFF1F2", text: "#9F1239", border: "#FECDD3" },
+    { label: "Renovation",       keywords: ["renovation", "203k", "homestyle"], bg: "#FFFBEB", text: "#A16207", border: "#FDE68A" },
+    { label: "Bridge",           keywords: ["bridge"],                      bg: "#F8FAFC", text: "#475569", border: "#CBD5E1" },
+    { label: "P&L",              keywords: ["p&l", "profit.?loss"],         bg: "#FEF9C3", text: "#854D0E", border: "#FDE047" },
+    { label: "Asset Depletion",  keywords: ["asset depletion", "asset qual"], bg: "#E0E7FF", text: "#4338CA", border: "#C7D2FE" },
+    { label: "Crypto",           keywords: ["crypto", "bitcoin"],           bg: "#FDF4FF", text: "#7E22CE", border: "#E9D5FF" },
+    { label: "ITIN",             keywords: ["itin"],                        bg: "#FCE7F3", text: "#9D174D", border: "#FBCFE8" },
   ];
-  function getTagColor(category) {
-    let hash = 0;
-    for (let i = 0; i < category.length; i++) hash = ((hash << 5) - hash) + category.charCodeAt(i);
-    return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+
+  /* Match product text against tag keywords — returns array of matching tag defs */
+  function getProductTags(product) {
+    let loanType = product["Loan Product"] || product["loan_product"] || "";
+    if (Array.isArray(loanType)) loanType = loanType[0] || "";
+    const version = product["Lender Product Name | Version (Final)"] || product["Lender Product Name | Version"] || "";
+    const searchStr = (loanType + " " + version).toLowerCase();
+    const matched = [];
+    for (const tag of TAG_DEFS) {
+      for (const kw of tag.keywords) {
+        if (new RegExp(kw, "i").test(searchStr)) {
+          matched.push(tag);
+          break; // don't double-match same tag
+        }
+      }
+    }
+    return matched;
   }
 
   return (
@@ -1181,9 +1205,7 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
           const p = item.product;
           const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
           const displayName = version || (p["Loan Product"] || "Product Details");
-          let category = p["Loan Product"] || p["loan_product"] || "";
-          if (Array.isArray(category)) category = category[0] || "";
-          const tagColor = category ? getTagColor(category) : null;
+          const tags = getProductTags(p);
           return (
             <div
               key={item.index}
@@ -1194,10 +1216,14 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
                 <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500, whiteSpace: "normal" }}>{displayName}</span>
-                {tagColor && category && (
-                  <span style={{ display: "inline-flex", alignSelf: "flex-start", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: tagColor.bg, color: tagColor.text, border: `1px solid ${tagColor.border}`, whiteSpace: "nowrap" }}>
-                    {category}
-                  </span>
+                {tags.length > 0 && (
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {tags.map((tag) => (
+                      <span key={tag.label} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: tag.bg, color: tag.text, border: `1px solid ${tag.border}`, whiteSpace: "nowrap" }}>
+                        {tag.label}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
               <span style={{ color: "#2563EB", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
