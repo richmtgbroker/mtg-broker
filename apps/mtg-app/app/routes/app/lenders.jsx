@@ -246,11 +246,11 @@ export default function LendersPage() {
   );
 }
 
-// Badge color config
-const BADGE_STYLES = {
-  Broker: "bg-[#FEF3C7] text-[#92400E]",
-  NonDel: "bg-[#DCFCE7] text-[#15803D]",
-  NEXA: "bg-[#1a1a1a] text-white",
+// Tag text color config
+const TAG_COLORS = {
+  Broker: "text-[#92400E]",
+  NonDel: "text-[#15803D]",
+  NEXA: "text-[#1a1a1a]",
 };
 
 function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm, channelFilter, onChannelFilter }) {
@@ -319,21 +319,23 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
 
       {/* Bottom section — fixed position relative to card bottom */}
       <div>
-        {/* Channel Badges - clickable to filter */}
+        {/* Channel Tags - clickable text words with pipe separators */}
         {channels.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 px-3 pb-2">
-            {channels.map((ch) => (
-              <button
-                key={ch}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onChannelFilter(channelFilter === ch ? null : ch);
-                }}
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
-              >
-                {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
-              </button>
+          <div className="flex items-center justify-center px-3 pb-2">
+            {channels.map((ch, i) => (
+              <span key={ch} className="flex items-center">
+                {i > 0 && <span className="text-[#cbd5e1] text-[11px] mx-1.5">|</span>}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChannelFilter(channelFilter === ch ? null : ch);
+                  }}
+                  className={`text-[11px] font-semibold cursor-pointer bg-transparent border-none p-0 transition-colors ${TAG_COLORS[ch] || "text-gray-600"} ${channelFilter === ch ? "underline decoration-2 underline-offset-2" : "hover:underline hover:underline-offset-2"}`}
+                >
+                  {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
+                </button>
+              </span>
             ))}
           </div>
         )}
