@@ -1,13 +1,28 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
-import { getUserEmail, getAccessToken } from "../../lib/auth";
-import { getLenderFavorite } from "../../hooks/useUserPreferences";
+import { getUserEmail } from "../../lib/auth";
+
+const API_BASE = "https://mtg-broker-favorites.rich-e00.workers.dev/api/favorites";
 
 export function meta() {
   return [{ title: "Saved Items — MtgBroker" }];
 }
 
-const API_BASE = "https://mtg-broker-api.rich-e00.workers.dev/api/favorites";
+// ============================================================
+// DESIGN TOKENS
+// ============================================================
+const C = {
+  bg: "#F8FAFC",
+  card: "#FFFFFF",
+  border: "#E2E8F0",
+  blue: "#2563EB",
+  text: "#0F172A",
+  muted: "#64748B",
+  dim: "#94A3B8",
+  red: "#DC2626",
+  redBg: "#FEF2F2",
+  radius: 10,
+};
 
 const TABS = [
   { key: "All", label: "All" },
@@ -28,6 +43,15 @@ const TYPE_COLORS = {
   Contact: "#059669",
 };
 
+const TYPE_DIRECTORIES = {
+  Lender: "lender directory",
+  Vendor: "vendor directory",
+  Contact: "contacts list",
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
 function formatDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -44,20 +68,22 @@ function slugify(name) {
 
 function itemLink(item) {
   if (item.itemType === "Lender") {
-    const slug = item.itemId || slugify(item.itemName);
+    const slug = slugify(item.itemName);
     return `/app/lenders/${slug}`;
   }
-  return "#";
+  return null;
 }
 
-/* ── Skeleton loader ── */
+// ============================================================
+// SKELETON CARD
+// ============================================================
 function SkeletonCard() {
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #E2E8F0",
-        borderRadius: 10,
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: C.radius,
         padding: "16px 20px",
         display: "flex",
         alignItems: "center",
@@ -70,8 +96,9 @@ function SkeletonCard() {
           width: 40,
           height: 40,
           borderRadius: 8,
-          background: "#E2E8F0",
+          background: C.border,
           animation: "pulse 1.5s ease-in-out infinite",
+          flexShrink: 0,
         }}
       />
       <div style={{ flex: 1 }}>
@@ -80,7 +107,7 @@ function SkeletonCard() {
             width: "40%",
             height: 14,
             borderRadius: 4,
-            background: "#E2E8F0",
+            background: C.border,
             marginBottom: 8,
             animation: "pulse 1.5s ease-in-out infinite",
           }}
@@ -90,7 +117,7 @@ function SkeletonCard() {
             width: "25%",
             height: 10,
             borderRadius: 4,
-            background: "#E2E8F0",
+            background: C.border,
             animation: "pulse 1.5s ease-in-out infinite",
           }}
         />
@@ -99,6 +126,143 @@ function SkeletonCard() {
   );
 }
 
+// ============================================================
+// SAVED ITEM CARD
+// ============================================================
+function SavedItemCard({ fav, onRemove, removing }) {
+  const icon = TYPE_ICONS[fav.itemType] || "fa-solid fa-star";
+  const badgeColor = TYPE_COLORS[fav.itemType] || C.muted;
+  const href = itemLink(fav);
+
+  const nameElement = href ? (
+    <Link
+      to={href}
+      style={{
+        fontSize: 15,
+        fontWeight: 600,
+        color: C.text,
+        textDecoration: "none",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+      onMouseEnter={(e) => { e.target.style.color = C.blue; }}
+      onMouseLeave={(e) => { e.target.style.color = C.text; }}
+    >
+      {fav.itemName || "Untitled"}
+    </Link>
+  ) : (
+    <span
+      style={{
+        fontSize: 15,
+        fontWeight: 600,
+        color: C.text,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {fav.itemName || "Untitled"}
+    </span>
+  );
+
+  return (
+    <div
+      style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: C.radius,
+        padding: "16px 20px",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        marginBottom: 10,
+        transition: "box-shadow 0.15s",
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+    >
+      {/* Type Icon */}
+      <div
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          background: badgeColor + "14",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <i className={icon} style={{ fontSize: 16, color: badgeColor }} />
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          {nameElement}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: badgeColor,
+              background: badgeColor + "14",
+              padding: "2px 8px",
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {fav.itemType}
+          </span>
+        </div>
+        <div style={{ fontSize: 12, color: C.dim }}>
+          Added {formatDate(fav.dateAdded)}
+        </div>
+      </div>
+
+      {/* Remove Button */}
+      <button
+        onClick={() => onRemove(fav.id)}
+        disabled={removing}
+        title="Remove from saved"
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          border: `1px solid ${C.border}`,
+          background: "transparent",
+          color: C.dim,
+          cursor: removing ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          transition: "all 0.15s",
+          opacity: removing ? 0.5 : 1,
+        }}
+        onMouseEnter={(e) => {
+          if (!removing) {
+            e.currentTarget.style.color = C.red;
+            e.currentTarget.style.borderColor = "#FECACA";
+            e.currentTarget.style.background = C.redBg;
+          }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = C.dim;
+          e.currentTarget.style.borderColor = C.border;
+          e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <i className="fa-solid fa-trash-can" style={{ fontSize: 13 }} />
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MAIN PAGE
+// ============================================================
 export default function SavedPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [favorites, setFavorites] = useState([]);
@@ -109,15 +273,7 @@ export default function SavedPage() {
   const email = typeof window !== "undefined" ? getUserEmail() : null;
   const loggedIn = !!email;
 
-  useEffect(() => {
-    if (!loggedIn) {
-      setLoading(false);
-      return;
-    }
-    fetchFavorites();
-  }, [loggedIn]);
-
-  async function fetchFavorites() {
+  const fetchFavorites = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -135,11 +291,21 @@ export default function SavedPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [email]);
 
-  async function removeFavorite(favId) {
+  useEffect(() => {
+    if (!loggedIn) {
+      setLoading(false);
+      return;
+    }
+    fetchFavorites();
+  }, [loggedIn, fetchFavorites]);
+
+  const removeFavorite = useCallback(async (favId) => {
     setRemoving((prev) => ({ ...prev, [favId]: true }));
-    // Optimistically remove
+    // Store for revert
+    const prevFavorites = favorites;
+    // Optimistic delete
     setFavorites((prev) => prev.filter((f) => f.id !== favId));
     try {
       const res = await fetch(`${API_BASE}/${favId}`, {
@@ -148,10 +314,10 @@ export default function SavedPage() {
       });
       if (!res.ok) {
         // Revert on failure
-        await fetchFavorites();
+        setFavorites(prevFavorites);
       }
     } catch {
-      await fetchFavorites();
+      setFavorites(prevFavorites);
     } finally {
       setRemoving((prev) => {
         const next = { ...prev };
@@ -159,22 +325,22 @@ export default function SavedPage() {
         return next;
       });
     }
-  }
+  }, [favorites, email]);
 
   const filtered =
     activeTab === "All"
       ? favorites
       : favorites.filter((f) => f.itemType === activeTab);
 
-  /* ── Tab pill style ── */
+  // Tab pill style
   function tabStyle(key) {
     const active = key === activeTab;
     return {
       padding: "6px 16px",
       borderRadius: 999,
-      border: active ? "1px solid #2563EB" : "1px solid #E2E8F0",
-      background: active ? "#2563EB" : "#fff",
-      color: active ? "#fff" : "#64748B",
+      border: active ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
+      background: active ? C.blue : C.card,
+      color: active ? "#fff" : C.muted,
       fontSize: 13,
       fontWeight: 600,
       cursor: "pointer",
@@ -182,20 +348,43 @@ export default function SavedPage() {
     };
   }
 
+  // Empty state messaging
+  function getEmptyMessage() {
+    if (activeTab === "All") {
+      return {
+        title: "No saved items yet",
+        desc: "Bookmark your favorite lenders, vendors, and contacts to access them quickly from here.",
+      };
+    }
+    const typeLabel = activeTab.toLowerCase() + "s";
+    const directory = TYPE_DIRECTORIES[activeTab] || "directory";
+    return {
+      title: `No saved ${typeLabel} yet`,
+      desc: `Browse the ${directory} to start saving.`,
+    };
+  }
+
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC" }}>
+    <div style={{ minHeight: "100%", fontFamily: "inherit" }}>
       {/* Pulse animation for skeletons */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-      `}</style>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
 
       {/* Page Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <i className="fa-solid fa-bookmark" style={{ fontSize: 24, color: "#2563EB" }} />
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: "#DBEAFE",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <i className="fa-solid fa-bookmark" style={{ fontSize: 18, color: C.blue }} />
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>
           Saved Items
         </h1>
       </div>
@@ -204,21 +393,21 @@ export default function SavedPage() {
       {!loggedIn && (
         <div
           style={{
-            background: "#fff",
-            border: "1px solid #E2E8F0",
-            borderRadius: 10,
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            borderRadius: C.radius,
             padding: "48px 32px",
             textAlign: "center",
           }}
         >
           <i
             className="fa-solid fa-right-to-bracket"
-            style={{ fontSize: 40, color: "#94A3B8", display: "block", marginBottom: 16 }}
+            style={{ fontSize: 40, color: C.dim, display: "block", marginBottom: 16 }}
           />
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
             Sign in to view your saved items
           </h2>
-          <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
+          <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.6 }}>
             Log in to save and access your favorite lenders, vendors, and contacts.
           </p>
         </div>
@@ -253,11 +442,11 @@ export default function SavedPage() {
           {!loading && error && (
             <div
               style={{
-                background: "#FEF2F2",
+                background: C.redBg,
                 border: "1px solid #FECACA",
-                borderRadius: 10,
+                borderRadius: C.radius,
                 padding: 20,
-                color: "#DC2626",
+                color: C.red,
                 fontSize: 14,
                 textAlign: "center",
               }}
@@ -270,9 +459,9 @@ export default function SavedPage() {
                   marginLeft: 12,
                   padding: "4px 12px",
                   borderRadius: 6,
-                  border: "1px solid #DC2626",
+                  border: `1px solid ${C.red}`,
                   background: "transparent",
-                  color: "#DC2626",
+                  color: C.red,
                   fontSize: 13,
                   cursor: "pointer",
                 }}
@@ -282,127 +471,17 @@ export default function SavedPage() {
             </div>
           )}
 
-          {/* Favorites List */}
+          {/* Favorites List (full-width rows) */}
           {!loading && !error && filtered.length > 0 && (
             <div>
-              {filtered.map((fav) => {
-                const icon = TYPE_ICONS[fav.itemType] || "fa-solid fa-star";
-                const badgeColor = TYPE_COLORS[fav.itemType] || "#64748B";
-                const href = itemLink(fav);
-
-                return (
-                  <div
-                    key={fav.id}
-                    style={{
-                      background: "#fff",
-                      border: "1px solid #E2E8F0",
-                      borderRadius: 10,
-                      padding: "16px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 16,
-                      marginBottom: 10,
-                      transition: "box-shadow 0.15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
-                  >
-                    {/* Type Icon */}
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 8,
-                        background: badgeColor + "12",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <i className={icon} style={{ fontSize: 18, color: badgeColor }} />
-                    </div>
-
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <Link
-                          to={href}
-                          style={{
-                            fontSize: 15,
-                            fontWeight: 600,
-                            color: "#0F172A",
-                            textDecoration: "none",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          onMouseEnter={(e) => { e.target.style.color = "#2563EB"; }}
-                          onMouseLeave={(e) => { e.target.style.color = "#0F172A"; }}
-                        >
-                          {fav.itemName || "Untitled"}
-                        </Link>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: badgeColor,
-                            background: badgeColor + "14",
-                            padding: "2px 8px",
-                            borderRadius: 999,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {fav.itemType}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                        Added {formatDate(fav.dateAdded)}
-                      </div>
-                    </div>
-
-                    {/* Remove Button */}
-                    <button
-                      onClick={() => removeFavorite(fav.id)}
-                      disabled={removing[fav.id]}
-                      title="Remove from saved"
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 8,
-                        border: "1px solid #E2E8F0",
-                        background: "transparent",
-                        color: "#94A3B8",
-                        cursor: removing[fav.id] ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        transition: "all 0.15s",
-                        opacity: removing[fav.id] ? 0.5 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!removing[fav.id]) {
-                          e.currentTarget.style.color = "#DC2626";
-                          e.currentTarget.style.borderColor = "#FECACA";
-                          e.currentTarget.style.background = "#FEF2F2";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#94A3B8";
-                        e.currentTarget.style.borderColor = "#E2E8F0";
-                        e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      <i className="fa-solid fa-trash" style={{ fontSize: 13 }} />
-                    </button>
-                  </div>
-                );
-              })}
+              {filtered.map((fav) => (
+                <SavedItemCard
+                  key={fav.id}
+                  fav={fav}
+                  onRemove={removeFavorite}
+                  removing={!!removing[fav.id]}
+                />
+              ))}
             </div>
           )}
 
@@ -410,34 +489,30 @@ export default function SavedPage() {
           {!loading && !error && filtered.length === 0 && (
             <div
               style={{
-                background: "#fff",
-                border: "1px solid #E2E8F0",
-                borderRadius: 10,
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: C.radius,
                 padding: "48px 32px",
                 textAlign: "center",
               }}
             >
               <i
                 className="fa-solid fa-bookmark"
-                style={{ fontSize: 48, color: "#94A3B8", display: "block", marginBottom: 16 }}
+                style={{ fontSize: 48, color: C.dim, display: "block", marginBottom: 16 }}
               />
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
-                {activeTab === "All"
-                  ? "No saved items yet"
-                  : `No saved ${activeTab.toLowerCase()}s yet`}
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
+                {getEmptyMessage().title}
               </h2>
               <p
                 style={{
                   fontSize: 14,
-                  color: "#64748B",
+                  color: C.muted,
                   maxWidth: 420,
                   margin: "0 auto",
                   lineHeight: 1.6,
                 }}
               >
-                {activeTab === "All"
-                  ? "Bookmark your favorite lenders, vendors, and contacts to access them quickly from here."
-                  : `You haven't saved any ${activeTab.toLowerCase()}s yet. Browse and bookmark items to see them here.`}
+                {getEmptyMessage().desc}
               </p>
             </div>
           )}

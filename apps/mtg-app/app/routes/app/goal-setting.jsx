@@ -1,11 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { getUserEmail } from "../../lib/auth";
 
 export function meta() {
   return [{ title: "Goal Setting — MtgBroker" }];
 }
 
-const API_BASE = "https://mtg-broker-api.rich-e00.workers.dev/api/goal-plan";
+const API_BASE = "https://mtg-broker-api.rich-e00.workers.dev";
+
+const FIELDS = [
+  "planYear","loName","grossIncome","avgLoanAmt","avgBps","conversionRatio",
+  "bizDevPercent","oneGoal","strategy1","strategy2","strategy3",
+  "s1t1","s1t2","s1t3","s1t4","s1t5",
+  "s2t1","s2t2","s2t3","s2t4","s2t5",
+  "s3t1","s3t2","s3t3","s3t4","s3t5",
+  "notesField"
+];
+
+function buildEmpty() {
+  var obj = {};
+  FIELDS.forEach(function (k) { obj[k] = ""; });
+  obj.planYear = String(new Date().getFullYear());
+  return obj;
+}
+
+/* ── Formatting helpers ─────────────────────────────── */
 
 function fmtCurrency(n) {
   if (n == null || isNaN(n)) return "$0";
@@ -14,370 +32,573 @@ function fmtCurrency(n) {
 
 function parseCurrency(str) {
   if (!str) return 0;
-  var cleaned = str.replace(/[^0-9.]/g, "");
+  var cleaned = String(str).replace(/[^0-9.]/g, "");
   var val = parseFloat(cleaned);
   return isNaN(val) ? 0 : val;
 }
 
-/* ── Styles ─────────────────────────────────────────────── */
+function formatCurrencyInput(raw) {
+  var num = parseCurrency(raw);
+  if (num === 0 && !raw) return "";
+  return num.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
 
-const styles = {
-  page: { maxWidth: 900, margin: "0 auto" },
-  header: { display: "flex", alignItems: "center", gap: 12, marginBottom: 32 },
-  title: { fontSize: 24, fontWeight: 700, color: "#0F172A", margin: 0 },
-  card: {
-    background: "#fff",
-    border: "1px solid #E2E8F0",
-    borderRadius: 10,
-    padding: 24,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: "#64748B",
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    marginBottom: 16,
-    marginTop: 0,
-  },
-  label: { display: "block", fontSize: 13, fontWeight: 600, color: "#0F172A", marginBottom: 6 },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 15,
-    border: "1px solid #E2E8F0",
-    borderRadius: 8,
-    outline: "none",
-    color: "#0F172A",
-    background: "#F8FAFC",
-    boxSizing: "border-box",
-  },
-  textarea: {
-    width: "100%",
-    padding: "10px 12px",
-    fontSize: 15,
-    border: "1px solid #E2E8F0",
-    borderRadius: 8,
-    outline: "none",
-    color: "#0F172A",
-    background: "#F8FAFC",
-    boxSizing: "border-box",
-    minHeight: 100,
-    resize: "vertical",
-    fontFamily: "inherit",
-  },
-  row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
-  metricCard: {
-    background: "#F8FAFC",
-    border: "1px solid #E2E8F0",
-    borderRadius: 10,
-    padding: 16,
-    textAlign: "center",
-  },
-  metricValue: { fontSize: 22, fontWeight: 700, color: "#2563EB", marginBottom: 4 },
-  metricLabel: { fontSize: 12, color: "#64748B" },
-  btn: {
-    width: "100%",
-    padding: "12px 0",
-    fontSize: 15,
-    fontWeight: 600,
-    color: "#fff",
-    background: "#2563EB",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-  btnDisabled: {
-    width: "100%",
-    padding: "12px 0",
-    fontSize: 15,
-    fontWeight: 600,
-    color: "#fff",
-    background: "#93B4F5",
-    border: "none",
-    borderRadius: 8,
-    cursor: "not-allowed",
-  },
-  loginCard: {
-    background: "#fff",
-    border: "1px solid #E2E8F0",
-    borderRadius: 10,
-    padding: "48px 32px",
-    textAlign: "center",
-  },
-  toast: {
-    position: "fixed",
-    bottom: 24,
-    right: 24,
-    background: "#0F172A",
-    color: "#fff",
-    padding: "10px 20px",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 600,
-    zIndex: 9999,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-  },
-  skeleton: {
-    background: "linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%)",
-    backgroundSize: "200% 100%",
-    borderRadius: 8,
-    animation: "shimmer 1.5s infinite",
-  },
+function fmtNum(n, decimals) {
+  if (n == null || isNaN(n)) return "0";
+  return Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: decimals || 0,
+    maximumFractionDigits: decimals || 0,
+  });
+}
+
+/* ── Styles ─────────────────────────────────────────── */
+
+var colors = {
+  bg: "#F8FAFC",
+  white: "#FFFFFF",
+  border: "#E2E8F0",
+  blue: "#2563EB",
+  text: "#0F172A",
+  muted: "#64748B",
+  dim: "#94A3B8",
+  highlightBg: "#EFF6FF",
+  resultBg: "#F1F5F9",
 };
 
-/* ── Component ──────────────────────────────────────────── */
+var cardStyle = {
+  background: colors.white,
+  border: "1px solid " + colors.border,
+  borderRadius: 16,
+  padding: 24,
+  marginBottom: 24,
+};
 
-export default function GoalSettingPage() {
-  const [email, setEmail] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(false);
-  const [planId, setPlanId] = useState(null);
+var inputBase = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "1px solid " + colors.border,
+  borderRadius: 8,
+  fontSize: 14,
+  color: colors.text,
+  outline: "none",
+  boxSizing: "border-box",
+  background: colors.white,
+};
 
-  // Form fields
-  const [annualTarget, setAnnualTarget] = useState("");
-  const [avgLoanSize, setAvgLoanSize] = useState("");
-  const [avgBps, setAvgBps] = useState("");
-  const [notes, setNotes] = useState("");
+var labelStyle = {
+  fontSize: 14,
+  fontWeight: 600,
+  color: colors.text,
+  marginBottom: 4,
+  display: "block",
+};
 
-  // Derived calculations
-  var annualNum = parseCurrency(annualTarget);
-  var loanNum = parseCurrency(avgLoanSize);
-  var bpsNum = parseFloat(avgBps) || 0;
-  var monthlyTarget = annualNum / 12;
-  var unitsPerMonth = loanNum > 0 ? monthlyTarget / loanNum : 0;
-  var monthlyIncome = monthlyTarget * (bpsNum / 10000);
+var sectionTitle = {
+  fontSize: 20,
+  fontWeight: 700,
+  color: colors.text,
+  margin: 0,
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+};
 
-  // Load plan on mount
+var printBtn = {
+  padding: "6px 14px",
+  fontSize: 13,
+  fontWeight: 600,
+  color: colors.blue,
+  background: "transparent",
+  border: "1px solid " + colors.blue,
+  borderRadius: 8,
+  cursor: "pointer",
+};
+
+/* ── Component ──────────────────────────────────────── */
+
+export default function GoalSetting() {
+  var [formData, setFormData] = useState(buildEmpty);
+  var [recId, setRecId] = useState(null);
+  var [saveStatus, setSaveStatus] = useState("loading");
+  var [loading, setLoading] = useState(true);
+  var emailRef = useRef(null);
+  var debounceRef = useRef(null);
+  var recIdRef = useRef(null);
+
+  // Keep recIdRef in sync
+  useEffect(function () { recIdRef.current = recId; }, [recId]);
+
+  /* ── Fetch on mount ───────────────────────────────── */
   useEffect(function () {
-    var userEmail = getUserEmail();
-    setEmail(userEmail);
-    if (!userEmail) {
-      setLoading(false);
-      return;
-    }
-    fetch(API_BASE, {
-      headers: { Authorization: "Bearer " + userEmail },
+    var email = getUserEmail();
+    emailRef.current = email;
+    if (!email) { setLoading(false); setSaveStatus("ready"); return; }
+
+    fetch(API_BASE + "/api/goal-plan", {
+      headers: { Authorization: "Bearer " + email },
     })
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data.plan && data.plan.data) {
-          var d = data.plan.data;
-          setPlanId(data.plan.id);
-          if (d.annualTarget) setAnnualTarget(fmtCurrency(d.annualTarget));
-          if (d.avgLoanSize) setAvgLoanSize(fmtCurrency(d.avgLoanSize));
-          if (d.avgBps) setAvgBps(String(d.avgBps));
-          if (d.notes) setNotes(d.notes);
+      .then(function (json) {
+        if (json.plan && json.plan.data) {
+          var merged = buildEmpty();
+          Object.keys(json.plan.data).forEach(function (k) {
+            if (k in merged) merged[k] = json.plan.data[k] || "";
+          });
+          setFormData(merged);
+          setRecId(json.plan.id);
+          recIdRef.current = json.plan.id;
         }
+        setSaveStatus("ready");
       })
-      .catch(function () { /* silent */ })
+      .catch(function () { setSaveStatus("error"); })
       .finally(function () { setLoading(false); });
   }, []);
 
-  // Save handler
-  var handleSave = useCallback(
-    async function () {
-      if (!email) return;
-      setSaving(true);
-      var planData = {
-        annualTarget: annualNum,
-        monthlyTarget: monthlyTarget,
-        avgLoanSize: loanNum,
-        unitsPerMonth: unitsPerMonth,
-        avgBps: bpsNum,
-        monthlyIncome: monthlyIncome,
-        notes: notes,
-      };
-      try {
-        var url = planId ? API_BASE + "/" + planId : API_BASE;
-        var method = planId ? "PUT" : "POST";
-        var resp = await fetch(url, {
-          method: method,
-          headers: {
-            Authorization: "Bearer " + email,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ planData: planData }),
-        });
-        var data = await resp.json();
-        if (data.plan && data.plan.id) {
-          setPlanId(data.plan.id);
-        }
-        setToast(true);
-        setTimeout(function () { setToast(false); }, 2500);
-      } catch (e) {
-        alert("Failed to save. Please try again.");
-      } finally {
-        setSaving(false);
-      }
-    },
-    [email, annualNum, loanNum, bpsNum, monthlyTarget, unitsPerMonth, monthlyIncome, notes, planId]
-  );
+  /* ── Save function ────────────────────────────────── */
+  var save = useCallback(function (data) {
+    var email = emailRef.current;
+    if (!email) return;
+    setSaveStatus("saving");
 
-  // Currency input handler — formats as user types
-  function handleCurrencyChange(setter) {
-    return function (e) {
-      var raw = e.target.value.replace(/[^0-9]/g, "");
-      if (!raw) { setter(""); return; }
-      setter("$" + Number(raw).toLocaleString("en-US"));
-    };
+    var id = recIdRef.current;
+    var url = id ? API_BASE + "/api/goal-plan/" + id : API_BASE + "/api/goal-plan";
+    var method = id ? "PUT" : "POST";
+
+    fetch(url, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + email,
+      },
+      body: JSON.stringify({ planData: data }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (json.plan && json.plan.id) {
+          setRecId(json.plan.id);
+          recIdRef.current = json.plan.id;
+        }
+        setSaveStatus("saved");
+      })
+      .catch(function () { setSaveStatus("error"); });
+  }, []);
+
+  /* ── Debounced auto-save ──────────────────────────── */
+  var schedSave = useCallback(function (newData) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(function () { save(newData); }, 2000);
+  }, [save]);
+
+  function onChange(field, value) {
+    setFormData(function (prev) {
+      var next = Object.assign({}, prev);
+      next[field] = value;
+      schedSave(next);
+      return next;
+    });
   }
 
-  /* ── Login prompt ──────────────────────────── */
+  function onCurrencyChange(field, raw) {
+    var formatted = formatCurrencyInput(raw);
+    onChange(field, formatted);
+  }
 
-  if (!loading && !email) {
+  /* ── Reset ────────────────────────────────────────── */
+  function resetAll() {
+    if (!window.confirm("Reset all goal-setting data? This cannot be undone.")) return;
+    var empty = buildEmpty();
+    setFormData(empty);
+    save(empty);
+  }
+
+  /* ── Print section ────────────────────────────────── */
+  function printSection(sectionId) {
+    var el = document.getElementById(sectionId);
+    if (!el) return;
+    var w = window.open("", "_blank");
+    w.document.write(
+      "<html><head><title>Print</title><style>body{font-family:system-ui,sans-serif;padding:24px;color:#0F172A}*{box-sizing:border-box}</style></head><body>" +
+      el.innerHTML +
+      "</body></html>"
+    );
+    w.document.close();
+    w.print();
+  }
+
+  /* ── Calculations ─────────────────────────────────── */
+  var grossIncome = parseCurrency(formData.grossIncome);
+  var avgLoanAmt = parseCurrency(formData.avgLoanAmt);
+  var avgBps = parseFloat(formData.avgBps) || 0;
+  var conversionRatio = parseFloat(formData.conversionRatio) || 0;
+  var bizDevPercent = parseFloat(formData.bizDevPercent) || 0;
+  var planYear = formData.planYear || new Date().getFullYear();
+
+  var avgCommission = (avgBps / 10000) * avgLoanAmt;
+  var numFundings = avgCommission > 0 ? Math.ceil(grossIncome / avgCommission) : 0;
+  var totalFundings = numFundings * avgLoanAmt;
+  var fundingsPerMonth = numFundings > 0 ? (numFundings / 12) : 0;
+  var leadsRequired = conversionRatio > 0 ? Math.ceil(numFundings / (conversionRatio / 100)) : 0;
+  var leadsPerWeek = leadsRequired > 0 ? (leadsRequired / 48) : 0;
+  var leadsPerDay = leadsPerWeek > 0 ? (leadsPerWeek / 5) : 0;
+  var bizDevBudget = grossIncome * (bizDevPercent / 100);
+  var netIncome = grossIncome - bizDevBudget;
+
+  /* ── Status dot ───────────────────────────────────── */
+  function statusDot() {
+    var dotBase = { width: 10, height: 10, borderRadius: "50%", display: "inline-block", marginRight: 8 };
+    if (saveStatus === "loading") return Object.assign({}, dotBase, { background: colors.blue, animation: "pulse 1s infinite" });
+    if (saveStatus === "saving") return Object.assign({}, dotBase, { background: "#F59E0B", animation: "pulse 1s infinite" });
+    if (saveStatus === "saved") return Object.assign({}, dotBase, { background: "#22C55E" });
+    if (saveStatus === "error") return Object.assign({}, dotBase, { background: "#EF4444" });
+    return Object.assign({}, dotBase, { background: colors.dim });
+  }
+
+  function statusText() {
+    if (saveStatus === "loading") return "Loading...";
+    if (saveStatus === "saving") return "Saving...";
+    if (saveStatus === "saved") return "All changes saved";
+    if (saveStatus === "error") return "Error saving";
+    return "Ready";
+  }
+
+  /* ── Calc row builder ─────────────────────────────── */
+  function calcRow(num, label, sub, content, highlight) {
     return (
-      <div style={styles.page}>
-        <div style={styles.header}>
-          <i className="fa-solid fa-bullseye" style={{ fontSize: 24, color: "#2563EB" }} />
-          <h1 style={styles.title}>Goal Setting</h1>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 14, padding: "12px 16px",
+        background: highlight ? colors.highlightBg : "transparent",
+        borderRadius: 10, marginBottom: 6,
+      }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: "50%", background: colors.text,
+          color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, fontWeight: 700, flexShrink: 0,
+        }}>{num}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{label}</div>
+          {sub && <small style={{ fontSize: 12, color: colors.muted }}>{sub}</small>}
         </div>
-        <div style={styles.loginCard}>
-          <i className="fa-solid fa-lock" style={{ fontSize: 36, color: "#94A3B8", marginBottom: 16, display: "block" }} />
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: "0 0 8px" }}>
-            Sign in to set goals
-          </h2>
-          <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
-            Please log in to create and track your production goals.
-          </p>
-        </div>
+        <div style={{ width: 200, flexShrink: 0 }}>{content}</div>
       </div>
     );
   }
 
-  /* ── Loading skeleton ──────────────────────── */
+  function resultBox(value, highlight) {
+    return (
+      <div style={{
+        padding: "8px 12px", borderRadius: 8, fontSize: 14, fontWeight: 700,
+        textAlign: "right",
+        background: highlight ? colors.blue : colors.resultBg,
+        color: highlight ? "#fff" : colors.text,
+      }}>{value}</div>
+    );
+  }
+
+  function currencyInput(field) {
+    return (
+      <input
+        style={inputBase}
+        value={formData[field]}
+        placeholder="$0"
+        onChange={function (e) { onCurrencyChange(field, e.target.value); }}
+      />
+    );
+  }
+
+  function numInput(field, placeholder) {
+    return (
+      <input
+        style={inputBase}
+        type="number"
+        value={formData[field]}
+        placeholder={placeholder || "0"}
+        onChange={function (e) { onChange(field, e.target.value); }}
+      />
+    );
+  }
 
   if (loading) {
     return (
-      <div style={styles.page}>
-        <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-        <div style={styles.header}>
-          <i className="fa-solid fa-bullseye" style={{ fontSize: 24, color: "#2563EB" }} />
-          <h1 style={styles.title}>Goal Setting</h1>
-        </div>
-        <div style={styles.card}>
-          <div style={{ ...styles.skeleton, height: 20, width: 140, marginBottom: 20 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div style={{ ...styles.skeleton, height: 44 }} />
-            <div style={{ ...styles.skeleton, height: 44 }} />
-          </div>
-        </div>
-        <div style={styles.card}>
-          <div style={{ ...styles.skeleton, height: 20, width: 180, marginBottom: 20 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-            <div style={{ ...styles.skeleton, height: 72 }} />
-            <div style={{ ...styles.skeleton, height: 72 }} />
-            <div style={{ ...styles.skeleton, height: 72 }} />
-          </div>
-        </div>
+      <div style={{ minHeight: "100vh", background: colors.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: colors.muted }}>Loading goal plan...</p>
       </div>
     );
   }
 
-  /* ── Main form ─────────────────────────────── */
-
   return (
-    <div style={styles.page}>
-      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
-      <div style={styles.header}>
-        <i className="fa-solid fa-bullseye" style={{ fontSize: 24, color: "#2563EB" }} />
-        <h1 style={styles.title}>Goal Setting</h1>
-      </div>
+    <div style={{ minHeight: "100vh", background: colors.bg, padding: "0 16px 64px" }}>
+      {/* Pulse animation */}
+      <style>{"\n@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }\n@media print { .no-print{display:none!important} }\n"}</style>
 
-      {/* Production Goals */}
-      <div style={styles.card}>
-        <h3 style={styles.sectionTitle}>Production Goals</h3>
-        <div style={styles.row}>
-          <div>
-            <label style={styles.label}>Annual Volume Target</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              style={styles.input}
-              placeholder="$0"
-              value={annualTarget}
-              onChange={handleCurrencyChange(setAnnualTarget)}
-            />
+      <div style={{ maxWidth: 960, margin: "0 auto" }}>
+
+        {/* ── Save Status Bar ──────────────────────────── */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 50,
+          background: colors.white, borderBottom: "1px solid " + colors.border,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 20px", marginBottom: 24, borderRadius: "0 0 12px 12px",
+        }} className="no-print">
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span style={statusDot()}></span>
+            <span style={{ fontSize: 13, color: colors.muted }}>{statusText()}</span>
           </div>
-          <div>
-            <label style={styles.label}>Average Loan Size</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              style={styles.input}
-              placeholder="$0"
-              value={avgLoanSize}
-              onChange={handleCurrencyChange(setAvgLoanSize)}
-            />
-          </div>
+          <button
+            onClick={resetAll}
+            style={{
+              padding: "6px 14px", fontSize: 13, fontWeight: 600,
+              color: "#EF4444", background: "transparent",
+              border: "1px solid #EF4444", borderRadius: 8, cursor: "pointer",
+            }}
+          >Reset All</button>
         </div>
-      </div>
 
-      {/* Calculated Metrics */}
-      <div style={styles.card}>
-        <h3 style={styles.sectionTitle}>Calculated Metrics</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          <div style={styles.metricCard}>
-            <div style={styles.metricValue}>{fmtCurrency(monthlyTarget)}</div>
-            <div style={styles.metricLabel}>Monthly Volume</div>
+        {/* ═══════════════════════════════════════════════
+            SECTION 1 — Take Action Business Plan Goals
+            ═══════════════════════════════════════════════ */}
+        <div id="print-plan" style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={sectionTitle}>
+              <i className="fa fa-calculator" style={{ color: colors.blue }}></i>
+              Take Action Business Plan Goals
+            </h2>
+            <button style={printBtn} className="no-print" onClick={function () { printSection("print-plan"); }}>
+              <i className="fa fa-print" style={{ marginRight: 6 }}></i>Print
+            </button>
           </div>
-          <div style={styles.metricCard}>
-            <div style={styles.metricValue}>
-              {unitsPerMonth ? unitsPerMonth.toFixed(1) : "0"}
+
+          {/* Info row */}
+          <div style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+            <div style={{ flex: 1 }}>
+              <label style={labelStyle}>Plan Year</label>
+              <input
+                style={inputBase}
+                type="number"
+                min="2020"
+                max="2050"
+                value={formData.planYear}
+                onChange={function (e) { onChange("planYear", e.target.value); }}
+              />
             </div>
-            <div style={styles.metricLabel}>Units / Month</div>
+            <div style={{ flex: 2 }}>
+              <label style={labelStyle}>Loan Officer Name</label>
+              <input
+                style={inputBase}
+                value={formData.loName}
+                placeholder="Enter your name"
+                onChange={function (e) { onChange("loName", e.target.value); }}
+              />
+            </div>
           </div>
-          <div style={styles.metricCard}>
-            <div style={styles.metricValue}>{fmtCurrency(monthlyIncome)}</div>
-            <div style={styles.metricLabel}>Monthly Income</div>
+
+          {/* Calculation rows */}
+          {calcRow(1, "My " + planYear + " gross personal income will be:", null, currencyInput("grossIncome"), false)}
+          {calcRow(2, "My average loan amount will be:", null, currencyInput("avgLoanAmt"), false)}
+          {calcRow(3, "My average basis points (commission) earned per loan will be:", null, numInput("avgBps", "e.g. 100"), false)}
+          {calcRow(4, "My average commission earned per loan will be:", null, resultBox(fmtCurrency(avgCommission), false), false)}
+          {calcRow(5, "My total fundings for " + planYear + " will be:", null, resultBox(fmtCurrency(totalFundings), false), false)}
+          {calcRow(6, "The number of fundings required to achieve my income goal:", null, resultBox(fmtNum(numFundings, 0), true), true)}
+          {calcRow(7, "The number of fundings required per month:", null, resultBox(fmtNum(fundingsPerMonth, 1), true), true)}
+          {calcRow(8, "My conversion ratio (lead to loan pull-through %):", "If you don't know for sure, put down an estimate", numInput("conversionRatio", "e.g. 35"), false)}
+          {calcRow(9, "Number of leads required to achieve my goal:", null, resultBox(fmtNum(leadsRequired, 0), false), false)}
+          {calcRow(10, "Number of leads required per week:", "Based on 48 weeks", resultBox(fmtNum(leadsPerWeek, 1), true), true)}
+          {calcRow(11, "Percentage of annual income allocated towards business development:", "Top producers allocate 5-10%", numInput("bizDevPercent", "e.g. 7"), false)}
+          {calcRow(12, "My total annual budget devoted towards business development:", null, resultBox(fmtCurrency(bizDevBudget), false), false)}
+          {calcRow(13, "My net income in " + planYear + " will be:", null, resultBox(fmtCurrency(netIncome), true), true)}
+
+          {/* Summary Grid */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 24,
+          }}>
+            {[
+              { label: "Gross Income Goal", value: fmtCurrency(grossIncome), primary: true },
+              { label: "Loans Needed", value: fmtNum(numFundings, 0), primary: false },
+              { label: "Leads Per Week", value: fmtNum(leadsPerWeek, 1), primary: false },
+              { label: "Leads Per Day", value: fmtNum(leadsPerDay, 1), primary: false },
+              { label: "Net Income", value: fmtCurrency(netIncome), primary: true },
+            ].map(function (item, i) {
+              return (
+                <div key={i} style={{
+                  background: item.primary ? colors.blue : colors.resultBg,
+                  color: item.primary ? "#fff" : colors.text,
+                  borderRadius: 12, padding: 16, textAlign: "center",
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, opacity: item.primary ? 0.85 : 0.7, marginBottom: 6 }}>{item.label}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{item.value}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      {/* Compensation */}
-      <div style={styles.card}>
-        <h3 style={styles.sectionTitle}>Compensation</h3>
-        <div style={{ maxWidth: 240 }}>
-          <label style={styles.label}>Average BPS</label>
-          <input
-            type="number"
-            style={styles.input}
-            placeholder="0"
-            value={avgBps}
-            onChange={function (e) { setAvgBps(e.target.value); }}
+        {/* ═══════════════════════════════════════════════
+            SECTION 2 — 1-3-5 Goal Setting Framework
+            ═══════════════════════════════════════════════ */}
+        <div id="print-goals" style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={sectionTitle}>
+              <i className="fa fa-bullseye" style={{ color: colors.blue }}></i>
+              1-3-5 Goal Setting Framework
+            </h2>
+            <button style={printBtn} className="no-print" onClick={function () { printSection("print-goals"); }}>
+              <i className="fa fa-print" style={{ marginRight: 6 }}></i>Print
+            </button>
+          </div>
+
+          {/* ONE Goal */}
+          <div style={{
+            background: colors.highlightBg, borderRadius: 12, padding: 20, marginBottom: 24,
+            borderLeft: "4px solid " + colors.blue,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%", background: colors.blue,
+                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, fontWeight: 700,
+              }}>1</div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>ONE Goal</span>
+            </div>
+            <p style={{ fontSize: 13, color: colors.muted, margin: "0 0 10px 0" }}>
+              Define the single most important goal you want to achieve this year. Everything else should support this goal.
+            </p>
+            <textarea
+              style={Object.assign({}, inputBase, { minHeight: 80, resize: "vertical" })}
+              value={formData.oneGoal}
+              placeholder="What is your #1 goal this year?"
+              onChange={function (e) { onChange("oneGoal", e.target.value); }}
+            />
+          </div>
+
+          {/* THREE Strategies */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%", background: colors.blue,
+                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, fontWeight: 700,
+              }}>3</div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>THREE Strategies</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+              {[1, 2, 3].map(function (n) {
+                var field = "strategy" + n;
+                return (
+                  <div key={n} style={{
+                    background: colors.resultBg, borderRadius: 12, padding: 16, textAlign: "center",
+                  }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: "50%", background: colors.text,
+                      color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: 700, marginBottom: 8,
+                    }}>{n}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: colors.muted, marginBottom: 8 }}>Strategy</div>
+                    <input
+                      style={inputBase}
+                      value={formData[field]}
+                      placeholder={"Strategy " + n}
+                      onChange={function (e) { onChange(field, e.target.value); }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* FIVE Tactics per Strategy */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%", background: colors.blue,
+                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, fontWeight: 700,
+              }}>5</div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>FIVE Tactics per Strategy</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+              {[1, 2, 3].map(function (sn) {
+                return (
+                  <div key={sn} style={{
+                    background: colors.resultBg, borderRadius: 12, padding: 16,
+                  }}>
+                    <div style={{
+                      fontSize: 14, fontWeight: 700, color: colors.text, marginBottom: 12,
+                      paddingBottom: 8, borderBottom: "2px solid " + colors.blue,
+                    }}>
+                      Strategy {sn}: {formData["strategy" + sn] || "—"}
+                    </div>
+                    {[1, 2, 3, 4, 5].map(function (tn) {
+                      var field = "s" + sn + "t" + tn;
+                      return (
+                        <div key={tn} style={{ marginBottom: 8 }}>
+                          <label style={{ fontSize: 12, color: colors.muted, marginBottom: 2, display: "block" }}>Tactic {tn}</label>
+                          <input
+                            style={inputBase}
+                            value={formData[field]}
+                            placeholder={"Tactic " + tn}
+                            onChange={function (e) { onChange(field, e.target.value); }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SMART Goals Reference */}
+          <div style={{
+            background: colors.resultBg, borderRadius: 12, padding: 20,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, marginBottom: 14, textAlign: "center" }}>
+              SMART Goals Reference
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+              {[
+                { letter: "S", word: "Specific", desc: "Clearly define what you want to accomplish" },
+                { letter: "M", word: "Measurable", desc: "Include metrics to track progress" },
+                { letter: "A", word: "Achievable", desc: "Set realistic and attainable goals" },
+                { letter: "R", word: "Relevant", desc: "Align with your broader objectives" },
+                { letter: "T", word: "Time-Bound", desc: "Set a clear deadline or timeframe" },
+              ].map(function (item, i) {
+                return (
+                  <div key={i} style={{ textAlign: "center" }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: "50%", background: colors.blue,
+                      color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 20, fontWeight: 700, marginBottom: 6,
+                    }}>{item.letter}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.text, marginBottom: 4 }}>{item.word}</div>
+                    <div style={{ fontSize: 11, color: colors.muted, lineHeight: 1.4 }}>{item.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════
+            SECTION 3 — Notes & Action Items
+            ═══════════════════════════════════════════════ */}
+        <div id="print-notes" style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <h2 style={sectionTitle}>
+              <i className="fa fa-sticky-note" style={{ color: colors.blue }}></i>
+              Notes &amp; Action Items
+            </h2>
+            <button style={printBtn} className="no-print" onClick={function () { printSection("print-notes"); }}>
+              <i className="fa fa-print" style={{ marginRight: 6 }}></i>Print
+            </button>
+          </div>
+          <textarea
+            style={Object.assign({}, inputBase, { minHeight: 120, resize: "vertical" })}
+            value={formData.notesField}
+            placeholder="Add notes, action items, reminders..."
+            onChange={function (e) { onChange("notesField", e.target.value); }}
           />
         </div>
+
       </div>
-
-      {/* Strategy Notes */}
-      <div style={styles.card}>
-        <h3 style={styles.sectionTitle}>Strategy Notes</h3>
-        <textarea
-          style={styles.textarea}
-          placeholder="Add your goals, strategies, and action plans..."
-          value={notes}
-          onChange={function (e) { setNotes(e.target.value); }}
-        />
-      </div>
-
-      {/* Save button */}
-      <button
-        style={saving ? styles.btnDisabled : styles.btn}
-        disabled={saving}
-        onClick={handleSave}
-      >
-        {saving ? "Saving..." : "Save Goals"}
-      </button>
-
-      {/* Toast */}
-      {toast && (
-        <div style={styles.toast}>
-          <i className="fa-solid fa-check" style={{ marginRight: 8 }} />
-          Saved!
-        </div>
-      )}
     </div>
   );
 }
