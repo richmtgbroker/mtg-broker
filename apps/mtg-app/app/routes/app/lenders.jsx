@@ -246,11 +246,11 @@ export default function LendersPage() {
   );
 }
 
-// Tag pill styles — rounded-full with tinted bg, no border (vs buttons which are rounded-lg with border)
+// Tag pill styles — default and active (darker shade when selected)
 const TAG_STYLES = {
-  Broker: "bg-[#FEF3C7] text-[#92400E]",
-  NonDel: "bg-[#DCFCE7] text-[#15803D]",
-  NEXA: "bg-[#1a1a1a] text-white",
+  Broker: { default: "bg-[#FEF3C7] text-[#92400E]", active: "bg-[#F59E0B] text-white" },
+  NonDel: { default: "bg-[#DCFCE7] text-[#15803D]", active: "bg-[#16A34A] text-white" },
+  NEXA: { default: "bg-[#1a1a1a] text-white", active: "bg-[#000000] text-white ring-2 ring-[#555] ring-offset-1" },
 };
 
 function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm, channelFilter, onChannelFilter }) {
@@ -330,7 +330,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
                   e.stopPropagation();
                   onChannelFilter(channelFilter === ch ? null : ch);
                 }}
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer border-none transition-colors ${TAG_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer border-none transition-colors ${channelFilter === ch ? (TAG_STYLES[ch]?.active || "bg-gray-600 text-white") : (TAG_STYLES[ch]?.default || "bg-gray-100 text-gray-600")} ${channelFilter !== ch ? "hover:opacity-80" : ""}`}
               >
                 {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
               </button>
