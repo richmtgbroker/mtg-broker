@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router";
+import {
+  getLenderNotes, saveLenderNotes,
+  getLenderRating, saveLenderRating,
+  getLenderFavorite, toggleLenderFavorite,
+  syncFromSupabase, getUserEmail,
+} from "../../hooks/useUserPreferences";
 
 const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
@@ -120,29 +126,37 @@ export default function LenderDetailPage() {
     load();
   }, [slug]);
 
-  /* Load favorites + notes from localStorage */
+  /* Load preferences from localStorage cache, then background-sync from Supabase */
   useEffect(() => {
     if (!slug) return;
-    try { setIsFav(localStorage.getItem("mtg_fav_" + slug) === "1"); } catch {}
-    try { setStarRating(parseInt(localStorage.getItem("mtg_stars_" + slug) || "0", 10)); } catch {}
-    try { setPrivateNotes(localStorage.getItem("mtg_notes_" + slug) || ""); } catch {}
+    // Instant read from localStorage cache
+    setIsFav(getLenderFavorite(slug));
+    setStarRating(getLenderRating(slug));
+    setPrivateNotes(getLenderNotes(slug));
+    // Background sync from Supabase → update state if cloud has newer data
+    (async () => {
+      const favRow = await syncFromSupabase("lender_favorite", slug);
+      if (favRow) setIsFav(favRow.value_bool === true);
+      const ratingRow = await syncFromSupabase("lender_rating", slug);
+      if (ratingRow) setStarRating(ratingRow.value_number || 0);
+      const notesRow = await syncFromSupabase("lender_notes", slug);
+      if (notesRow) setPrivateNotes(notesRow.value_text || "");
+    })();
   }, [slug]);
 
   const toggleFav = useCallback(() => {
-    const next = !isFav;
-    setIsFav(next);
-    try { if (next) localStorage.setItem("mtg_fav_" + slug, "1"); else localStorage.removeItem("mtg_fav_" + slug); } catch {}
-  }, [isFav, slug]);
+    toggleLenderFavorite(slug).then((next) => setIsFav(next));
+  }, [slug]);
 
   const handleStarClick = useCallback((n) => {
     setStarRating(n);
-    try { localStorage.setItem("mtg_stars_" + slug, String(n)); } catch {}
+    saveLenderRating(slug, n);
   }, [slug]);
 
   const handleNotesChange = useCallback((e) => {
     const v = e.target.value;
     setPrivateNotes(v);
-    try { localStorage.setItem("mtg_notes_" + slug, v); } catch {}
+    saveLenderNotes(slug, v);
     setNotesSaveStatus("Saved");
     setTimeout(() => setNotesSaveStatus(""), 2000);
   }, [slug]);
@@ -217,9 +231,9 @@ export default function LenderDetailPage() {
     { id: "contacts", label: "Contacts" },
   ];
 
-  /* Check if user is admin (simple email check in localStorage) */
-  let isAdmin = false;
-  try { isAdmin = localStorage.getItem("mtg_user_email") === ADMIN_EMAIL; } catch {}
+  /* Check if user is admin via Outseta JWT email */
+  const currentEmail = getUserEmail();
+  const isAdmin = currentEmail === ADMIN_EMAIL;
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
