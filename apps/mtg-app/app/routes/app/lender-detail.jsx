@@ -1117,6 +1117,8 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
     groups[loanType].push({ product: p, index: idx });
   });
   const groupNames = Object.keys(groups).sort();
+  /* Flat sorted list of all products (sorted by group name, then display name) */
+  const allProducts = groupNames.flatMap((g) => groups[g]);
 
   const query = search.toLowerCase().trim();
 
@@ -1128,60 +1130,44 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search product specifics\u2026"
+          placeholder="Search product specifics..."
           style={{ width: "100%", padding: "10px 14px", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", background: "#FFFFFF", color: "#0F172A", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
           onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.12)"; }}
           onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
         />
       </div>
 
-      {/* Grouped product cards */}
-      {groupNames.map((groupName) => {
-        const items = groups[groupName];
-        // Filter items by search query
-        const filtered = items.filter((item) => {
+      {/* Flat product card list (no group headers) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+        {allProducts.filter((item) => {
+          if (!query) return true;
           const p = item.product;
           const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
           const displayName = version || (p["Loan Product"] || "Product Details");
-          const searchText = (displayName + " " + groupName).toLowerCase();
-          return !query || searchText.indexOf(query) !== -1;
-        });
-        if (filtered.length === 0) return null;
-
-        return (
-          <div key={groupName}>
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "16px 0 8px 0" }}>
-              {groupName} ({filtered.length})
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-              {filtered.map((item) => {
-                const p = item.product;
-                const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
-                const displayName = version || (p["Loan Product"] || "Product Details");
-                return (
-                  <div
-                    key={item.index}
-                    onClick={() => onSelectProduct(p)}
-                    style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, cursor: "pointer", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.background = "#F0F7FF"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.1)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
-                  >
-                    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                      <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500, whiteSpace: "normal" }}>{displayName}</span>
-                      {version && version !== displayName && (
-                        <span style={{ fontSize: 12, color: "#64748B" }}>{groupName}</span>
-                      )}
-                    </div>
-                    <span style={{ color: "#2563EB", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                      <i className="fa-solid fa-chevron-right" />
-                    </span>
-                  </div>
-                );
-              })}
+          const groupName = p["Loan Product"] || p["loan_product"] || "";
+          return (displayName + " " + groupName).toLowerCase().indexOf(query) !== -1;
+        }).map((item) => {
+          const p = item.product;
+          const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
+          const displayName = version || (p["Loan Product"] || "Product Details");
+          return (
+            <div
+              key={item.index}
+              onClick={() => onSelectProduct(p)}
+              style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, cursor: "pointer", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.background = "#F0F7FF"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.1)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500, whiteSpace: "normal" }}>{displayName}</span>
+              </div>
+              <span style={{ color: "#2563EB", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                <i className="fa-solid fa-chevron-right" />
+              </span>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
