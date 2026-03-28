@@ -606,18 +606,35 @@ export async function onRequestPost(context) {
       'Licensing Page': licensingPage,
     }
 
-    // ── Step 2: Extract details with Claude ──────────────────────────
+    // ── Step 2: Extract details with Claude (or fallback if fetch failed) ──
     const anthropicKey = env.ANTHROPIC_API_KEY
     if (!anthropicKey) return jsonError(request, 'ANTHROPIC_API_KEY not configured', 500)
 
-    const extracted = await extractLenderDetails(pageTexts, url, anthropicKey)
+    // Check if we got any page content at all
+    const hasContent = Object.values(pageTexts).some(t => t && t.trim())
+    let extracted
+    let fetchFailed = false
 
-    // Override Claude's social media guesses with verified links from HTML
-    if (socialLinksFromHtml.facebook) extracted.facebook = socialLinksFromHtml.facebook
-    if (socialLinksFromHtml.linkedin) extracted.linkedin = socialLinksFromHtml.linkedin
-    if (socialLinksFromHtml.instagram) extracted.instagram = socialLinksFromHtml.instagram
-    if (socialLinksFromHtml.youtube) extracted.youtube = socialLinksFromHtml.youtube
-    if (socialLinksFromHtml.x_twitter) extracted.x_twitter = socialLinksFromHtml.x_twitter
+    if (hasContent) {
+      extracted = await extractLenderDetails(pageTexts, url, anthropicKey)
+
+      // Override Claude's social media guesses with verified links from HTML
+      if (socialLinksFromHtml.facebook) extracted.facebook = socialLinksFromHtml.facebook
+      if (socialLinksFromHtml.linkedin) extracted.linkedin = socialLinksFromHtml.linkedin
+      if (socialLinksFromHtml.instagram) extracted.instagram = socialLinksFromHtml.instagram
+      if (socialLinksFromHtml.youtube) extracted.youtube = socialLinksFromHtml.youtube
+      if (socialLinksFromHtml.x_twitter) extracted.x_twitter = socialLinksFromHtml.x_twitter
+    } else {
+      // Fallback: create a minimal record using the domain name
+      fetchFailed = true
+      const hostname = new URL(url).hostname.replace(/^www\./, '')
+      // Turn "21stmortgage.com" → "21stmortgage" → title case → "21Stmortgage"
+      const domainName = hostname.split('.')[0]
+      extracted = {
+        lender_name: domainName.charAt(0).toUpperCase() + domainName.slice(1),
+        corporate_website: url,
+      }
+    }
 
     if (!extracted.lender_name) {
       return jsonError(request, 'Could not determine the lender name from the website', 422)
@@ -736,12 +753,16 @@ export async function onRequestPost(context) {
 
     return jsonSuccess(request, {
       success: true,
+      fetch_failed: fetchFailed,
       lender_name: extracted.lender_name,
       record_id: record.id,
       airtable_url: newRecordUrl,
       fields_populated: populatedFields,
       fields_missing: missingFields,
       extracted,
+      ...(fetchFailed ? {
+        message: 'Website could not be scraped (likely bot protection). A minimal record was created with just the URL. You can fill in details manually in Airtable.',
+      } : {}),
     })
 
   } catch (err) {
