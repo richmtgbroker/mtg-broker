@@ -520,58 +520,157 @@
   font-size: 12px;
 }
 
-/* ─── FIELD ROWS ─────────────────────────────────────────────────────────── */
+/* ─── COMPARISON TABLE ───────────────────────────────────────────────────── */
 .section-fields {
-  padding: 8px 16px 12px;
+  padding: 0;
 }
 
-.field-row {
+/* Column headers */
+.compare-header {
   display: flex;
-  align-items: flex-start;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--gray-100);
-  gap: 12px;
+  padding: 8px 16px;
+  background: var(--gray-100);
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
 }
 
-.field-row:last-child {
+.compare-col-label {
+  min-width: 180px;
+  max-width: 180px;
+  flex-shrink: 0;
+}
+
+.compare-col-current,
+.compare-col-ai {
+  flex: 1;
+  min-width: 0;
+}
+
+.compare-col-current {
+  padding-left: 12px;
+}
+
+.compare-col-ai {
+  padding-left: 12px;
+}
+
+/* Comparison rows */
+.compare-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.compare-row:last-child {
   border-bottom: none;
 }
 
-.field-wide {
-  flex-direction: column;
-}
-
-.field-label {
+.compare-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
-  min-width: 200px;
-  max-width: 200px;
+  min-width: 180px;
+  max-width: 180px;
   flex-shrink: 0;
-  padding-top: 2px;
-}
-
-.field-wide .field-label {
-  max-width: none;
-  min-width: 0;
-  margin-bottom: 4px;
-}
-
-.field-values {
-  flex: 1;
+  padding: 10px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-.field-manual,
-.field-ai {
+.conflict-icon {
+  color: #dc2626;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+/* Side-by-side value cells */
+.compare-current,
+.compare-ai {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-left: 1px solid var(--gray-100);
+}
+
+.compare-value {
+  font-size: 13px;
+  color: var(--text-dark);
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Match — both values agree */
+.match-cell {
+  background: #f0fdf4;
+}
+
+/* Conflict — values differ */
+.conflict-cell {
+  background: #fef2f2;
+}
+
+.compare-conflict {
+  /* Subtle left border accent for conflict rows */
+}
+
+.compare-conflict .compare-label {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Single-value display (no comparison partner) */
+.compare-single {
+  flex: 1;
+  padding: 10px 12px;
+  border-left: 1px solid var(--gray-100);
+}
+
+.single-value {
   display: flex;
   align-items: flex-start;
   gap: 8px;
 }
 
+/* Wide rows (notes, long text) — stack vertically */
+.compare-wide {
+  flex-direction: column;
+}
+
+.compare-wide .compare-label {
+  max-width: none;
+  min-width: 0;
+  padding-bottom: 0;
+}
+
+.compare-wide .compare-current,
+.compare-wide .compare-ai,
+.compare-wide .compare-single {
+  border-left: none;
+  padding-top: 4px;
+  padding-left: 16px;
+  padding-bottom: 12px;
+}
+
+/* Conflict badge in section header */
+.conflict-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  margin-left: 4px;
+}
+
+/* Tags */
 .field-tag {
   display: inline-block;
   padding: 1px 6px;
@@ -592,14 +691,6 @@
 .ai-tag {
   background: #dbeafe;
   color: #1e40af;
-}
-
-.field-value {
-  font-size: 14px;
-  color: var(--text-dark);
-  line-height: 1.4;
-  word-break: break-word;
-  white-space: pre-wrap;
 }
 
 /* ─── SOURCE DATA ────────────────────────────────────────────────────────── */
@@ -662,13 +753,24 @@
     padding: 20px 16px;
   }
 
-  .field-row:not(.field-wide) {
+  .compare-row:not(.compare-wide) {
     flex-direction: column;
   }
 
-  .field-label {
+  .compare-label {
     min-width: 0;
     max-width: none;
+    padding-bottom: 0;
+  }
+
+  .compare-current,
+  .compare-ai {
+    border-left: none;
+    padding-top: 4px;
+  }
+
+  .compare-header {
+    display: none;
   }
 
   .top-field-row {

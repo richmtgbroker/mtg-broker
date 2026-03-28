@@ -322,7 +322,24 @@ const FIELD_SECTIONS = [
   },
 ];
 
-// ─── DETAIL SECTION ─────────────────────────────────────────────────────────
+// ─── CONFLICT DETECTION ─────────────────────────────────────────────────────
+// Normalize values for comparison (strip whitespace, emoji, percent formatting)
+function normalizeForCompare(val) {
+  if (!val) return '';
+  return String(val)
+    .trim()
+    .toLowerCase()
+    .replace(/[🟢🟡🔴\s]+/g, ' ')  // Remove status emojis
+    .replace(/\s+/g, ' ')            // Collapse whitespace
+    .trim();
+}
+
+function valuesConflict(manualVal, aiVal) {
+  if (!manualVal || !aiVal) return false;  // No conflict if one is missing
+  return normalizeForCompare(manualVal) !== normalizeForCompare(aiVal);
+}
+
+// ─── DETAIL SECTION (side-by-side comparison table) ─────────────────────────
 function DetailSection({ section, fields }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -335,40 +352,78 @@ function DetailSection({ section, fields }) {
 
   if (!hasData) return null;
 
+  // Count conflicts in this section
+  const conflictCount = section.fields.filter(f => {
+    const aiVal = f.ai ? fields[f.ai] : null;
+    const manualVal = f.manual ? fields[f.manual] : null;
+    return valuesConflict(manualVal, aiVal);
+  }).length;
+
+  // Check if any field in this section has both manual and AI values
+  const hasComparisons = section.fields.some(f => f.manual && f.ai);
+
   return (
     <div className="detail-section">
       <button className="section-header" onClick={() => setExpanded(!expanded)}>
         <span className="section-title">
           <i className={section.icon}></i>
           {section.title}
+          {conflictCount > 0 && (
+            <span className="conflict-badge">{conflictCount} conflict{conflictCount > 1 ? 's' : ''}</span>
+          )}
         </span>
         <i className={`fa-solid fa-chevron-${expanded ? 'up' : 'down'}`}></i>
       </button>
       {expanded && (
         <div className="section-fields">
+          {/* Column headers for sections that have comparisons */}
+          {hasComparisons && (
+            <div className="compare-header">
+              <div className="compare-col-label">Field</div>
+              <div className="compare-col-current">Current</div>
+              <div className="compare-col-ai">AI (New)</div>
+            </div>
+          )}
           {section.fields.map((field, idx) => {
             const aiVal = field.ai ? fields[field.ai] : null;
             const manualVal = field.manual ? fields[field.manual] : null;
             // Skip fields with no data
             if ((!aiVal || aiVal === '') && (!manualVal || manualVal === '')) return null;
 
+            const hasConflict = valuesConflict(manualVal, aiVal);
+            const hasBothValues = manualVal && aiVal;
+
             return (
-              <div key={idx} className={`field-row ${field.wide ? 'field-wide' : ''}`}>
-                <div className="field-label">{field.label}</div>
-                <div className="field-values">
-                  {manualVal && (
-                    <div className="field-manual">
-                      <span className="field-tag manual-tag">Manual</span>
-                      <span className="field-value">{manualVal}</span>
-                    </div>
-                  )}
-                  {aiVal && (
-                    <div className="field-ai">
-                      <span className="field-tag ai-tag">AI</span>
-                      <span className="field-value">{aiVal}</span>
-                    </div>
-                  )}
+              <div key={idx} className={`compare-row ${hasConflict ? 'compare-conflict' : ''} ${field.wide ? 'compare-wide' : ''}`}>
+                <div className="compare-label">
+                  {field.label}
+                  {hasConflict && <i className="fa-solid fa-triangle-exclamation conflict-icon"></i>}
                 </div>
+                {hasBothValues ? (
+                  <>
+                    <div className={`compare-current ${hasConflict ? 'conflict-cell' : 'match-cell'}`}>
+                      <span className="compare-value">{manualVal}</span>
+                    </div>
+                    <div className={`compare-ai ${hasConflict ? 'conflict-cell' : 'match-cell'}`}>
+                      <span className="compare-value">{aiVal}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="compare-single">
+                    {manualVal && (
+                      <div className="single-value">
+                        <span className="field-tag manual-tag">Current</span>
+                        <span className="compare-value">{manualVal}</span>
+                      </div>
+                    )}
+                    {aiVal && (
+                      <div className="single-value">
+                        <span className="field-tag ai-tag">AI</span>
+                        <span className="compare-value">{aiVal}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
