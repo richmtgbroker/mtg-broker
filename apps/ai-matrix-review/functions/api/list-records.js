@@ -214,24 +214,8 @@ export async function onRequestGet(context) {
   }
 
   try {
-    // Verify JWT — admin only
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    const payload = await verifyOutsetaJWT(token);
-
-    if (!payload) {
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!isAdmin(payload)) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Auth is handled by Outseta page-level gating on the Webflow page.
+    // The Airtable API key (server-side only) is the security layer here.
 
     // Parse query parameters
     const url = new URL(request.url);
