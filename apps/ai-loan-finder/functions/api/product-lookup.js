@@ -10,12 +10,14 @@ const ALLOWED_ORIGINS = [
   'https://mtg-loan-finder.pages.dev',
   'https://mtg-app.pages.dev',
   'https://mtg-app-staging.pages.dev',
+  'https://mtg-app-stage.pages.dev',
 ]
 
 function isAllowedOrigin(origin) {
   if (!origin) return false
   if (ALLOWED_ORIGINS.includes(origin)) return true
   if (/^https:\/\/[a-f0-9]+\.mtg-app-staging\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app-stage\.pages\.dev$/.test(origin)) return true
   if (/^https:\/\/[a-f0-9]+\.mtg-app\.pages\.dev$/.test(origin)) return true
   if (/^https:\/\/[a-f0-9]+\.mtg-loan-finder\.pages\.dev$/.test(origin)) return true
   return false
