@@ -583,20 +583,6 @@ export default function VendorsPage() {
                   {v.name}
                 </div>
 
-                {/* Category */}
-                {v.categoryRaw && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "#64748B",
-                      textAlign: "center",
-                      marginBottom: 12,
-                    }}
-                  >
-                    {v.categoryRaw}
-                  </div>
-                )}
-
                 {/* Action Buttons */}
                 <div
                   style={{
