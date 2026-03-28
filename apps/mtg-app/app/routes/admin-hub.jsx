@@ -1071,12 +1071,35 @@ export default function AdminHub() {
                     Lender Email Updates
                   </span>
                 </button>
+                <button
+                  onClick={() => setActiveTab("matrix-review")}
+                  className={`flex-1 px-6 py-3.5 text-sm font-semibold transition-colors cursor-pointer ${
+                    activeTab === "matrix-review"
+                      ? "text-primary-600 border-b-2 border-primary-600 bg-white"
+                      : "text-text-muted hover:text-text hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    AI Matrix Review
+                  </span>
+                </button>
               </div>
 
               {/* Tab Content */}
-              <div className="p-6">
+              <div className={activeTab === "matrix-review" ? "p-0" : "p-6"}>
                 {activeTab === "add-lender" && <AddLenderSection />}
                 {activeTab === "email-updates" && <LenderUpdatesSection />}
+                {activeTab === "matrix-review" && (
+                  <iframe
+                    src="https://mtg-matrix-review.pages.dev"
+                    className="w-full border-0"
+                    style={{ height: "calc(100vh - 200px)", minHeight: "600px" }}
+                    title="AI Matrix Review"
+                  />
+                )}
               </div>
             </div>
           </>
