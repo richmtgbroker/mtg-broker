@@ -156,7 +156,10 @@ async function verifyOutsetaJWT(token) {
 
 
 // ─── Fetch a URL with timeout and error handling ─────────────────────────────
-async function fetchPageRaw(url, timeoutMs = 10000) {
+// fetchDiagnostics collects debug info for troubleshooting failed fetches
+const fetchDiagnostics = []
+
+async function fetchPageRaw(url, timeoutMs = 15000) {
   // Returns raw HTML (for link extraction). Returns null on failure.
   try {
     const controller = new AbortController()
@@ -171,9 +174,15 @@ async function fetchPageRaw(url, timeoutMs = 10000) {
       },
     })
     clearTimeout(timer)
-    if (!res.ok) return null
-    return await res.text()
+    if (!res.ok) {
+      fetchDiagnostics.push({ url, status: res.status, statusText: res.statusText })
+      return null
+    }
+    const text = await res.text()
+    fetchDiagnostics.push({ url, status: res.status, bodyLength: text.length })
+    return text
   } catch (e) {
+    fetchDiagnostics.push({ url, error: e.message || String(e) })
     return null
   }
 }
@@ -236,7 +245,10 @@ async function extractLenderDetails(pageTexts, url, apiKey) {
     .join('\n\n')
 
   if (!combined.trim()) {
-    throw new Error('Could not fetch any content from the website')
+    const diagInfo = fetchDiagnostics.length > 0
+      ? ' | Diagnostics: ' + JSON.stringify(fetchDiagnostics)
+      : ''
+    throw new Error('Could not fetch any content from the website' + diagInfo)
   }
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -519,6 +531,9 @@ export async function onRequestPost(context) {
   const { request, env } = context
 
   try {
+    // Clear diagnostics from any previous request
+    fetchDiagnostics.length = 0
+
     // ── Auth: admin only ──────────────────────────────────────────────
     const authHeader = request.headers.get('Authorization')
     const rawToken = authHeader?.replace('Bearer ', '') || null
