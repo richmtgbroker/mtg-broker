@@ -391,7 +391,8 @@ function DetailSection({ section, fields }) {
             if ((!aiVal || aiVal === '') && (!manualVal || manualVal === '')) return null;
 
             const hasConflict = valuesConflict(manualVal, aiVal);
-            const hasBothValues = manualVal && aiVal;
+            // If this field has a manual counterpart, always show both columns
+            const isComparisonField = !!field.manual;
 
             return (
               <div key={idx} className={`compare-row ${hasConflict ? 'compare-conflict' : ''} ${field.wide ? 'compare-wide' : ''}`}>
@@ -399,23 +400,25 @@ function DetailSection({ section, fields }) {
                   {field.label}
                   {hasConflict && <i className="fa-solid fa-triangle-exclamation conflict-icon"></i>}
                 </div>
-                {hasBothValues ? (
+                {isComparisonField ? (
                   <>
-                    <div className={`compare-current ${hasConflict ? 'conflict-cell' : 'match-cell'}`}>
-                      <span className="compare-value">{manualVal}</span>
+                    <div className={`compare-current ${hasConflict ? 'conflict-cell' : manualVal && aiVal ? 'match-cell' : ''}`}>
+                      {manualVal ? (
+                        <span className="compare-value">{manualVal}</span>
+                      ) : (
+                        <span className="compare-empty">Empty</span>
+                      )}
                     </div>
-                    <div className={`compare-ai ${hasConflict ? 'conflict-cell' : 'match-cell'}`}>
-                      <span className="compare-value">{aiVal}</span>
+                    <div className={`compare-ai ${hasConflict ? 'conflict-cell' : manualVal && aiVal ? 'match-cell' : ''}`}>
+                      {aiVal ? (
+                        <span className="compare-value">{aiVal}</span>
+                      ) : (
+                        <span className="compare-empty">Empty</span>
+                      )}
                     </div>
                   </>
                 ) : (
                   <div className="compare-single">
-                    {manualVal && (
-                      <div className="single-value">
-                        <span className="field-tag manual-tag">Current</span>
-                        <span className="compare-value">{manualVal}</span>
-                      </div>
-                    )}
                     {aiVal && (
                       <div className="single-value">
                         <span className="field-tag ai-tag">AI</span>
@@ -445,7 +448,7 @@ function DetailPanel({ record, onStatusChange, statusUpdating }) {
   const matrixDocs = f['Matrix Document'] || [];
   const matrixUrl = f['Matrix'];
   const productStatus = f['Product Status'] || '';
-  const airtableLink = `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}/${record.id}`;
+  const airtableLink = f['Link to this Airtable LOAN (Formula)'] || `https://airtable.com/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}/${record.id}`;
 
   return (
     <div className="detail-panel">

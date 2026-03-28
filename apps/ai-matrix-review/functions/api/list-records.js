@@ -105,6 +105,7 @@ const LIST_FIELDS = [
   'Product Status',                      // fldl5uXa9QsJGCNfB
   'AI: Analysis Summary',               // fldxyQrPEpm2qVrrt
   'Lender Name (from Lender Name)',      // fld16K2p7hVi00f4w - lookup
+  'Link to this Airtable LOAN (Formula)', // fldflPZzc4F3tBGaw - formula URL
 ];
 
 // All AI: fields for the detail view

@@ -657,6 +657,13 @@
   padding-bottom: 12px;
 }
 
+/* Empty placeholder */
+.compare-empty {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
 /* Conflict badge in section header */
 .conflict-badge {
   display: inline-block;
