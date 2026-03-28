@@ -20,6 +20,8 @@ const ALLOWED_ORIGINS = [
   'https://www.mtg.broker',
   'https://mtg-loan-finder.pages.dev',
   'https://mtg-app-staging.pages.dev',
+  'https://mtg-app.pages.dev',
+  'https://mtg-app-stage.pages.dev',
 ]
 
 const ADMIN_EMAILS = ['rich@mtg.broker', 'rich@prestonlending.com']
