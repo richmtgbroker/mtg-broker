@@ -6,11 +6,11 @@ import {
   getLenderFavorite, toggleLenderFavorite,
   syncFromSupabase, getUserEmail,
 } from "../../hooks/useUserPreferences";
+import { isAdmin as checkIsAdmin } from "../../lib/auth";
 
 const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
 const CACHE_TTL = 30 * 60 * 1000;
-const ADMIN_EMAIL = "rich@mtg.broker";
 
 /* ── Config maps (match Worker JS) ── */
 const SOCIAL_CONFIG = {
@@ -231,9 +231,8 @@ export default function LenderDetailPage() {
     { id: "contacts", label: "Contacts" },
   ];
 
-  /* Check if user is admin via Outseta JWT email */
-  const currentEmail = getUserEmail();
-  const isAdmin = currentEmail === ADMIN_EMAIL;
+  /* Check if user is admin — uses shared ADMIN_EMAILS list from lib/auth.js */
+  const adminUser = checkIsAdmin();
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -285,14 +284,14 @@ export default function LenderDetailPage() {
           </button>
 
           {/* Admin-only: Airtable lender record */}
-          {isAdmin && lender.airtableLink && (
+          {adminUser && lender.airtableLink && (
             <a href={lender.airtableLink} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(245,158,11,0.5)", background: "rgba(245,158,11,0.15)", color: "#FBBF24", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
               <i className="fa-solid fa-table" style={{ marginRight: 5 }} />Airtable
             </a>
           )}
 
           {/* Admin-only: Lender Detail Config table */}
-          {isAdmin && (
+          {adminUser && (
             <a href="https://airtable.com/appuJgI9X93OLaf0u/tblFuFTmTs0cZmWfO" target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(168,85,247,0.5)", background: "rgba(168,85,247,0.15)", color: "#C084FC", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
               <i className="fa-solid fa-sliders" style={{ marginRight: 5 }} />Config
             </a>
