@@ -5,8 +5,9 @@ export function meta() {
   return [{ title: "Vendors — MtgBroker" }];
 }
 
-const VENDORS_API = "https://mtg-broker-vendors.rich-e00.workers.dev/api/vendors";
-const FAVORITES_API = "https://mtg-broker-favorites.rich-e00.workers.dev/api/favorites";
+/* Use same-origin proxy (Pages Functions) to avoid CORS issues */
+const VENDORS_API = "/api/vendors";
+const FAVORITES_API = "/api/favorites";
 const CACHE_KEY = "vendors_directory_v4";
 const CACHE_TTL = 10 * 60 * 1000;
 

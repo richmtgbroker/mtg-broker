@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import { getUserEmail } from "../../lib/auth";
 
-const API_BASE = "https://mtg-broker-favorites.rich-e00.workers.dev/api/favorites";
+/* Use same-origin proxy (Pages Functions) to avoid CORS issues */
+const API_BASE = "/api/favorites";
 
 export function meta() {
   return [{ title: "Saved Items — MtgBroker" }];
