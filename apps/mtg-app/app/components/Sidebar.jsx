@@ -141,7 +141,8 @@ function SidebarLink({ item, currentPath, collapsed, isNexa = false, isPro = fal
       to={item.href}
       className={`flex items-center gap-3 rounded-[10px] no-underline text-[17px] font-medium whitespace-nowrap overflow-hidden transition-all duration-150 ${
         collapsed ? "p-2.5 justify-center" : "px-3 py-2.5"
-      } ${isActive ? activeClasses : `text-text-secondary ${hoverClasses}`}`}
+      } ${isActive ? activeClasses : hoverClasses}`}
+      style={isActive ? undefined : { color: "#64748b" }}
       title={collapsed ? item.label : undefined}
     >
       <NavIcon

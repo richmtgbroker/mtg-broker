@@ -69,7 +69,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
         <TasksSection tasks={tasks} />
         <LeadsSection leads={leads} />
-        <PipelineOverview stats={pipelineStats} />
+        <PipelineOverview stats={pipelineStats} leadCount={leads.length} taskCount={tasks.length} />
       </div>
     </div>
   );
@@ -89,24 +89,24 @@ function QuickActions({ lenderCount }) {
   ];
 
   return (
-    <DashSection title="Quick Actions">
-      <div className="grid grid-cols-2 gap-2">
+    <DashSection title="Quick Actions" fillHeight>
+      <div className="grid grid-cols-3 gap-2.5 h-full">
         {actions.map((a) => (
           <Link
             key={a.href}
             to={a.href}
-            className={`group flex flex-col items-center text-center px-3 py-4 rounded-[16px] border no-underline transition-all ${
+            className={`group flex flex-col items-center justify-center text-center px-3 py-4 rounded-xl border no-underline transition-all hover:-translate-y-1 ${
               a.highlight
-                ? "bg-[#F0F7FF] border-2 border-[#2563EB] shadow-[0_4px_16px_rgba(37,99,235,0.2)]"
-                : "bg-[#F8FAFC] border-[#E2E8F0] hover:border-text-muted"
+                ? "bg-gradient-to-b from-[#EFF6FF] to-[#DBEAFE] border-2 border-[#2563EB] shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.3)]"
+                : "bg-gradient-to-b from-white to-[#F1F5F9] border-[#E2E8F0] shadow-[0_2px_6px_rgba(0,0,0,0.08)] hover:border-[#94A3B8] hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)]"
             }`}
           >
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-2 shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all group-hover:bg-[#2563EB] group-hover:text-white group-hover:scale-105 ${a.highlight ? "bg-primary-600 text-white" : "bg-white text-text-muted"}`}>
-              <NavIcon paths={a.icon} size={18} />
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-2.5 transition-all group-hover:scale-110 ${a.highlight ? "bg-primary-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.35)]" : "bg-[#E2E8F0] text-[#334155] group-hover:bg-[#2563EB] group-hover:text-white group-hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)]"}`}>
+              <NavIcon paths={a.icon} size={28} strokeWidth={2} />
             </div>
             <div className="min-w-0">
-              <div className={`text-[13px] font-bold ${a.highlight ? "text-primary-600" : "text-text"}`}>{a.label}</div>
-              <div className="text-[11px] text-text-faint truncate">{a.sub}</div>
+              <div className={`text-[15px] font-bold ${a.highlight ? "text-primary-600" : "text-[#0F172A]"}`}>{a.label}</div>
+              <div className="text-xs text-[#64748B] truncate">{a.sub}</div>
             </div>
           </Link>
         ))}
@@ -130,15 +130,15 @@ function RatesSection({ rates }) {
 
   return (
     <DashSection title="Today's Avg Rates" icon={`<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>`}>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2.5">
         {rateKeys.map(({ key, label }) => {
           const data = rates?.[key];
           const change = data ? parseFloat(data.change) : 0;
           return (
             <div key={key} className="bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-xl p-2.5 shadow-[0_2px_8px_rgba(37,99,235,0.2)]">
-              <div className="text-[11px] text-white/85 font-medium mb-0.5 uppercase">{label}</div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-extrabold text-white">{data ? `${data.rate}%` : "--%"}</span>
+              <div className="text-[10px] text-white/85 font-semibold mb-0.5 uppercase tracking-wide">{label}</div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[15px] font-extrabold text-white">{data ? `${data.rate}%` : "--%"}</span>
                 {data && (
                   <span className={`text-xs font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded ${change > 0 ? "bg-red-500/20 text-red-300" : change < 0 ? "bg-green-500/20 text-green-300" : "bg-white/15 text-white/70"}`}>
                     {change > 0 && <span>&#9650;</span>}
@@ -239,44 +239,80 @@ function LeadsSection({ leads }) {
 // ============================================================
 // PIPELINE OVERVIEW
 // ============================================================
-function PipelineOverview({ stats }) {
+function PipelineOverview({ stats, leadCount, taskCount }) {
+  const avgLoan = stats.loans > 0 ? stats.volume / stats.loans : 0;
+
   return (
-    <DashSection title="PIPELINE OVERVIEW" linkHref="/app/pipeline" linkText="View All">
-      <div className="flex flex-col gap-3">
-        {/* Pipeline Loans — blue gradient highlight card */}
-        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 no-underline text-white shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all" style={{ background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" }}>
-          <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-white">
+    <DashSection title="Pipeline Overview" linkHref="/app/pipeline" linkText="View All">
+      <div className="flex flex-col gap-2.5">
+        {/* Pipeline Loans — blue gradient highlight */}
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-xl px-4 py-3 no-underline shadow-[0_2px_8px_rgba(37,99,235,0.25)] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] transition-all" style={{ background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)" }}>
+          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center shrink-0 text-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
           </div>
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-white mb-0.5">Pipeline Loans</div>
-            <div className="text-[24px] font-bold leading-tight text-white">{stats.loans}</div>
-            <div className="text-[11px] text-white/80">Active in pipeline</div>
+          <div className="flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-white/70">Active Loans</div>
+            <div className="text-xl font-extrabold leading-tight text-white">{stats.loans}</div>
           </div>
         </Link>
 
         {/* Pipeline Volume */}
-        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 bg-white border border-[#E2E8F0] shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
-          <div className="w-11 h-11 rounded-xl bg-[#D1FAE5] flex items-center justify-center text-[#059669] shrink-0">
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white border border-[#E2E8F0] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+          <div className="w-10 h-10 rounded-lg bg-[#D1FAE5] flex items-center justify-center text-[#059669] shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
           </div>
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-text-faint mb-0.5">Pipeline Volume</div>
-            <div className="text-[24px] font-bold leading-tight text-text">{formatCurrency(stats.volume)}</div>
+          <div className="flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8]">Volume</div>
+            <div className="text-lg font-extrabold text-[#0F172A] leading-tight">{formatCurrency(stats.volume)}</div>
+          </div>
+        </Link>
+
+        {/* Avg Loan Size */}
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white border border-[#E2E8F0] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+          <div className="w-10 h-10 rounded-lg bg-[#EDE9FE] flex items-center justify-center text-[#7C3AED] shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /><path d="M3 12h2M19 12h2" /></svg>
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8]">Avg Loan Size</div>
+            <div className="text-lg font-extrabold text-[#0F172A] leading-tight">{avgLoan ? formatCurrency(avgLoan) : "--"}</div>
           </div>
         </Link>
 
         {/* Upcoming Closings */}
-        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-[10px] px-4 py-3 bg-white border border-[#E2E8F0] shadow-[0_1px_3px_rgba(0,0,0,0.1)] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all">
-          <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
+        <Link to="/app/pipeline" className="flex items-center gap-4 rounded-xl px-4 py-3 bg-white border border-[#E2E8F0] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+          <div className="w-10 h-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
           </div>
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wide text-text-faint mb-0.5">Upcoming Closings</div>
-            <div className="text-[24px] font-bold leading-tight text-text">{stats.closings}</div>
-            <div className="text-[11px] text-text-faint">Next 14 days</div>
+          <div className="flex-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8]">Closings</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-extrabold text-[#0F172A] leading-tight">{stats.closings}</span>
+              <span className="text-[10px] text-[#94A3B8]">next 14 days</span>
+            </div>
           </div>
         </Link>
+
+        {/* Leads + Tasks mini row */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <Link to="/app/pipeline" className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white border border-[#E2E8F0] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+            <div className="w-8 h-8 rounded-lg bg-[#DBEAFE] flex items-center justify-center text-[#2563EB] shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8]">Leads</div>
+              <div className="text-base font-extrabold text-[#0F172A] leading-tight">{leadCount}</div>
+            </div>
+          </Link>
+          <Link to="/app/pipeline" className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white border border-[#E2E8F0] no-underline hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all">
+            <div className="w-8 h-8 rounded-lg bg-[#FEE2E2] flex items-center justify-center text-[#DC2626] shrink-0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-[#94A3B8]">Tasks</div>
+              <div className="text-base font-extrabold text-[#0F172A] leading-tight">{taskCount}</div>
+            </div>
+          </Link>
+        </div>
       </div>
     </DashSection>
   );
@@ -410,9 +446,9 @@ function CalendarChip({ dateStr, closings }) {
 // ============================================================
 // SHARED COMPONENTS
 // ============================================================
-function DashSection({ title, icon, linkHref, linkText, children }) {
+function DashSection({ title, icon, linkHref, linkText, fillHeight, children }) {
   return (
-    <div className="bg-white rounded-[20px] border border-border p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]">
+    <div className={`bg-white rounded-[20px] border border-border p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] ${fillHeight ? "flex flex-col" : ""}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-text flex items-center gap-2 uppercase tracking-wide">
           {icon && <NavIcon paths={icon} size={16} className="text-text-muted" />}
@@ -424,7 +460,7 @@ function DashSection({ title, icon, linkHref, linkText, children }) {
           </Link>
         )}
       </div>
-      {children}
+      {fillHeight ? <div className="flex-1">{children}</div> : children}
     </div>
   );
 }

@@ -4,19 +4,41 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-white py-8 px-6">
-      <div className="max-w-[1280px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-text-muted">
-        <div className="flex items-center gap-2">
-          <span>&copy; {year} mtg.broker</span>
-          <span className="text-border">|</span>
-          <Link to="/pricing" className="no-underline text-text-muted hover:text-primary-600 transition-colors">
-            Pricing
+    <footer className="bg-[#0F172A]">
+      {/* Main row: copyright, links, equal housing — all centered */}
+      <div className="max-w-[1280px] mx-auto px-6 py-4 flex flex-col items-center gap-2.5">
+        <div className="flex items-center gap-3 flex-wrap justify-center text-xs" style={{ color: "#94A3B8" }}>
+          <span>&copy; {year} MtgBroker, LLC</span>
+          <Link to="/privacy-policy" className="no-underline hover:text-white transition-colors" style={{ color: "#94A3B8" }}>
+            Privacy Policy
           </Link>
+          <span style={{ color: "#334155" }}>|</span>
+          <Link to="/terms-of-service" className="no-underline hover:text-white transition-colors" style={{ color: "#94A3B8" }}>
+            Terms of Service
+          </Link>
+          <span style={{ color: "#334155" }}>|</span>
+          {/* Official Equal Housing Opportunity logo */}
+          <span className="inline-flex items-center gap-1.5">
+            <svg width="14" height="15" viewBox="0 0 100 110" fill="#94A3B8" xmlns="http://www.w3.org/2000/svg">
+              {/* Outer house outline */}
+              <polygon points="50,5 5,45 5,105 95,105 95,45" fill="none" stroke="#94A3B8" strokeWidth="6" strokeLinejoin="miter" />
+              {/* Roof peak fill */}
+              <polygon points="50,5 5,45 95,45" fill="#94A3B8" />
+              {/* Equal sign - top bar */}
+              <rect x="28" y="58" width="44" height="10" fill="#94A3B8" />
+              {/* Equal sign - bottom bar */}
+              <rect x="28" y="76" width="44" height="10" fill="#94A3B8" />
+            </svg>
+            <span>Equal Housing Opportunity</span>
+          </span>
         </div>
-        <div className="flex items-center gap-4">
-          <a href="mailto:support@mtg.broker" className="no-underline text-text-muted hover:text-primary-600 transition-colors">
-            Support
-          </a>
+      </div>
+      {/* Disclaimer row */}
+      <div className="border-t border-[#1E293B]">
+        <div className="max-w-[720px] mx-auto px-6 py-3">
+          <p className="text-[11px] text-center leading-relaxed m-0" style={{ color: "#64748B" }}>
+            MtgBroker, LLC provides informational tools for mortgage professionals and does not provide legal, tax, or financial advice. Calculator and scenario results are estimates and may not reflect final lender approval or pricing. MtgBroker, LLC is not a lender.
+          </p>
         </div>
       </div>
     </footer>
