@@ -6,7 +6,7 @@ import {
   getLenderFavorite, toggleLenderFavorite,
   syncFromSupabase, getUserEmail,
 } from "../../hooks/useUserPreferences";
-import { isAdmin as checkIsAdmin } from "../../lib/auth";
+import { isAdmin as checkIsAdmin, isNexaUser, checkNexaAccess } from "../../lib/auth";
 
 const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
@@ -81,6 +81,14 @@ export default function LenderDetailPage() {
   const [starRating, setStarRating] = useState(0);
   const [privateNotes, setPrivateNotes] = useState("");
   const [notesSaveStatus, setNotesSaveStatus] = useState("");
+  const [nexaAuthorized, setNexaAuthorized] = useState(() => isNexaUser());
+
+  /* Async NEXA check (Outseta custom field fallback) */
+  useEffect(() => {
+    if (!nexaAuthorized) {
+      checkNexaAccess().then((result) => { if (result) setNexaAuthorized(true); });
+    }
+  }, []);
 
   /* Load Font Awesome 6 */
   useEffect(() => {
@@ -219,11 +227,13 @@ export default function LenderDetailPage() {
   const loanProducts = lender.loanProducts || [];
   const loanTypes = lender.loanTypes || [];
 
+  /* Channel badges — NEXA tags only visible to NEXA-authorized users.
+     Styles match the lender directory card tags. */
   const badges = [];
-  if (lender.nexaWholesale) badges.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
-  if (lender.nexaNondel) badges.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
-  if (lender.nexa100) badges.push({ label: "NEXA 100", cls: "bg-white/10 text-[#CBD5E1]" });
-  if (lender.nexaOnly) badges.push({ label: "NEXA Only", cls: "bg-[#EDE9FE] text-[#6D28D9]" });
+  if (lender.nexaWholesale) badges.push({ label: "Broker", style: { background: "#FEF3C7", color: "#92400E" } });
+  if (lender.nexaNondel) badges.push({ label: "NonDel", style: { background: "#DCFCE7", color: "#15803D" } });
+  if (nexaAuthorized && lender.nexa100) badges.push({ label: "NEXA\u{1F4AF}", style: { background: "#1a1a1a", color: "#FFFFFF" } });
+  if (nexaAuthorized && lender.nexaOnly) badges.push({ label: "NEXA Only", style: { background: "#EDE9FE", color: "#6D28D9" } });
 
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -256,7 +266,7 @@ export default function LenderDetailPage() {
           {badges.length > 0 && (
             <div className="flex gap-1.5 flex-wrap">
               {badges.map((b) => (
-                <span key={b.label} className={`text-[10px] font-bold py-[3px] px-2 rounded-[4px] uppercase tracking-wide ${b.cls}`}>{b.label}</span>
+                <span key={b.label} style={{ ...b.style, fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 100, letterSpacing: "0.05em" }}>{b.label}</span>
               ))}
             </div>
           )}
