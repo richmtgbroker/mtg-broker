@@ -1,14 +1,13 @@
 // functions/api/add-lender.js
-// Cloudflare Pages Function — fetches a lender's website, uses Claude to extract details,
-// checks for duplicates, and creates a record in the Airtable Lender List table.
+// Cloudflare Pages Function — uses Claude with web search to research a lender,
+// checks for duplicates, and creates/updates a record in the Airtable Lender List table.
 //
 // POST { url }
 //   1. Verify JWT (admin-only)
-//   2. Fetch the lender's website (main page + /about, /wholesale, /contact)
-//   3. Send page content to Claude to extract lender details
-//   4. Check Airtable for duplicate lender names
-//   5. Create Airtable record with extracted fields
-//   6. Return { success, lender_name, record_id, fields_populated, fields_missing }
+//   2. Use Claude + web search to research the lender from their URL
+//   3. Check Airtable for duplicate lender names
+//   4. Create Airtable record with extracted fields
+//   5. Return { success, lender_name, record_id, fields_populated, fields_missing }
 //
 // Required env vars: ANTHROPIC_API_KEY, AIRTABLE_API_KEY
 
@@ -155,169 +154,76 @@ async function verifyOutsetaJWT(token) {
 }
 
 
-// ─── Fetch a URL with timeout and error handling ─────────────────────────────
-// fetchDiagnostics collects debug info for troubleshooting failed fetches
-const fetchDiagnostics = []
-
-async function fetchPageRaw(url, timeoutMs = 15000) {
-  // Returns raw HTML (for link extraction). Returns null on failure.
-  // Try up to 2 strategies: bare fetch first (works best for CF-to-CF),
-  // then with browser headers as fallback.
-  const strategies = [
-    { headers: { 'Accept': 'text/html' } },
-    {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-    },
-  ]
-
-  for (const strategy of strategies) {
-    try {
-      const controller = new AbortController()
-      const timer = setTimeout(() => controller.abort(), timeoutMs)
-      const res = await fetch(url, {
-        signal: controller.signal,
-        redirect: 'follow',
-        headers: strategy.headers,
-      })
-      clearTimeout(timer)
-      if (!res.ok) {
-        fetchDiagnostics.push({ url, status: res.status, statusText: res.statusText })
-        continue // try next strategy
-      }
-      const text = await res.text()
-      fetchDiagnostics.push({ url, status: res.status, bodyLength: text.length })
-      return text
-    } catch (e) {
-      fetchDiagnostics.push({ url, error: e.message || String(e) })
-      continue // try next strategy
-    }
-  }
-  return null
-}
-
-function htmlToText(html) {
-  // Strip tags and collapse whitespace for Claude
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 30000)
-}
-
-async function fetchPage(url, timeoutMs = 10000) {
-  const html = await fetchPageRaw(url, timeoutMs)
-  return html ? htmlToText(html) : null
-}
-
-
-// ─── Extract social media links directly from HTML anchor tags ──────────────
-function extractSocialLinksFromHtml(html) {
-  if (!html) return {}
-  const links = {}
-
-  // Match all href attributes in anchor tags
-  const hrefPattern = /href\s*=\s*["']([^"']+)["']/gi
-  let match
-  while ((match = hrefPattern.exec(html)) !== null) {
-    const href = match[1].toLowerCase()
-
-    // Only match company/page URLs, not share/intent links
-    if (href.includes('facebook.com/') && !href.includes('sharer') && !href.includes('/share')) {
-      if (!links.facebook) links.facebook = match[1]
-    }
-    if (href.includes('linkedin.com/company/') || href.includes('linkedin.com/in/')) {
-      if (!links.linkedin) links.linkedin = match[1]
-    }
-    if (href.includes('instagram.com/') && !href.includes('/share')) {
-      if (!links.instagram) links.instagram = match[1]
-    }
-    if ((href.includes('youtube.com/') || href.includes('youtu.be/')) && !href.includes('/share')) {
-      if (!links.youtube) links.youtube = match[1]
-    }
-    if ((href.includes('twitter.com/') || href.includes('x.com/')) && !href.includes('intent') && !href.includes('/share')) {
-      if (!links.x_twitter) links.x_twitter = match[1]
-    }
-  }
-
-  return links
-}
-
-
-// ─── Use Claude to extract lender details from page content ──────────────────
-async function extractLenderDetails(pageTexts, url, apiKey) {
-  const combined = Object.entries(pageTexts)
-    .filter(([, text]) => text)
-    .map(([page, text]) => `=== ${page} ===\n${text}`)
-    .join('\n\n')
-
-  if (!combined.trim()) {
-    const diagInfo = fetchDiagnostics.length > 0
-      ? ' | Diagnostics: ' + JSON.stringify(fetchDiagnostics)
-      : ''
-    throw new Error('Could not fetch any content from the website' + diagInfo)
-  }
-
+// ─── Use Claude with web search to research a lender ─────────────────────────
+async function researchLenderWithWebSearch(url, apiKey) {
+  // Use Claude's web_search tool to research the lender — no direct HTML scraping needed.
+  // This works even on Cloudflare-protected sites, bot-blocked sites, etc.
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': '2025-04-15',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
+      model: 'claude-sonnet-4-6-20250514',
+      max_tokens: 4096,
+      tools: [
+        {
+          type: 'web_search_20250305',
+          name: 'web_search',
+          max_uses: 5,
+        },
+      ],
       messages: [{
         role: 'user',
         content: `You are a Data Architect for a wholesale mortgage broker platform.
-You are extracting information about a wholesale mortgage lender from their website content.
+Research this wholesale mortgage lender and extract their details: ${url}
 
-The website URL is: ${url}
+Use web search to find information about this company. Search their website, LinkedIn, NMLS Consumer Access, and any other relevant sources.
 
-Here is the text content from their website pages:
+## What to Research
 
-${combined}
+1. **Lender Name** — official company name (not domain name)
+2. **Description** — 1-2 paragraph company description
+3. **Corporate Website** — clean main URL (no tracking params)
+4. **NMLS** — NMLS ID number (digits only). Search "site:nmlsconsumeraccess.org [company name]" if not found on their site
+5. **TPO/Broker Portal** — wholesale/TPO/broker portal login URL
+6. **FHA ID, VA ID, USDA ID** — government lender IDs if found
+7. **Licensed States** — comma-separated state abbreviations, or "All 50 States"
+8. **Licensed States URL** — URL on the lender's CORPORATE website only (not NMLS or third-party)
+9. **Scenario Desk** — email address if found
+10. **Social Media** — Facebook, LinkedIn, Instagram, YouTube, X/Twitter profile URLs
+    - Prioritize wholesale/TPO-specific channels when available
+    - Only include verified business accounts
 
-## Extraction Rules
+## Rules
 
-1. **Only use data clearly found in the content.** Use null for anything you cannot confidently identify. Never guess or fabricate values.
-2. **Lender Name:** Use the official company name, not the domain name.
-3. **NMLS:** Look in the footer, "About Us", or licensing pages. Digits only.
-4. **Social Media:** Prioritize "Wholesale" or "TPO" specific channels when available. Only include verified business accounts found on the site.
-5. **Licensed States:** Look for a "State Licensing," "Availability," or "Where We Lend" page link.
-   - If you find a list of states, return comma-separated abbreviations (e.g., "AL, FL, TX").
-   - If the site says "All 50 States" or equivalent, return "All 50 States".
-   - If no licensing info is found, return null.
-   - For the licensed_states_url, ONLY use a URL from the lender's corporate website. NEVER use third-party sites (FREEandCLEAR, loanbase.com, NMLS Consumer Access, etc.).
-6. **TPO/Broker Portal:** Look for a wholesale login, TPO portal, or broker portal URL.
-7. **Description:** Extract 1-2 paragraphs from the About section. Keep it factual.
+- **Only use data you can verify.** Use null for anything you cannot confidently identify.
+- For licensed_states_url, ONLY use a URL from the lender's corporate website. NEVER use third-party sites.
+- For social media, only include actual company profile URLs, not share/intent links.
 
 ## Required Output
 
-Return ONLY a JSON object with these exact keys. No other text.
+Return ONLY a JSON object with these exact keys. No other text before or after the JSON.
 
 {
   "lender_name": "Official company name",
-  "description": "1-2 paragraph company description/about section",
-  "corporate_website": "Clean main corporate URL (no tracking params)",
-  "tpo_broker_portal": "Wholesale/TPO/broker portal login URL if found",
-  "nmls": "NMLS ID number (digits only)",
-  "fha_id": "FHA lender ID if found",
-  "va_id": "VA lender ID if found",
-  "usda_id": "USDA lender ID if found",
-  "licensed_states": "Comma-separated state abbreviations, or 'All 50 States'",
-  "licensed_states_url": "URL of the licensing/availability page on the lender's corporate website ONLY",
-  "scenario_desk": "Scenario desk email address if found",
-  "facebook": "Facebook page URL",
-  "linkedin": "LinkedIn company page URL",
-  "instagram": "Instagram profile URL",
-  "youtube": "YouTube channel URL",
-  "x_twitter": "X/Twitter profile URL"
+  "description": "1-2 paragraph company description",
+  "corporate_website": "Clean main corporate URL",
+  "tpo_broker_portal": "Wholesale/TPO portal URL or null",
+  "nmls": "NMLS ID (digits only) or null",
+  "fha_id": "FHA lender ID or null",
+  "va_id": "VA lender ID or null",
+  "usda_id": "USDA lender ID or null",
+  "licensed_states": "Comma-separated abbreviations, 'All 50 States', or null",
+  "licensed_states_url": "Corporate website licensing page URL or null",
+  "scenario_desk": "Email address or null",
+  "facebook": "Facebook page URL or null",
+  "linkedin": "LinkedIn company page URL or null",
+  "instagram": "Instagram profile URL or null",
+  "youtube": "YouTube channel URL or null",
+  "x_twitter": "X/Twitter profile URL or null"
 }`,
       }],
     }),
@@ -329,7 +235,14 @@ Return ONLY a JSON object with these exact keys. No other text.
   }
 
   const result = await response.json()
-  const text = result.content?.[0]?.text || ''
+
+  // Extract the final text response from Claude (skip tool_use and tool_result blocks)
+  const textBlocks = (result.content || []).filter(b => b.type === 'text')
+  const text = textBlocks.map(b => b.text).join('\n')
+
+  if (!text) {
+    throw new Error('Claude did not return a text response')
+  }
 
   // Parse JSON from Claude's response (handle potential markdown wrapping)
   const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -386,7 +299,6 @@ async function checkDuplicate(lenderName, websiteUrl, apiKey) {
   }
 
   // Strategy 2: Match by core name keywords
-  // e.g. "Renovation Finance LLC (dba Renofi)" → search for "renovation finance"
   if (lenderName) {
     const coreName = extractCoreName(lenderName)
     if (coreName.length >= 3) {
@@ -405,7 +317,7 @@ async function checkDuplicate(lenderName, websiteUrl, apiKey) {
       } catch { /* continue */ }
     }
 
-    // Strategy 3: Also try the full extracted name as a substring (original behavior)
+    // Strategy 3: Also try the full extracted name as a substring
     const fullFormula = encodeURIComponent(
       `FIND(LOWER("${lenderName.replace(/"/g, '\\"')}"), LOWER({Lender Name}))`
     )
@@ -542,9 +454,6 @@ export async function onRequestPost(context) {
   const { request, env } = context
 
   try {
-    // Clear diagnostics from any previous request
-    fetchDiagnostics.length = 0
-
     // ── Auth: admin only ──────────────────────────────────────────────
     const authHeader = request.headers.get('Authorization')
     const rawToken = authHeader?.replace('Bearer ', '') || null
@@ -561,8 +470,6 @@ export async function onRequestPost(context) {
     // ── Parse input ──────────────────────────────────────────────────
     const body = await request.json()
     let { url, force, update_existing, selected_fields } = body
-    // update_existing: if set, should be the Airtable record ID to merge into
-    // selected_fields: optional array of field names the user chose to update
 
     if (!url || typeof url !== 'string') {
       return jsonError(request, 'url is required', 400)
@@ -572,75 +479,24 @@ export async function onRequestPost(context) {
     url = url.trim()
     if (!url.startsWith('http')) url = 'https://' + url
 
-    // ── Step 1: Fetch the website pages ──────────────────────────────
-    // Parse the base URL for sub-page fetching
-    let baseUrl
+    // Validate URL format
     try {
-      const parsed = new URL(url)
-      baseUrl = `${parsed.protocol}//${parsed.hostname}`
+      new URL(url)
     } catch (e) {
       return jsonError(request, 'Invalid URL format', 400)
     }
 
-    // Fetch main page as raw HTML (for social link extraction) + sub-pages as text
-    const [mainPageRaw, aboutPage, wholesalePage, tpoPage, contactPage, licensingPage] = await Promise.all([
-      fetchPageRaw(url),
-      fetchPage(`${baseUrl}/about`),
-      fetchPage(`${baseUrl}/wholesale`),
-      fetchPage(`${baseUrl}/tpo`),
-      fetchPage(`${baseUrl}/contact`),
-      fetchPage(`${baseUrl}/licensing`),
-    ])
-
-    // Extract social media links directly from homepage HTML before stripping tags
-    const socialLinksFromHtml = extractSocialLinksFromHtml(mainPageRaw || '')
-
-    const mainPage = mainPageRaw ? htmlToText(mainPageRaw) : null
-
-    const pageTexts = {
-      'Main Page': mainPage,
-      'About Page': aboutPage,
-      'Wholesale Page': wholesalePage,
-      'TPO Page': tpoPage,
-      'Contact Page': contactPage,
-      'Licensing Page': licensingPage,
-    }
-
-    // ── Step 2: Extract details with Claude (or fallback if fetch failed) ──
+    // ── Step 1: Research lender with Claude + web search ─────────────
     const anthropicKey = env.ANTHROPIC_API_KEY
     if (!anthropicKey) return jsonError(request, 'ANTHROPIC_API_KEY not configured', 500)
 
-    // Check if we got any page content at all
-    const hasContent = Object.values(pageTexts).some(t => t && t.trim())
-    let extracted
-    let fetchFailed = false
-
-    if (hasContent) {
-      extracted = await extractLenderDetails(pageTexts, url, anthropicKey)
-
-      // Override Claude's social media guesses with verified links from HTML
-      if (socialLinksFromHtml.facebook) extracted.facebook = socialLinksFromHtml.facebook
-      if (socialLinksFromHtml.linkedin) extracted.linkedin = socialLinksFromHtml.linkedin
-      if (socialLinksFromHtml.instagram) extracted.instagram = socialLinksFromHtml.instagram
-      if (socialLinksFromHtml.youtube) extracted.youtube = socialLinksFromHtml.youtube
-      if (socialLinksFromHtml.x_twitter) extracted.x_twitter = socialLinksFromHtml.x_twitter
-    } else {
-      // Fallback: create a minimal record using the domain name
-      fetchFailed = true
-      const hostname = new URL(url).hostname.replace(/^www\./, '')
-      // Turn "21stmortgage.com" → "21stmortgage" → title case → "21Stmortgage"
-      const domainName = hostname.split('.')[0]
-      extracted = {
-        lender_name: domainName.charAt(0).toUpperCase() + domainName.slice(1),
-        corporate_website: url,
-      }
-    }
+    const extracted = await researchLenderWithWebSearch(url, anthropicKey)
 
     if (!extracted.lender_name) {
-      return jsonError(request, 'Could not determine the lender name from the website', 422)
+      return jsonError(request, 'Could not determine the lender name', 422)
     }
 
-    // ── Step 3: Check for duplicates ─────────────────────────────────
+    // ── Step 2: Check for duplicates ─────────────────────────────────
     const airtableKey = env.AIRTABLE_API_KEY
     if (!airtableKey) return jsonError(request, 'AIRTABLE_API_KEY not configured', 500)
 
@@ -691,7 +547,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    // ── Step 4a: Update existing record with user-selected fields ───
+    // ── Step 3a: Update existing record with user-selected fields ───
     if (update_existing) {
       let airtableFields = mapToAirtableFields(extracted, url)
 
@@ -729,7 +585,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    // ── Step 4b: Create new Airtable record ──────────────────────────
+    // ── Step 3b: Create new Airtable record ──────────────────────────
     const airtableFields = mapToAirtableFields(extracted, url)
     const record = await createAirtableRecord(airtableFields, airtableKey)
 
@@ -747,22 +603,18 @@ export async function onRequestPost(context) {
       }
     } catch { /* use fallback URL */ }
 
-    // ── Step 5: Report results ───────────────────────────────────────
+    // ── Step 4: Report results ───────────────────────────────────────
     const populatedFields = Object.keys(airtableFields)
     const missingFields = ALL_KEY_FIELDS.filter(f => !populatedFields.includes(f))
 
     return jsonSuccess(request, {
       success: true,
-      fetch_failed: fetchFailed,
       lender_name: extracted.lender_name,
       record_id: record.id,
       airtable_url: newRecordUrl,
       fields_populated: populatedFields,
       fields_missing: missingFields,
       extracted,
-      ...(fetchFailed ? {
-        message: 'Website could not be scraped (likely bot protection). A minimal record was created with just the URL. You can fill in details manually in Airtable.',
-      } : {}),
     })
 
   } catch (err) {
