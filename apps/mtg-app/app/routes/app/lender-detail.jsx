@@ -1122,22 +1122,53 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
 
   const query = search.toLowerCase().trim();
 
+  /* Category tag color palette — deterministic by category name hash */
+  const TAG_COLORS = [
+    { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },  // blue
+    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },  // green
+    { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },  // orange
+    { bg: "#FDF2F8", text: "#BE185D", border: "#FBCFE8" },  // pink
+    { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },  // purple
+    { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0" },  // emerald
+    { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },  // amber
+    { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },  // sky
+    { bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA" },  // red
+    { bg: "#F8FAFC", text: "#475569", border: "#CBD5E1" },  // slate
+  ];
+  function getTagColor(category) {
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) hash = ((hash << 5) - hash) + category.charCodeAt(i);
+    return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length];
+  }
+
   return (
     <div>
-      {/* Search box */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Search box — narrower with clear button */}
+      <div style={{ marginBottom: 16, maxWidth: 360, position: "relative" }}>
         <input
           type="text"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search product specifics..."
-          style={{ width: "100%", padding: "10px 14px", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", background: "#FFFFFF", color: "#0F172A", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
+          style={{ width: "100%", padding: "10px 14px", paddingRight: search ? 36 : 14, border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", background: "#FFFFFF", color: "#0F172A", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
           onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.12)"; }}
           onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
         />
+        {/* Clear button — only visible when there's text */}
+        {search && (
+          <button
+            onClick={() => onSearchChange("")}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", border: "none", background: "#E2E8F0", color: "#64748B", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#CBD5E1"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#E2E8F0"; }}
+            title="Clear search"
+          >
+            <i className="fa-solid fa-xmark" />
+          </button>
+        )}
       </div>
 
-      {/* Flat product card list (no group headers) */}
+      {/* Flat product card list with category tags */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
         {allProducts.filter((item) => {
           if (!query) return true;
@@ -1150,6 +1181,9 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
           const p = item.product;
           const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
           const displayName = version || (p["Loan Product"] || "Product Details");
+          let category = p["Loan Product"] || p["loan_product"] || "";
+          if (Array.isArray(category)) category = category[0] || "";
+          const tagColor = category ? getTagColor(category) : null;
           return (
             <div
               key={item.index}
@@ -1158,8 +1192,13 @@ function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSear
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.background = "#F0F7FF"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.1)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, minWidth: 0 }}>
                 <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500, whiteSpace: "normal" }}>{displayName}</span>
+                {tagColor && category && (
+                  <span style={{ display: "inline-flex", alignSelf: "flex-start", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: tagColor.bg, color: tagColor.text, border: `1px solid ${tagColor.border}`, whiteSpace: "nowrap" }}>
+                    {category}
+                  </span>
+                )}
               </div>
               <span style={{ color: "#2563EB", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
                 <i className="fa-solid fa-chevron-right" />
