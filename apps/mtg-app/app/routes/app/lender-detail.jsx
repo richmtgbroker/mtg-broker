@@ -1,9 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router";
 
 const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
 const CACHE_TTL = 30 * 60 * 1000;
+const ADMIN_EMAIL = "rich@mtg.broker";
+
+/* ── Config maps (match Worker JS) ── */
+const SOCIAL_CONFIG = {
+  Facebook:      { icon: "fa-brands fa-facebook",  color: "#1877F2", label: "Facebook" },
+  LinkedIn:      { icon: "fa-brands fa-linkedin",  color: "#0A66C2", label: "LinkedIn" },
+  Instagram:     { icon: "fa-brands fa-instagram", color: "#E1306C", label: "Instagram" },
+  "X (Twitter)": { icon: "fa-brands fa-x-twitter", color: "#000000", label: "X" },
+  YouTube:       { icon: "fa-brands fa-youtube",   color: "#FF0000", label: "YouTube" },
+};
+
+const PRICING_ENGINE_CONFIG = {
+  LenderPrice: { icon: "fa-solid fa-chart-line",              label: "LenderPrice", url: "https://marketplace.digitallending.com/#/login" },
+  Loansifter:  { icon: "fa-solid fa-magnifying-glass-dollar", label: "Loansifter",  url: "https://loansifternow.optimalblue.com/" },
+  Polly:       { icon: "fa-solid fa-wave-square",             label: "Polly",       url: "https://lx.pollyex.com/accounts/login/" },
+  Arive:       { icon: "fa-solid fa-rocket",                  label: "Arive",       url: "https://www.arive.com/" },
+};
+
+const LINK_ICON_CONFIG = {
+  Website:                 "fa-solid fa-globe",
+  "Broker Portal":         "fa-solid fa-arrow-right-to-bracket",
+  "Correspondent Website": "fa-solid fa-building",
+  "Correspondent Portal":  "fa-solid fa-door-open",
+  Products:                "fa-solid fa-file-invoice-dollar",
+  "Scenario Desk":         "fa-solid fa-comments-dollar",
+  "Turn Times":            "fa-solid fa-clock",
+  "Lender Fees":           "fa-solid fa-receipt",
+  "Quick Pricer":          "fa-solid fa-bolt",
+  "TPO Portal Pricer":     "fa-solid fa-calculator",
+  "Guidelines & Matrices": "fa-solid fa-book-open",
+  "NEXA Drive Folder":     "fa-brands fa-google-drive",
+  "Licensed States":       "fa-solid fa-map",
+};
+
+function getSectionColor(name) {
+  if (name && name.toUpperCase().indexOf("NEXA") !== -1) return "#1E3A5F";
+  return "#2563EB";
+}
+
+function isValidURL(str) {
+  try { new URL(str); return true; } catch { return false; }
+}
+
+/* simple markdown-ish → HTML (bold, italic, links, newlines) */
+function parseMarkdown(text) {
+  let s = text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:underline;">$1</a>')
+    .replace(/\n/g, "<br/>");
+  return s;
+}
 
 export function meta() {
   return [{ title: "Lender Detail — MtgBroker" }];
@@ -16,12 +69,27 @@ export default function LenderDetailPage() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [logoError, setLogoError] = useState(false);
+  const [selectedAE, setSelectedAE] = useState(null);
+  const [copyMsg, setCopyMsg] = useState("");
+  const [isFav, setIsFav] = useState(false);
+  const [starRating, setStarRating] = useState(0);
+  const [privateNotes, setPrivateNotes] = useState("");
+  const [notesSaveStatus, setNotesSaveStatus] = useState("");
 
+  /* Load Font Awesome 6 */
+  useEffect(() => {
+    if (document.querySelector('link[href*="font-awesome"]')) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css";
+    link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+  }, []);
+
+  /* Load lender data */
   useEffect(() => {
     if (!slug) return;
-
     async function load() {
-      // Check localStorage cache
       const cacheKey = CACHE_KEY_PREFIX + slug;
       try {
         const cached = localStorage.getItem(cacheKey);
@@ -30,46 +98,82 @@ export default function LenderDetailPage() {
           if (parsed?.ts && Date.now() - parsed.ts < CACHE_TTL) {
             setLender(parsed.data);
             setLoading(false);
-            // Background refresh
             fetchLender(slug, cacheKey, true);
             return;
           }
         }
       } catch {}
-
       await fetchLender(slug, cacheKey, false);
     }
-
-    async function fetchLender(slug, cacheKey, background) {
+    async function fetchLender(s, cacheKey, background) {
       try {
-        const res = await fetch(`${LENDERS_API}/${slug}`);
-        if (!res.ok) {
-          if (!background) setError("Lender not found");
-          if (!background) setLoading(false);
-          return;
-        }
+        const res = await fetch(`${LENDERS_API}/${s}`);
+        if (!res.ok) { if (!background) { setError("Lender not found"); setLoading(false); } return; }
         const data = await res.json();
         if (data.success && data.lender) {
           setLender(data.lender);
           try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: data.lender })); } catch {}
-        } else if (!background) {
-          setError("Lender not found");
-        }
-      } catch (e) {
-        if (!background) setError("Failed to load lender data. Please try again.");
-      }
+        } else if (!background) { setError("Lender not found"); }
+      } catch { if (!background) setError("Failed to load lender data. Please try again."); }
       if (!background) setLoading(false);
     }
-
     load();
   }, [slug]);
 
-  // Build favicon URL
-  let faviconUrl = null;
-  if (!logoError && lender?.logo) {
-    faviconUrl = lender.logo;
+  /* Load favorites + notes from localStorage */
+  useEffect(() => {
+    if (!slug) return;
+    try { setIsFav(localStorage.getItem("mtg_fav_" + slug) === "1"); } catch {}
+    try { setStarRating(parseInt(localStorage.getItem("mtg_stars_" + slug) || "0", 10)); } catch {}
+    try { setPrivateNotes(localStorage.getItem("mtg_notes_" + slug) || ""); } catch {}
+  }, [slug]);
+
+  const toggleFav = useCallback(() => {
+    const next = !isFav;
+    setIsFav(next);
+    try { if (next) localStorage.setItem("mtg_fav_" + slug, "1"); else localStorage.removeItem("mtg_fav_" + slug); } catch {}
+  }, [isFav, slug]);
+
+  const handleStarClick = useCallback((n) => {
+    setStarRating(n);
+    try { localStorage.setItem("mtg_stars_" + slug, String(n)); } catch {}
+  }, [slug]);
+
+  const handleNotesChange = useCallback((e) => {
+    const v = e.target.value;
+    setPrivateNotes(v);
+    try { localStorage.setItem("mtg_notes_" + slug, v); } catch {}
+    setNotesSaveStatus("Saved");
+    setTimeout(() => setNotesSaveStatus(""), 2000);
+  }, [slug]);
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      showToast("Link copied!");
+    }).catch(() => {});
+  }, []);
+
+  const shareLink = useCallback(() => {
+    if (navigator.share) {
+      navigator.share({ title: lender?.name || "Lender", url: window.location.href }).catch(() => {});
+    } else {
+      copyLink();
+    }
+  }, [lender, copyLink]);
+
+  function showToast(msg) {
+    setCopyMsg(msg);
+    setTimeout(() => setCopyMsg(""), 2500);
   }
 
+  function copyToClipboard(text, label) {
+    navigator.clipboard.writeText(text).then(() => showToast((label || "Value") + " copied!")).catch(() => {});
+  }
+
+  let faviconUrl = null;
+  if (!logoError && lender?.logo) faviconUrl = lender.logo;
+
+  /* ── Loading ── */
   if (loading) {
     return (
       <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -81,6 +185,7 @@ export default function LenderDetailPage() {
     );
   }
 
+  /* ── Error ── */
   if (error || !lender) {
     return (
       <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -100,7 +205,6 @@ export default function LenderDetailPage() {
   const loanProducts = lender.loanProducts || [];
   const loanTypes = lender.loanTypes || [];
 
-  // Channel badges
   const badges = [];
   if (lender.nexaWholesale) badges.push({ label: "Wholesale", cls: "bg-[#DBEAFE] text-[#1D4ED8]" });
   if (lender.nexaNondel) badges.push({ label: "Non-Del", cls: "bg-[#DCFCE7] text-[#15803D]" });
@@ -110,10 +214,12 @@ export default function LenderDetailPage() {
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "products", label: "Loan Products" },
+    { id: "contacts", label: "Contacts" },
   ];
-  if (accountExecs.length > 0 || otherContacts.length > 0) {
-    tabs.push({ id: "contacts", label: "Contacts" });
-  }
+
+  /* Check if user is admin (simple email check in localStorage) */
+  let isAdmin = false;
+  try { isAdmin = localStorage.getItem("mtg_user_email") === ADMIN_EMAIL; } catch {}
 
   return (
     <div style={{ background: "#F8FAFC", minHeight: "100vh" }}>
@@ -121,19 +227,19 @@ export default function LenderDetailPage() {
       <Breadcrumb lenderName={lender.name} />
 
       {/* Header — dark navy */}
-      <div className="flex items-center gap-4 flex-wrap rounded-[12px] p-[18px_24px]" style={{ background: "#1E3A5F" }}>
+      <div style={{ background: "#1E3A5F", padding: "18px 24px", display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap", borderRadius: "12px" }}>
         {/* Logo */}
-        <div className="w-[80px] h-[80px] rounded-[12px] border-2 border-white/20 overflow-hidden flex items-center justify-center shrink-0 text-white font-extrabold text-[26px]" style={{ background: "#2563EB" }}>
+        <div style={{ width: 80, height: 80, borderRadius: 12, border: "2px solid rgba(255,255,255,0.22)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff", fontWeight: 800, fontSize: 26, background: "#2563EB" }}>
           {faviconUrl ? (
-            <img src={faviconUrl} alt={lender.name} className="w-full h-full object-cover" onError={() => setLogoError(true)} />
+            <img src={faviconUrl} alt={lender.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={() => setLogoError(true)} />
           ) : (
             lender.name.charAt(0).toUpperCase()
           )}
         </div>
 
         {/* Info */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[20px] font-bold text-white leading-[1.2] m-0 mb-2 truncate">{lender.name}</h1>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF", lineHeight: 1.2, margin: "0 0 8px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lender.name}</h1>
           {badges.length > 0 && (
             <div className="flex gap-1.5 flex-wrap">
               {badges.map((b) => (
@@ -144,31 +250,47 @@ export default function LenderDetailPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-2 shrink-0">
-          {lender.website_url && (
-            <a href={lender.website_url} target="_blank" rel="noopener noreferrer" className="py-[7px] px-3.5 rounded-[7px] border border-white/20 bg-white/[0.08] text-[#CBD5E1] text-xs font-semibold no-underline hover:bg-white/[0.14] transition-colors">
-              Website
-            </a>
-          )}
-          {lender.tpo_portal_url && (
-            <a href={lender.tpo_portal_url} target="_blank" rel="noopener noreferrer" className="py-[7px] px-3.5 rounded-[7px] border border-white/20 bg-white/[0.08] text-[#CBD5E1] text-xs font-semibold no-underline hover:bg-white/[0.14] transition-colors">
-              TPO Portal
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+          {/* Favorite heart */}
+          <button
+            onClick={toggleFav}
+            title={isFav ? "Remove from favorites" : "Add to favorites"}
+            style={{ width: 38, height: 38, borderRadius: 8, border: isFav ? "1px solid rgba(251,113,133,0.6)" : "1px solid rgba(255,255,255,0.2)", background: isFav ? "rgba(251,113,133,0.2)" : "rgba(255,255,255,0.08)", color: isFav ? "#FB7185" : "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+          >
+            <i className={isFav ? "fa-solid fa-heart" : "fa-regular fa-heart"} />
+          </button>
+
+          {/* Copy Link */}
+          <button onClick={copyLink} style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+            <i className="fa-solid fa-link" style={{ marginRight: 5 }} />Copy Link
+          </button>
+
+          {/* Share */}
+          <button onClick={shareLink} style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+            <i className="fa-solid fa-share-nodes" style={{ marginRight: 5 }} />Share
+          </button>
+
+          {/* Admin Airtable button */}
+          {isAdmin && lender.airtableLink && (
+            <a href={lender.airtableLink} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(245,158,11,0.5)", background: "rgba(245,158,11,0.15)", color: "#FBBF24", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              <i className="fa-solid fa-table" style={{ marginRight: 5 }} />Airtable
             </a>
           )}
         </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1.5 bg-white border border-[#E2E8F0] rounded-[12px] p-[10px_16px] flex-wrap mt-2">
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12, padding: "10px 16px", flexWrap: "wrap", marginTop: 8 }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`py-1.5 px-4 border rounded-full text-[13px] font-semibold cursor-pointer font-inherit whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? "bg-[#2563EB] text-white border-[#2563EB]"
-                : "bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0] hover:bg-white hover:text-[#0F172A] hover:border-[#CBD5E1]"
-            }`}
+            style={{
+              padding: "6px 16px", borderRadius: 100, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", transition: "all 0.15s",
+              background: activeTab === tab.id ? "#2563EB" : "#F8FAFC",
+              color: activeTab === tab.id ? "#FFFFFF" : "#64748B",
+              border: activeTab === tab.id ? "1px solid #2563EB" : "1px solid #E2E8F0",
+            }}
           >
             {tab.label}
           </button>
@@ -176,217 +298,612 @@ export default function LenderDetailPage() {
       </div>
 
       {/* Tab Panels */}
-      <div className="mt-5">
-        {/* Overview Tab */}
+      <div style={{ marginTop: 20 }}>
+        {/* ── Overview Tab ── */}
         {activeTab === "overview" && (
           <div>
-            {/* Description */}
-            {lender.description && (
-              <p className="text-[15px] text-[#64748B] leading-[1.8] mb-4">{lender.description}</p>
-            )}
-
-            {/* Loan Types */}
-            {loanTypes.length > 0 && (
-              <div className="bg-white border border-[#E2E8F0] rounded-[10px] overflow-hidden mb-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-[9px] py-[11px] px-4" style={{ background: "#EFF6FF", borderBottom: "1px solid #BFDBFE" }}>
-                  <div className="w-[3px] h-4 rounded-[2px] bg-[#2563EB] shrink-0" />
-                  <span className="text-[13px] font-extrabold uppercase tracking-[0.01em] text-[#1D4ED8]">Loan Types</span>
-                </div>
-                <div className="p-3.5 flex flex-wrap gap-1.5">
-                  {loanTypes.map((lt) => (
-                    <span key={lt} className="text-[13px] font-medium py-[5px] px-[13px] rounded-[20px] bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">{lt}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Section cards grid */}
             {sections.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
                 {sections.map((section, i) => (
-                  <SectionCard key={i} section={section} />
+                  <SectionCard key={i} section={section} copyToClipboard={copyToClipboard} />
                 ))}
               </div>
             )}
+
+            {/* Private Notes */}
+            <div style={{ marginTop: 20 }}>
+              <PrivateNotes
+                starRating={starRating}
+                onStarClick={handleStarClick}
+                notes={privateNotes}
+                onNotesChange={handleNotesChange}
+                saveStatus={notesSaveStatus}
+              />
+            </div>
           </div>
         )}
 
-        {/* Loan Products Tab */}
+        {/* ── Loan Products Tab ── */}
         {activeTab === "products" && (
           <div>
-            {loanProducts.length === 0 ? (
-              <div className="text-center py-10 bg-white border border-[#E2E8F0] rounded-[10px] text-[#64748B] text-[13px]">
-                No loan products found for this lender.
+            {/* Loan Types */}
+            {loanTypes.length > 0 && (
+              <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                <SectionHeader title="Loan Types" color="#2563EB" />
+                <div style={{ padding: "14px 16px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {loanTypes.map((lt) => (
+                    <span key={lt} style={{ fontSize: 13, fontWeight: 500, padding: "5px 13px", borderRadius: 20, background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{lt}</span>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {loanProducts.map((prod, i) => (
-                  <a
-                    key={i}
-                    href={prod.slug ? `/app/products/${prod.slug}` : "#"}
-                    className="bg-white border border-[#E2E8F0] rounded-[8px] py-3.5 px-4 flex justify-between items-center gap-3 no-underline shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition-all hover:border-[#93C5FD] hover:bg-[#F0F7FF] hover:shadow-[0_2px_8px_rgba(37,99,235,0.1)]"
-                  >
-                    <span className="text-[15px] text-[#0F172A] font-medium">{prod.name || prod}</span>
-                    <span className="text-[14px] text-[#2563EB] font-semibold shrink-0">&rsaquo;</span>
-                  </a>
-                ))}
+            )}
+
+            {loanProducts.length === 0 && loanTypes.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748B", fontSize: 13, background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10 }}>
+                <i className="fa-solid fa-file-invoice-dollar" style={{ fontSize: 28, color: "#94A3B8", marginBottom: 10, display: "block" }} />
+                No loan products linked yet.
               </div>
+            ) : loanProducts.length > 0 && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "0 0 10px 0" }}>Loan Product Types</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                  {loanProducts.map((prod, i) => (
+                    <a
+                      key={i}
+                      href={prod.slug ? `/app/products/${prod.slug}` : "#"}
+                      style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, textDecoration: "none", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.background = "#F0F7FF"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#FFFFFF"; }}
+                    >
+                      <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500 }}>{prod.name || prod}</span>
+                      <span style={{ fontSize: 14, color: "#2563EB", fontWeight: 600, flexShrink: 0 }}>&rsaquo;</span>
+                    </a>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {/* Contacts Tab */}
+        {/* ── Contacts Tab ── */}
         {activeTab === "contacts" && (
           <div>
-            {/* Account Executives */}
-            {accountExecs.length > 0 && (
-              <div className="mb-5">
-                <div className="text-[11px] font-bold tracking-[0.08em] text-[#94A3B8] uppercase mb-2.5">Account Executives</div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                  {accountExecs.map((ae, i) => (
-                    <div key={i} className="bg-white border border-[#E2E8F0] rounded-[10px] py-[18px] px-3 flex flex-col items-center gap-2.5 text-center shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                      <div className="w-[52px] h-[52px] rounded-full border-2 border-[#E2E8F0] overflow-hidden bg-[#EFF6FF] flex items-center justify-center text-[#2563EB] font-bold text-lg shrink-0">
-                        {ae.photo ? (
-                          <img src={ae.photo} alt={ae.name} className="w-full h-full object-cover rounded-full" />
-                        ) : (
-                          ae.name?.charAt(0)?.toUpperCase() || "?"
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-[#0F172A] m-0 leading-[1.3]">{ae.name}</p>
-                        {ae.title && <p className="text-[12px] text-[#64748B] m-0">{ae.title}</p>}
-                      </div>
-                      {ae.email && (
-                        <a href={`mailto:${ae.email}`} className="text-[12px] text-[#2563EB] no-underline hover:underline truncate max-w-full">{ae.email}</a>
-                      )}
-                      {ae.phone && (
-                        <a href={`tel:${ae.phone}`} className="text-[12px] text-[#2563EB] no-underline hover:underline">{ae.phone}</a>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            {accountExecs.length === 0 && otherContacts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748B", fontSize: 13, background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10 }}>
+                <i className="fa-solid fa-users" style={{ fontSize: 28, color: "#94A3B8", marginBottom: 10, display: "block" }} />
+                No contacts listed for this lender.
               </div>
-            )}
+            ) : (
+              <>
+                {/* Account Executives */}
+                {accountExecs.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "0 0 10px 0" }}>Account Executives</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+                      {accountExecs.map((ae, i) => (
+                        <div
+                          key={i}
+                          onClick={() => setSelectedAE(ae)}
+                          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10, padding: "18px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "pointer", textAlign: "center", transition: "border-color 0.15s, box-shadow 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(37,99,235,0.12)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
+                        >
+                          <div style={{ width: 52, height: 52, borderRadius: "50%", overflow: "hidden", border: "2px solid #E2E8F0", flexShrink: 0 }}>
+                            {ae.photo ? (
+                              <img src={ae.photo} alt={ae.name} style={{ width: 52, height: 52, objectFit: "cover", borderRadius: "50%" }} />
+                            ) : (
+                              <div style={{ width: 52, height: 52, borderRadius: "50%", background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", fontWeight: 700, fontSize: 18 }}>
+                                {ae.name?.charAt(0)?.toUpperCase() || "?"}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: "#0F172A", margin: 0, lineHeight: 1.3 }}>{ae.name}</p>
+                            {ae.title && <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>{ae.title}</p>}
+                          </div>
+                          <span style={{ fontSize: 11, color: "#94A3B8" }}>Tap for details</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Other Contacts */}
-            {otherContacts.length > 0 && (
-              <div>
-                <div className="text-[11px] font-bold tracking-[0.08em] text-[#94A3B8] uppercase mb-2.5">Other Contacts</div>
-                <div className="bg-white border border-[#E2E8F0] rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                  {otherContacts.map((oc, i) => (
-                    <div key={i} className={`grid grid-cols-3 py-3 px-4 items-center gap-2 ${i % 2 === 0 ? "bg-white" : "bg-[#F8FAFC]"} ${i < otherContacts.length - 1 ? "border-b border-[#E2E8F0]" : ""}`}>
-                      <div>
-                        <p className="text-[14px] font-semibold text-[#0F172A] m-0">{oc.name}</p>
-                        {oc.title && <p className="text-[12px] text-[#64748B] m-0">{oc.title}</p>}
-                      </div>
-                      <div />
-                      <div className="text-right">
-                        {oc.email && <a href={`mailto:${oc.email}`} className="block text-[13px] text-[#2563EB] no-underline hover:underline">{oc.email}</a>}
-                        {oc.phone && <a href={`tel:${oc.phone}`} className="block text-[13px] text-[#2563EB] no-underline hover:underline">{oc.phone}</a>}
-                      </div>
+                {/* Other Contacts */}
+                {otherContacts.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "0 0 10px 0" }}>Other Contacts</p>
+                    <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                      {otherContacts.map((oc, i) => (
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", padding: "12px 16px", alignItems: "center", gap: 8, background: i % 2 === 0 ? "#FFFFFF" : "#F8FAFC", borderBottom: i < otherContacts.length - 1 ? "1px solid #E2E8F0" : "none" }}>
+                          <div>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: "#0F172A", margin: 0 }}>{oc.name}</p>
+                            {oc.title && <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>{oc.title}</p>}
+                          </div>
+                          <div />
+                          <div style={{ textAlign: "right" }}>
+                            {oc.email && <a href={`mailto:${oc.email}`} style={{ display: "block", fontSize: 13, color: "#2563EB", textDecoration: "none" }}>{oc.email}</a>}
+                            {oc.phone && <a href={`tel:${oc.phone}`} style={{ display: "block", fontSize: 13, color: "#2563EB", textDecoration: "none" }}>{oc.phone}</a>}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
       </div>
-    </div>
-  );
-}
 
-function Breadcrumb({ lenderName }) {
-  return (
-    <nav className="flex items-center gap-2 text-[14px] text-[#94A3B8] py-3">
-      <Link to="/app/lenders" className="text-[#2563EB] no-underline font-semibold hover:underline">Lenders</Link>
-      <span className="text-[#E2E8F0]">/</span>
-      <span className="text-[#64748B] font-medium">{lenderName || "..."}</span>
-    </nav>
-  );
-}
+      {/* AE Detail Modal */}
+      {selectedAE && (
+        <AEModal ae={selectedAE} onClose={() => setSelectedAE(null)} copyToClipboard={copyToClipboard} />
+      )}
 
-function SectionCard({ section }) {
-  // Section color map based on section title
-  const colorMap = {
-    "Links": { bg: "#EFF6FF", border: "#BFDBFE", bar: "#2563EB", text: "#1D4ED8" },
-    "Pricing Engines": { bg: "#F0FDF4", border: "#BBF7D0", bar: "#15803D", text: "#15803D" },
-    "Fees & Compensation": { bg: "#FFF7ED", border: "#FED7AA", bar: "#C2410C", text: "#C2410C" },
-    "Requirements": { bg: "#FDF2F8", border: "#FBCFE8", bar: "#BE185D", text: "#BE185D" },
-    "Notes": { bg: "#F5F3FF", border: "#DDD6FE", bar: "#7C3AED", text: "#7C3AED" },
-  };
-
-  const defaultColor = { bg: "#F8FAFC", border: "#E2E8F0", bar: "#64748B", text: "#64748B" };
-  // Try to find a matching color by checking if the section title contains any key
-  let colors = defaultColor;
-  for (const [key, val] of Object.entries(colorMap)) {
-    if (section.title?.toLowerCase().includes(key.toLowerCase())) {
-      colors = val;
-      break;
-    }
-  }
-
-  const fields = section.fields || [];
-
-  return (
-    <div className="bg-white rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.05)]" style={{ border: `1px solid ${colors.border}` }}>
-      {/* Header */}
-      <div className="flex items-center gap-[9px] py-[11px] px-4" style={{ background: colors.bg, borderBottom: `1px solid ${colors.border}` }}>
-        <div className="w-[3px] h-4 rounded-[2px] shrink-0" style={{ background: colors.bar }} />
-        <span className="text-[13px] font-extrabold uppercase tracking-[0.01em]" style={{ color: colors.text }}>{section.title}</span>
-      </div>
-
-      {/* Fields */}
-      {fields.map((field, i) => (
-        <div key={i} className="grid grid-cols-2 py-[11px] px-4 items-center gap-2.5" style={{ borderBottom: i < fields.length - 1 ? "1px solid rgba(0,0,0,0.15)" : "none" }}>
-          <span className="text-[13px] text-[#64748B] font-medium">{field.label}</span>
-          <FieldValue field={field} />
+      {/* Copy Toast */}
+      {copyMsg && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: "#1E293B", color: "#fff", padding: "8px 18px", borderRadius: 100, fontSize: 13, fontWeight: 500, zIndex: 10000 }}>
+          {copyMsg}
         </div>
-      ))}
-
-      {fields.length === 0 && (
-        <div className="py-4 px-4 text-[13px] text-[#94A3B8]">No data available</div>
       )}
     </div>
   );
 }
 
-function FieldValue({ field }) {
-  const value = field.value;
-  const renderMode = field.renderMode || "text";
+/* ════════════════════════════════════════
+   Breadcrumb
+   ════════════════════════════════════════ */
+function Breadcrumb({ lenderName }) {
+  return (
+    <nav style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#94A3B8", padding: "12px 0 10px" }}>
+      <Link to="/app/lenders" style={{ color: "#2563EB", textDecoration: "none", fontWeight: 600 }}>Lenders</Link>
+      <span style={{ color: "#E2E8F0" }}>/</span>
+      <span style={{ color: "#64748B", fontWeight: 500 }}>{lenderName || "..."}</span>
+    </nav>
+  );
+}
 
-  if (!value && value !== 0 && value !== false) {
-    return <span className="text-[15px] font-semibold text-[#94A3B8]">—</span>;
-  }
-
-  // Boolean badge
-  if (renderMode === "boolean" || typeof value === "boolean" || value === "Yes" || value === "No" || value === "TRUE" || value === "FALSE") {
-    const isYes = value === true || value === "Yes" || value === "TRUE" || value === "true";
+/* ════════════════════════════════════════
+   Section Header (matches Worker)
+   ════════════════════════════════════════ */
+function SectionHeader({ title, color }) {
+  const isDarkNavy = color === "#1E3A5F";
+  if (isDarkNavy) {
     return (
-      <span className={`inline-flex items-center gap-1 text-[13px] font-semibold py-1 px-[11px] rounded-full whitespace-nowrap ${isYes ? "bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]" : "bg-[#F8FAFC] text-[#94A3B8] border border-[#E2E8F0]"}`}>
-        {isYes ? "Yes" : "No"}
-      </span>
-    );
-  }
-
-  // URL link
-  if (renderMode === "link" || (typeof value === "string" && value.startsWith("http"))) {
-    return (
-      <a href={value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-[7px] py-[5px] px-3 rounded-[6px] bg-[#EFF6FF] border border-[#BFDBFE] text-[#2563EB] text-[12px] font-semibold no-underline whitespace-nowrap hover:bg-[#DBEAFE] hover:border-[#93C5FD] transition-colors">
-        Open &rsaquo;
-      </a>
-    );
-  }
-
-  // Notes / long text
-  if (renderMode === "notes" || (typeof value === "string" && value.length > 100)) {
-    return (
-      <div className="col-span-2 mt-1">
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-[8px] p-3 text-[14px] leading-[1.7] text-[#64748B]">{value}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#1E3A5F", borderBottom: "1px solid #152D4A" }}>
+        <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#FFFFFF", opacity: 0.5 }} />
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#FFFFFF" }}>{title}</span>
       </div>
     );
   }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: color + "20", borderBottom: "1px solid " + color + "45" }}>
+      <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: color }} />
+      <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: color }}>{title}</span>
+    </div>
+  );
+}
 
-  // Default text
-  return <span className="text-[15px] font-semibold text-[#0F172A]">{String(value)}</span>;
+/* ════════════════════════════════════════
+   Section Card
+   ════════════════════════════════════════ */
+function SectionCard({ section, copyToClipboard }) {
+  const fields = section.fields || [];
+  if (fields.length === 0) return null;
+
+  const color = getSectionColor(section.name);
+  const isDarkNavy = color === "#1E3A5F";
+  const cardBorder = isDarkNavy ? "#8EB5D4" : color + "55";
+
+  // Detect if ALL fields share a single renderMode
+  const modes = {};
+  fields.forEach((f) => { modes[f.renderMode] = true; });
+  const modeKeys = Object.keys(modes);
+  const allSocial = modeKeys.length === 1 && modes["social"];
+  const allPricing = modeKeys.length === 1 && modes["pricing-engine"];
+  const allLinks = modeKeys.length === 1 && modes["link"];
+
+  // About section spans full width
+  const fullWidth = section.name === "About";
+
+  // Pricing: filter to available only
+  if (allPricing) {
+    const available = fields.filter((f) => {
+      const v = String(f.value || "").toLowerCase();
+      return v.indexOf("yes") !== -1 || v.indexOf("\u2705") !== -1;
+    });
+    if (available.length === 0) return null;
+  }
+
+  return (
+    <div style={{ background: "#FFFFFF", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid " + cardBorder, gridColumn: fullWidth ? "1 / -1" : undefined }}>
+      <SectionHeader title={section.name} color={color} />
+
+      {allSocial ? (
+        <div style={{ padding: "12px 16px" }}>
+          <SocialRow fields={fields} />
+        </div>
+      ) : allPricing ? (
+        <PricingGrid fields={fields} />
+      ) : allLinks ? (
+        <LinkRows fields={fields} />
+      ) : (
+        fields.map((field, i) => (
+          <FieldRow key={i} field={field} isLast={i === fields.length - 1} copyToClipboard={copyToClipboard} />
+        ))
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Field Row — handles ALL render modes
+   ════════════════════════════════════════ */
+function FieldRow({ field, isLast, copyToClipboard }) {
+  const mode = field.renderMode || "text";
+  const value = field.value;
+  const label = field.displayName;
+
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string" && (!value.trim() || value.trim() === "-")) return null;
+
+  const rowStyle = { display: "grid", gridTemplateColumns: "1fr 1fr", padding: "11px 16px", alignItems: "center", gap: 10, borderBottom: isLast ? "none" : "1px solid rgba(0,0,0,0.15)" };
+  const labelEl = <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>{label}</span>;
+
+  switch (mode) {
+    case "link": {
+      if (!isValidURL(String(value))) return null;
+      const icon = LINK_ICON_CONFIG[label] || "fa-solid fa-link";
+      return (
+        <div style={rowStyle}>
+          {labelEl}
+          <a href={String(value)} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px", borderRadius: 6, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#2563EB", fontSize: 12, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+            <i className={icon + " ld-link-btn-icon"} style={{ fontSize: 12, opacity: 0.8 }} />
+            {label}
+          </a>
+        </div>
+      );
+    }
+
+    case "boolean": {
+      const isYes = value === true || String(value).toLowerCase().includes("yes") || value === "TRUE" || value === "true";
+      return (
+        <div style={rowStyle}>
+          {labelEl}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, padding: "4px 11px", borderRadius: 100, whiteSpace: "nowrap", background: isYes ? "#F0FDF4" : "#F8FAFC", color: isYes ? "#15803D" : "#94A3B8", border: isYes ? "1px solid #BBF7D0" : "1px solid #E2E8F0" }}>
+            {isYes ? "\u2713 Yes" : "\u2717 No"}
+          </span>
+        </div>
+      );
+    }
+
+    case "pills": {
+      const pillVal = String(value).trim();
+      if (!pillVal) return null;
+      const lv = pillVal.toLowerCase();
+      const isYes = lv.includes("yes") || lv.includes("true");
+      const isNo = lv.includes("no") || lv.includes("false");
+      const pillStyle = isYes
+        ? { background: "#F0FDF4", color: "#15803D", border: "1px solid #BBF7D0" }
+        : isNo
+        ? { background: "#F8FAFC", color: "#94A3B8", border: "1px solid #E2E8F0" }
+        : { background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" };
+      return (
+        <div style={rowStyle}>
+          {labelEl}
+          <span style={{ display: "inline-flex", alignItems: "center", padding: "4px 13px", borderRadius: 100, fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", ...pillStyle }}>{pillVal}</span>
+        </div>
+      );
+    }
+
+    case "notes": {
+      const noteText = String(value).trim();
+      if (!noteText) return null;
+      return (
+        <div style={{ padding: "10px 16px", borderBottom: isLast ? "none" : "1px solid rgba(0,0,0,0.15)" }}>
+          <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: "12px 16px" }}>
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "0 0 8px 0" }}>{label}</p>
+            <div style={{ fontSize: 14, lineHeight: 1.7, color: "#64748B" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(noteText) }} />
+          </div>
+        </div>
+      );
+    }
+
+    case "richtext": {
+      const proseText = String(value).trim();
+      if (!proseText) return null;
+      return (
+        <div style={{ padding: "10px 16px", borderBottom: isLast ? "none" : "1px solid rgba(0,0,0,0.15)" }}>
+          <div style={{ fontSize: 14, lineHeight: 1.7, color: "#64748B" }} dangerouslySetInnerHTML={{ __html: parseMarkdown(proseText) }} />
+        </div>
+      );
+    }
+
+    case "copyable": {
+      const textVal = String(value);
+      return (
+        <div style={{ ...rowStyle, alignItems: "flex-start" }}>
+          {labelEl}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flex: 1 }}>
+            <pre style={{ flex: 1, fontSize: 13, lineHeight: 1.5, color: "#0F172A", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6, padding: "8px 10px", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "inherit" }}>{textVal}</pre>
+            <button
+              onClick={() => copyToClipboard(textVal, label)}
+              style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 6, border: "1px solid #E2E8F0", background: "#FFFFFF", color: "#64748B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}
+              title="Copy to clipboard"
+            >
+              <i className="fa-solid fa-copy" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    case "list": {
+      const listVal = String(value).trim();
+      if (!listVal) return null;
+      const items = listVal.split(/\n|,/).map((s) => s.trim()).filter(Boolean);
+      if (items.length === 0) return null;
+      if (items.length === 1) {
+        return (
+          <div style={rowStyle}>
+            {labelEl}
+            <span style={{ fontSize: 15, fontWeight: 600, color: "#0F172A" }}>{items[0]}</span>
+          </div>
+        );
+      }
+      return (
+        <div style={{ padding: "10px 16px", borderBottom: isLast ? "none" : "1px solid rgba(0,0,0,0.15)" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>{label}</p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {items.map((item, j) => (
+              <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 14, color: "#64748B", borderBottom: j < items.length - 1 ? "1px solid #E2E8F0" : "none", lineHeight: 1.5 }}>
+                <span style={{ color: "#94A3B8", flexShrink: 0 }}>&ndash;</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    case "attachment": {
+      if (!Array.isArray(value) || value.length === 0) return null;
+      return (
+        <div style={{ padding: "10px 16px", borderBottom: isLast ? "none" : "1px solid rgba(0,0,0,0.15)" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "#64748B", marginBottom: 6 }}>{label}</p>
+          <div>
+            {value.map((att, j) => {
+              const ext = att.filename ? att.filename.split(".").pop().toUpperCase() : "FILE";
+              return (
+                <a key={j} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, textDecoration: "none", color: "#0F172A", fontSize: 13, fontWeight: 500, margin: "0 8px 8px 0" }}>
+                  <i className="fa-solid fa-file-arrow-down" style={{ marginRight: 6, color: "#2563EB" }} />
+                  {att.filename || "Download"}
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", background: "#E2E8F0", borderRadius: 3, color: "#64748B", marginLeft: 4 }}>{ext}</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    case "social":
+    case "pricing-engine":
+      return null; // handled at section level
+
+    default: // text
+      return (
+        <div style={rowStyle}>
+          {labelEl}
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#0F172A" }}>{String(value)}</span>
+        </div>
+      );
+  }
+}
+
+/* ════════════════════════════════════════
+   Social Row — colored platform buttons
+   ════════════════════════════════════════ */
+function SocialRow({ fields }) {
+  const valid = fields.filter((f) => f.value && isValidURL(String(f.value)));
+  if (valid.length === 0) return <span style={{ fontSize: 13, color: "#94A3B8" }}>No links</span>;
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "4px 0" }}>
+      {valid.map((field, i) => {
+        const cfg = SOCIAL_CONFIG[field.displayName] || { icon: "fa-solid fa-share-nodes", color: "#64748B", label: field.displayName };
+        return (
+          <a
+            key={i}
+            href={String(field.value)}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={cfg.label}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, background: cfg.color, color: "#FFFFFF", textDecoration: "none", fontSize: 13, fontWeight: 500, transition: "opacity 0.15s, transform 0.1s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.transform = "translateY(0)"; }}
+          >
+            <i className={cfg.icon} style={{ fontSize: 15 }} />
+            <span style={{ fontSize: 12 }}>{cfg.label}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Pricing Grid — rows with icon/label/launch
+   ════════════════════════════════════════ */
+function PricingGrid({ fields }) {
+  const available = fields.filter((f) => {
+    const v = String(f.value || "").toLowerCase();
+    return v.indexOf("yes") !== -1 || v.indexOf("\u2705") !== -1;
+  });
+  if (available.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {available.map((field, i) => {
+        const pe = PRICING_ENGINE_CONFIG[field.displayName] || { icon: "fa-solid fa-chart-bar", label: field.displayName, url: "" };
+        return (
+          <a
+            key={i}
+            href={pe.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", textDecoration: "none", borderBottom: i < available.length - 1 ? "1px solid #E2E8F0" : "none", transition: "background 0.15s" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#F0F7FF"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <div style={{ width: 36, height: 36, borderRadius: 9, background: "#EFF6FF", border: "1px solid #BFDBFE", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", fontSize: 15, flexShrink: 0 }}>
+              <i className={pe.icon} />
+            </div>
+            <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: "#0F172A" }}>{pe.label}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#94A3B8", opacity: 0.6, display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+              Open <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 11 }} />
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Link Rows — displayName as button text with FA icon
+   ════════════════════════════════════════ */
+function LinkRows({ fields }) {
+  const valid = fields.filter((f) => f.value && isValidURL(String(f.value)));
+  if (valid.length === 0) return null;
+  return (
+    <>
+      {valid.map((field, i) => {
+        const icon = LINK_ICON_CONFIG[field.displayName] || "fa-solid fa-link";
+        return (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "11px 16px", alignItems: "center", gap: 10, borderBottom: i < valid.length - 1 ? "1px solid rgba(0,0,0,0.15)" : "none" }}>
+            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 500 }}>{field.displayName}</span>
+            <a href={String(field.value)} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "5px 12px", borderRadius: 6, background: "#EFF6FF", border: "1px solid #BFDBFE", color: "#2563EB", fontSize: 12, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}>
+              <i className={icon} style={{ fontSize: 12, opacity: 0.8 }} />
+              {field.displayName}
+            </a>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/* ════════════════════════════════════════
+   AE Detail Modal
+   ════════════════════════════════════════ */
+function AEModal({ ae, onClose, copyToClipboard }) {
+  const initials = ae.name ? ae.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
+
+  function buildSummary() {
+    let parts = [ae.name];
+    if (ae.title) parts.push(ae.title);
+    if (ae.email) parts.push(ae.email);
+    if (ae.phone) parts.push(ae.phone);
+    return parts.join("\n");
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "ld-fade-in 0.15s ease" }}
+    >
+      <style>{`@keyframes ld-fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes ld-slide-up { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 14, width: "100%", maxWidth: 380, position: "relative", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.2)", animation: "ld-slide-up 0.18s ease" }}
+      >
+        {/* Close */}
+        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, width: 28, height: 28, borderRadius: "50%", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.8)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, zIndex: 1 }}>
+          <i className="fa-solid fa-xmark" />
+        </button>
+
+        {/* Header */}
+        <div style={{ background: "linear-gradient(135deg, #0C4A6E 0%, #1D4ED8 100%)", padding: "28px 24px 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          {ae.photo ? (
+            <img src={ae.photo} alt={ae.name} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.35)" }} />
+          ) : (
+            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.18)", border: "3px solid rgba(255,255,255,0.35)", color: "#fff", fontSize: 26, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials}</div>
+          )}
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 4px 0" }}>{ae.name}</p>
+            {ae.title && <p style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", margin: 0 }}>{ae.title}</p>}
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {ae.email && (
+            <ContactRow icon="fa-solid fa-envelope" label={ae.email} href={`mailto:${ae.email}`} onCopy={() => copyToClipboard(ae.email, "Email")} />
+          )}
+          {ae.phone && (
+            <ContactRow icon="fa-solid fa-phone" label={ae.phone} href={`tel:${ae.phone}`} onCopy={() => copyToClipboard(ae.phone, "Phone")} />
+          )}
+        </div>
+
+        {/* Footer — copy all */}
+        <div style={{ padding: "0 20px 18px" }}>
+          <button
+            onClick={() => copyToClipboard(buildSummary(), "Contact info")}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "10px 16px", background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}
+          >
+            <i className="fa-solid fa-copy" /> Copy All Info
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContactRow({ icon, label, href, onCopy }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8 }}>
+      <div style={{ width: 34, height: 34, minWidth: 34, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: "#EFF6FF", color: "#2563EB", flexShrink: 0 }}>
+        <i className={icon} />
+      </div>
+      <a href={href} style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#0F172A", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</a>
+      <button onClick={onCopy} style={{ width: 28, height: 28, minWidth: 28, borderRadius: 6, border: "1px solid #E2E8F0", background: "#FFFFFF", color: "#94A3B8", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>
+        <i className="fa-solid fa-copy" />
+      </button>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Private Notes (localStorage)
+   ════════════════════════════════════════ */
+function PrivateNotes({ starRating, onStarClick, notes, onNotesChange, saveStatus }) {
+  return (
+    <div style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10, padding: 16 }}>
+      <SectionHeader title="Private Notes" color="#2563EB" />
+      <div style={{ padding: "12px 16px" }}>
+        {/* Star rating */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              onClick={() => onStarClick(n)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 2, fontSize: 18, color: n <= starRating ? "#F59E0B" : "#94A3B8", transition: "color 0.1s" }}
+            >
+              <i className={n <= starRating ? "fa-solid fa-star" : "fa-regular fa-star"} />
+            </button>
+          ))}
+          <span style={{ fontSize: 12, color: "#64748B", marginLeft: 6 }}>Your rating</span>
+        </div>
+
+        {/* Textarea */}
+        <textarea
+          value={notes}
+          onChange={onNotesChange}
+          placeholder="Add private notes about this lender..."
+          style={{ width: "100%", minHeight: 120, marginTop: 12, padding: 10, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, fontFamily: "inherit", fontSize: 13, color: "#0F172A", resize: "vertical", boxSizing: "border-box" }}
+        />
+        {saveStatus && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{saveStatus}</div>}
+      </div>
+    </div>
+  );
 }
