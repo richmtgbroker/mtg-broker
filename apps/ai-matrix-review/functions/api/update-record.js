@@ -233,15 +233,44 @@ export async function onRequestPatch(context) {
 
     // ─── VALIDATE AGAINST CHOICES ───────────────────────────────────────────
     // Split fields into valid (will be written) and skipped (returned as warnings).
+    // Uses fuzzy matching: strips emojis and extra whitespace to find the right choice,
+    // then writes the actual choice value (with correct emoji).
+
+    // Strip emoji circles and trim for comparison
+    function stripEmoji(s) {
+      return s.replace(/[\u{1F534}\u{1F7E2}\u{1F7E1}\u{1F7E0}\u{1F535}]/gu, '').trim();
+    }
+
+    // Try to find a matching choice, with fallback to emoji-stripped comparison
+    function findMatchingChoice(value, choices) {
+      // 1. Exact match
+      if (choices.includes(value)) return value;
+
+      // 2. Strip emojis from both and compare text content
+      const strippedValue = stripEmoji(value);
+      for (const choice of choices) {
+        if (stripEmoji(choice) === strippedValue) return choice;
+      }
+
+      // 3. Case-insensitive comparison (stripped)
+      const lowerValue = strippedValue.toLowerCase();
+      for (const choice of choices) {
+        if (stripEmoji(choice).toLowerCase() === lowerValue) return choice;
+      }
+
+      return null; // No match found
+    }
+
     const validFields = {};
     const skipped = [];
 
     for (const [fieldName, value] of Object.entries(fields)) {
       const choices = FIELD_CHOICES[fieldName];
       if (choices) {
-        // This is a singleSelect field — check if the value matches a valid choice
-        if (choices.includes(value)) {
-          validFields[fieldName] = value;
+        const match = findMatchingChoice(value, choices);
+        if (match) {
+          // Use the actual choice value (with correct emoji) not the AI's version
+          validFields[fieldName] = match;
         } else {
           skipped.push({ field: fieldName, value, reason: 'Value does not match any existing option' });
         }
