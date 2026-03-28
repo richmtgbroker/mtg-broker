@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
-// In production, API calls go to the Pages Function at the same origin.
+// API calls use relative URLs so they work on any deployment (staging, production, preview).
 // In dev, Vite proxies /api to localhost:8788 (wrangler pages dev).
-const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? ''
-  : 'https://mtg-matrix-review.pages.dev';
+const API_BASE = '';
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 function getAuthToken() {
