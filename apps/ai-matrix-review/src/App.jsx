@@ -542,11 +542,29 @@ function DetailPanel({ record, onStatusChange, statusUpdating, onApplyFields, ap
       return;
     }
 
-    const success = await onApplyFields(record.id, fieldsToUpdate);
-    if (success) {
-      const msg = reviewOnlyCount > 0
-        ? `Updated ${Object.keys(fieldsToUpdate).length} field(s). ${reviewOnlyCount} AI-only field(s) acknowledged.`
-        : `Updated ${Object.keys(fieldsToUpdate).length} field(s) successfully.`;
+    const result = await onApplyFields(record.id, fieldsToUpdate);
+    if (result.success) {
+      let msg = '';
+
+      // Show how many were updated
+      if (result.updated > 0) {
+        msg += `Updated ${result.updated} field(s).`;
+      }
+
+      // Show skipped fields (value didn't match existing options)
+      if (result.skipped && result.skipped.length > 0) {
+        msg += `\n\nSkipped ${result.skipped.length} field(s) — value doesn't match existing options:\n`;
+        result.skipped.forEach(s => {
+          msg += `\n  - ${s.field}: "${s.value}"`;
+        });
+        msg += '\n\nUpdate these manually in Airtable.';
+      }
+
+      // Show review-only count
+      if (reviewOnlyCount > 0) {
+        msg += `\n\n${reviewOnlyCount} AI-only field(s) acknowledged (no Current field to update).`;
+      }
+
       alert(msg);
       setSelectedFields(new Map());
     }
@@ -902,17 +920,21 @@ export default function App() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ recordId, fields: fieldsToUpdate }),
       });
+
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+        throw new Error(data.error || `HTTP ${res.status}`);
       }
 
       // Refresh the detail record to show updated values
       await fetchDetail(recordId);
-      return true;
+
+      // Return skipped fields info so the caller can show warnings
+      return { success: true, updated: data.updated || 0, skipped: data.skipped || [] };
     } catch (err) {
       alert('Failed to apply fields: ' + err.message);
-      return false;
+      return { success: false };
     } finally {
       setApplyingFields(false);
     }
