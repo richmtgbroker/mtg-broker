@@ -1,524 +1,342 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
-import { getUserEmail } from "../../lib/auth";
-
-/* Use same-origin proxy (Pages Functions) to avoid CORS issues */
-const API_BASE = "/api/favorites";
+import { getAccessToken, isLoggedIn } from "../../lib/auth";
 
 export function meta() {
-  return [{ title: "Saved Items — MtgBroker" }];
+  return [{ title: "Saved Scenarios — MtgBroker" }];
 }
 
-// ============================================================
-// DESIGN TOKENS
-// ============================================================
 const C = {
   bg: "#F8FAFC",
   card: "#FFFFFF",
   border: "#E2E8F0",
   blue: "#2563EB",
+  blueBg: "#EFF6FF",
   text: "#0F172A",
   muted: "#64748B",
   dim: "#94A3B8",
   red: "#DC2626",
   redBg: "#FEF2F2",
+  green: "#059669",
+  greenBg: "#ECFDF5",
   radius: 10,
 };
 
-const TABS = [
-  { key: "All", label: "All" },
-  { key: "Lender", label: "Lenders" },
-  { key: "Vendor", label: "Vendors" },
-  { key: "Contact", label: "Contacts" },
-];
-
-const TYPE_ICONS = {
-  Lender: "fa-solid fa-building-columns",
-  Vendor: "fa-solid fa-store",
-  Contact: "fa-solid fa-user",
+const CALC_TYPE_ICONS = {
+  "Refinance Analysis": "fa-solid fa-arrows-rotate",
+  "Mortgage Calculator": "fa-solid fa-calculator",
+  "Affordability Calculator": "fa-solid fa-house-circle-check",
+  "Buy Down Calculator": "fa-solid fa-arrow-down-short-wide",
+  "Blended Rate": "fa-solid fa-chart-pie",
+  "DSCR Calculator": "fa-solid fa-building",
+  "Loan Scenario Comparison": "fa-solid fa-code-compare",
+  "Rent vs Buy": "fa-solid fa-scale-balanced",
+  "Lender Pricing Comparison": "fa-solid fa-ranking-star",
+  "Gift of Equity": "fa-solid fa-gift",
+  "Income Calculation": "fa-solid fa-money-bill-trend-up",
+  "Fix N Flip": "fa-solid fa-hammer",
+  "Construction Loan": "fa-solid fa-helmet-safety",
+  "Closing Costs": "fa-solid fa-file-invoice-dollar",
+  "VA Entitlement": "fa-solid fa-flag-usa",
 };
 
-const TYPE_COLORS = {
-  Lender: "#2563EB",
-  Vendor: "#7C3AED",
-  Contact: "#059669",
+const CALC_TYPE_COLORS = {
+  "Refinance Analysis": "#2563EB",
+  "Mortgage Calculator": "#2563EB",
+  "Affordability Calculator": "#059669",
+  "Buy Down Calculator": "#7C3AED",
+  "Blended Rate": "#D97706",
+  "DSCR Calculator": "#0891B2",
+  "Loan Scenario Comparison": "#4F46E5",
+  "Rent vs Buy": "#BE185D",
+  "Lender Pricing Comparison": "#EA580C",
+  "Gift of Equity": "#DB2777",
+  "Income Calculation": "#059669",
+  "Fix N Flip": "#92400E",
+  "Construction Loan": "#D97706",
+  "Closing Costs": "#2563EB",
+  "VA Entitlement": "#1D4ED8",
 };
 
-const TYPE_DIRECTORIES = {
-  Lender: "lender directory",
-  Vendor: "vendor directory",
-  Contact: "contacts list",
-};
-
-// ============================================================
-// HELPERS
-// ============================================================
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function formatDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch { return "—"; }
 }
 
-function slugify(name) {
-  if (!name) return "";
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+function estimateSize(scenarios) {
+  const bytes = new Blob([JSON.stringify(scenarios)]).size;
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-function itemLink(item) {
-  if (item.itemType === "Lender") {
-    const slug = slugify(item.itemName);
-    return `/app/lenders/${slug}`;
-  }
-  return null;
-}
-
-// ============================================================
-// SKELETON CARD
-// ============================================================
-function SkeletonCard() {
-  return (
-    <div
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: C.radius,
-        padding: "16px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        marginBottom: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 8,
-          background: C.border,
-          animation: "pulse 1.5s ease-in-out infinite",
-          flexShrink: 0,
-        }}
-      />
-      <div style={{ flex: 1 }}>
-        <div
-          style={{
-            width: "40%",
-            height: 14,
-            borderRadius: 4,
-            background: C.border,
-            marginBottom: 8,
-            animation: "pulse 1.5s ease-in-out infinite",
-          }}
-        />
-        <div
-          style={{
-            width: "25%",
-            height: 10,
-            borderRadius: 4,
-            background: C.border,
-            animation: "pulse 1.5s ease-in-out infinite",
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// SAVED ITEM CARD
-// ============================================================
-function SavedItemCard({ fav, onRemove, removing }) {
-  const icon = TYPE_ICONS[fav.itemType] || "fa-solid fa-star";
-  const badgeColor = TYPE_COLORS[fav.itemType] || C.muted;
-  const href = itemLink(fav);
-
-  const nameElement = href ? (
-    <Link
-      to={href}
-      style={{
-        fontSize: 15,
-        fontWeight: 600,
-        color: C.text,
-        textDecoration: "none",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}
-      onMouseEnter={(e) => { e.target.style.color = C.blue; }}
-      onMouseLeave={(e) => { e.target.style.color = C.text; }}
-    >
-      {fav.itemName || "Untitled"}
-    </Link>
-  ) : (
-    <span
-      style={{
-        fontSize: 15,
-        fontWeight: 600,
-        color: C.text,
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {fav.itemName || "Untitled"}
-    </span>
-  );
-
-  return (
-    <div
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: C.radius,
-        padding: "16px 20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        marginBottom: 10,
-        transition: "box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
-    >
-      {/* Type Icon */}
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: "50%",
-          background: badgeColor + "14",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <i className={icon} style={{ fontSize: 16, color: badgeColor }} />
-      </div>
-
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-          {nameElement}
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: badgeColor,
-              background: badgeColor + "14",
-              padding: "2px 8px",
-              borderRadius: 999,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {fav.itemType}
-          </span>
-        </div>
-        <div style={{ fontSize: 12, color: C.dim }}>
-          Added {formatDate(fav.dateAdded)}
-        </div>
-      </div>
-
-      {/* Remove Button */}
-      <button
-        onClick={() => onRemove(fav.id)}
-        disabled={removing}
-        title="Remove from saved"
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 8,
-          border: `1px solid ${C.border}`,
-          background: "transparent",
-          color: C.dim,
-          cursor: removing ? "not-allowed" : "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          transition: "all 0.15s",
-          opacity: removing ? 0.5 : 1,
-        }}
-        onMouseEnter={(e) => {
-          if (!removing) {
-            e.currentTarget.style.color = C.red;
-            e.currentTarget.style.borderColor = "#FECACA";
-            e.currentTarget.style.background = C.redBg;
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = C.dim;
-          e.currentTarget.style.borderColor = C.border;
-          e.currentTarget.style.background = "transparent";
-        }}
-      >
-        <i className="fa-solid fa-trash-can" style={{ fontSize: 13 }} />
-      </button>
-    </div>
-  );
-}
-
-// ============================================================
-// MAIN PAGE
-// ============================================================
-export default function SavedPage() {
-  const [activeTab, setActiveTab] = useState("All");
-  const [favorites, setFavorites] = useState([]);
+export default function SavedScenariosPage() {
+  const [scenarios, setScenarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [removing, setRemoving] = useState({});
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [deleting, setDeleting] = useState(null);
 
-  const email = typeof window !== "undefined" ? getUserEmail() : null;
-  const loggedIn = !!email;
-
-  const fetchFavorites = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(API_BASE, {
-        headers: { Authorization: `Bearer ${email}` },
-      });
-      if (!res.ok) throw new Error("Failed to load favorites");
-      const data = await res.json();
-      const items = (data.favorites || []).sort(
-        (a, b) => new Date(b.dateAdded) - new Date(a.dateAdded)
-      );
-      setFavorites(items);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [email]);
-
-  useEffect(() => {
-    if (!loggedIn) {
+  const fetchScenarios = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) {
       setLoading(false);
       return;
     }
-    fetchFavorites();
-  }, [loggedIn, fetchFavorites]);
-
-  const removeFavorite = useCallback(async (favId) => {
-    setRemoving((prev) => ({ ...prev, [favId]: true }));
-    // Store for revert
-    const prevFavorites = favorites;
-    // Optimistic delete
-    setFavorites((prev) => prev.filter((f) => f.id !== favId));
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/${favId}`, {
+      const res = await fetch("/api/calculator-scenarios", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load scenarios");
+      const data = await res.json();
+      setScenarios(data.scenarios || []);
+    } catch (e) {
+      setError(e.message);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchScenarios(); }, [fetchScenarios]);
+
+  const handleDelete = useCallback(async (id) => {
+    const token = getAccessToken();
+    if (!token) return;
+    setDeleting(id);
+    const prev = scenarios;
+    setScenarios((s) => s.filter((x) => x.id !== id));
+    try {
+      const res = await fetch(`/api/calculator-scenarios/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${email}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        // Revert on failure
-        setFavorites(prevFavorites);
-      }
+      if (!res.ok) throw new Error();
     } catch {
-      setFavorites(prevFavorites);
-    } finally {
-      setRemoving((prev) => {
-        const next = { ...prev };
-        delete next[favId];
-        return next;
-      });
+      setScenarios(prev);
     }
-  }, [favorites, email]);
+    setDeleting(null);
+  }, [scenarios]);
 
-  const filtered =
-    activeTab === "All"
-      ? favorites
-      : favorites.filter((f) => f.itemType === activeTab);
-
-  // Tab pill style
-  function tabStyle(key) {
-    const active = key === activeTab;
-    return {
-      padding: "6px 16px",
-      borderRadius: 999,
-      border: active ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
-      background: active ? C.blue : C.card,
-      color: active ? "#fff" : C.muted,
-      fontSize: 13,
-      fontWeight: 600,
-      cursor: "pointer",
-      transition: "all 0.15s",
-    };
-  }
-
-  // Empty state messaging
-  function getEmptyMessage() {
-    if (activeTab === "All") {
-      return {
-        title: "No saved items yet",
-        desc: "Bookmark your favorite lenders, vendors, and contacts to access them quickly from here.",
-      };
+  const handleClearAll = useCallback(async () => {
+    if (!confirm("Are you sure you want to delete ALL saved scenarios? This cannot be undone.")) return;
+    const token = getAccessToken();
+    if (!token) return;
+    const prev = scenarios;
+    const ids = prev.map((s) => s.id);
+    setScenarios([]);
+    for (const id of ids) {
+      try {
+        await fetch(`/api/calculator-scenarios/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch {}
     }
-    const typeLabel = activeTab.toLowerCase() + "s";
-    const directory = TYPE_DIRECTORIES[activeTab] || "directory";
-    return {
-      title: `No saved ${typeLabel} yet`,
-      desc: `Browse the ${directory} to start saving.`,
-    };
+  }, [scenarios]);
+
+  // Filters
+  const uniqueTypes = [...new Set(scenarios.map((s) => s.calculatorType))].sort();
+  const query = search.toLowerCase().trim();
+  const filtered = scenarios.filter((s) => {
+    if (typeFilter !== "All" && s.calculatorType !== typeFilter) return false;
+    if (query && !(s.scenarioName || "").toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  // Stats
+  const totalCount = scenarios.length;
+  const typeCount = uniqueTypes.length;
+  const storageUsed = estimateSize(scenarios);
+
+  if (!isLoggedIn()) {
+    return (
+      <div style={{ background: C.bg, minHeight: "100vh", padding: "24px 0" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 20px" }}>
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 40, textAlign: "center" }}>
+            <i className="fa-solid fa-right-to-bracket" style={{ fontSize: 36, color: C.dim, marginBottom: 16 }} />
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>Sign In Required</h2>
+            <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Please sign in to view your saved scenarios.</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div style={{ minHeight: "100%", fontFamily: "inherit" }}>
-      {/* Pulse animation for skeletons */}
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+    <div style={{ background: C.bg, minHeight: "100vh", padding: "24px 0" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px" }}>
 
-      {/* Page Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            background: "#DBEAFE",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <i className="fa-solid fa-bookmark" style={{ fontSize: 18, color: C.blue }} />
-        </div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>
-          Saved Items
-        </h1>
-      </div>
-
-      {/* Not logged in */}
-      {!loggedIn && (
-        <div
-          style={{
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderRadius: C.radius,
-            padding: "48px 32px",
-            textAlign: "center",
-          }}
-        >
-          <i
-            className="fa-solid fa-right-to-bracket"
-            style={{ fontSize: 40, color: C.dim, display: "block", marginBottom: 16 }}
-          />
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
-            Sign in to view your saved items
-          </h2>
-          <p style={{ fontSize: 14, color: C.muted, margin: 0, lineHeight: 1.6 }}>
-            Log in to save and access your favorite lenders, vendors, and contacts.
-          </p>
-        </div>
-      )}
-
-      {loggedIn && (
-        <>
-          {/* Tab Filters */}
-          <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={tabStyle(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
+        {/* ── Header ── */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: C.text, margin: 0 }}>
+              <i className="fa-solid fa-bookmark" style={{ color: C.blue, marginRight: 10 }} />
+              Saved Scenarios
+            </h1>
+            <p style={{ fontSize: 14, color: C.muted, margin: "6px 0 0" }}>View and manage all your saved calculator scenarios</p>
           </div>
-
-          {/* Loading Skeleton */}
-          {loading && (
-            <div>
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          )}
-
-          {/* Error */}
-          {!loading && error && (
-            <div
-              style={{
-                background: C.redBg,
-                border: "1px solid #FECACA",
-                borderRadius: C.radius,
-                padding: 20,
-                color: C.red,
-                fontSize: 14,
-                textAlign: "center",
-              }}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={fetchScenarios}
+              disabled={loading}
+              style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.card, color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}
             >
-              <i className="fa-solid fa-circle-exclamation" style={{ marginRight: 8 }} />
-              {error}
+              <i className={`fa-solid fa-arrows-rotate ${loading ? "fa-spin" : ""}`} /> Refresh
+            </button>
+            {scenarios.length > 0 && (
               <button
-                onClick={fetchFavorites}
-                style={{
-                  marginLeft: 12,
-                  padding: "4px 12px",
-                  borderRadius: 6,
-                  border: `1px solid ${C.red}`,
-                  background: "transparent",
-                  color: C.red,
-                  fontSize: 13,
-                  cursor: "pointer",
-                }}
+                onClick={handleClearAll}
+                style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #FECACA", background: C.redBg, color: C.red, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}
               >
-                Retry
+                <i className="fa-solid fa-trash-can" /> Clear All
               </button>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
 
-          {/* Favorites List (full-width rows) */}
-          {!loading && !error && filtered.length > 0 && (
-            <div>
-              {filtered.map((fav) => (
-                <SavedItemCard
-                  key={fav.id}
-                  fav={fav}
-                  onRemove={removeFavorite}
-                  removing={!!removing[fav.id]}
-                />
-              ))}
-            </div>
-          )}
+        {/* ── Stats Bar ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+          <StatCard icon="fa-solid fa-bookmark" label="Total Scenarios" value={totalCount} color={C.blue} />
+          <StatCard icon="fa-solid fa-calculator" label="Calculator Types" value={typeCount} color="#7C3AED" />
+          <StatCard icon="fa-solid fa-database" label="Storage Used" value={storageUsed} color="#059669" />
+        </div>
 
-          {/* Empty State */}
-          {!loading && !error && filtered.length === 0 && (
-            <div
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderRadius: C.radius,
-                padding: "48px 32px",
-                textAlign: "center",
-              }}
-            >
-              <i
-                className="fa-solid fa-bookmark"
-                style={{ fontSize: 48, color: C.dim, display: "block", marginBottom: 16 }}
-              />
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
-                {getEmptyMessage().title}
-              </h2>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: C.muted,
-                  maxWidth: 420,
-                  margin: "0 auto",
-                  lineHeight: 1.6,
-                }}
+        {/* ── Search & Filter ── */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
+            <i className="fa-solid fa-magnifying-glass" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: C.dim, fontSize: 13 }} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search scenarios by name..."
+              style={{ width: "100%", padding: "10px 14px 10px 38px", border: `1px solid ${C.border}`, borderRadius: C.radius, fontSize: 14, fontFamily: "inherit", background: C.card, color: C.text, outline: "none", boxSizing: "border-box" }}
+              onFocus={(e) => { e.target.style.borderColor = C.blue; }}
+              onBlur={(e) => { e.target.style.borderColor = C.border; }}
+            />
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{ padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: C.radius, fontSize: 14, fontFamily: "inherit", background: C.card, color: C.text, cursor: "pointer", minWidth: 200 }}
+          >
+            <option value="All">All Calculator Types</option>
+            {uniqueTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* ── Error ── */}
+        {error && (
+          <div style={{ background: C.redBg, border: "1px solid #FECACA", borderRadius: C.radius, padding: "16px 20px", color: "#991B1B", fontSize: 14, marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+            <i className="fa-solid fa-circle-exclamation" />
+            {error}
+            <button onClick={fetchScenarios} style={{ marginLeft: "auto", background: "none", border: "none", color: C.blue, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Retry</button>
+          </div>
+        )}
+
+        {/* ── Loading ── */}
+        {loading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: 20, height: 80, animation: "ld-shimmer 1.5s infinite", backgroundImage: "linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%)", backgroundSize: "200% 100%" }} />
+            ))}
+            <style>{`@keyframes ld-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }`}</style>
+          </div>
+        )}
+
+        {/* ── Empty State ── */}
+        {!loading && !error && filtered.length === 0 && (
+          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "60px 20px", textAlign: "center" }}>
+            <i className="fa-solid fa-bookmark" style={{ fontSize: 48, color: C.dim, marginBottom: 16 }} />
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: "0 0 8px" }}>
+              {query || typeFilter !== "All" ? "No Matching Scenarios" : "No Saved Scenarios"}
+            </h3>
+            <p style={{ fontSize: 14, color: C.muted, margin: "0 0 20px", maxWidth: 400, marginLeft: "auto", marginRight: "auto" }}>
+              {query || typeFilter !== "All"
+                ? "No scenarios match your current filters. Try adjusting your search or filter."
+                : "You haven't saved any calculator scenarios yet. Start by using any calculator and clicking the Save button."}
+            </p>
+            {!query && typeFilter === "All" && (
+              <Link
+                to="/app/calculators"
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", background: C.blue, color: "#FFFFFF", borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none" }}
               >
-                {getEmptyMessage().desc}
-              </p>
-            </div>
-          )}
-        </>
-      )}
+                <i className="fa-solid fa-calculator" /> Go to Calculators
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* ── Scenario Cards ── */}
+        {!loading && filtered.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {filtered.map((s) => {
+              const icon = CALC_TYPE_ICONS[s.calculatorType] || "fa-solid fa-calculator";
+              const color = CALC_TYPE_COLORS[s.calculatorType] || C.blue;
+              return (
+                <div
+                  key={s.id}
+                  style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, transition: "border-color 0.15s, box-shadow 0.15s" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = "none"; }}
+                >
+                  {/* Icon */}
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <i className={icon} style={{ fontSize: 18, color: color }} />
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {s.scenarioName || "Untitled Scenario"}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 100, background: color + "15", color: color }}>
+                        {s.calculatorType}
+                      </span>
+                      <span style={{ fontSize: 12, color: C.dim }}>
+                        {formatDate(s.dateCreated)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    disabled={deleting === s.id}
+                    title="Delete scenario"
+                    style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${C.border}`, background: C.card, color: C.dim, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.15s" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = C.redBg; e.currentTarget.style.color = C.red; e.currentTarget.style.borderColor = "#FECACA"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = C.card; e.currentTarget.style.color = C.dim; e.currentTarget.style.borderColor = C.border; }}
+                  >
+                    <i className={deleting === s.id ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-trash-can"} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, color }) {
+  return (
+    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: C.radius, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 10, background: color + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <i className={icon} style={{ fontSize: 16, color: color }} />
+      </div>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.dim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: C.text, marginTop: 2 }}>{value}</div>
+      </div>
     </div>
   );
 }
