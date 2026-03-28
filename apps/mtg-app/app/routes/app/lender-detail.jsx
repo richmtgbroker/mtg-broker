@@ -284,10 +284,17 @@ export default function LenderDetailPage() {
             <i className="fa-solid fa-share-nodes" style={{ marginRight: 5 }} />Share
           </button>
 
-          {/* Admin Airtable button */}
+          {/* Admin-only: Airtable lender record */}
           {isAdmin && lender.airtableLink && (
             <a href={lender.airtableLink} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(245,158,11,0.5)", background: "rgba(245,158,11,0.15)", color: "#FBBF24", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
               <i className="fa-solid fa-table" style={{ marginRight: 5 }} />Airtable
+            </a>
+          )}
+
+          {/* Admin-only: Lender Detail Config table */}
+          {isAdmin && (
+            <a href="https://airtable.com/appuJgI9X93OLaf0u/tblFuFTmTs0cZmWfO" target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 7, border: "1px solid rgba(168,85,247,0.5)", background: "rgba(168,85,247,0.15)", color: "#C084FC", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+              <i className="fa-solid fa-sliders" style={{ marginRight: 5 }} />Config
             </a>
           )}
         </div>
