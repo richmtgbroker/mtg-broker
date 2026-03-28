@@ -339,8 +339,8 @@ function valuesConflict(manualVal, aiVal) {
   return normalizeForCompare(manualVal) !== normalizeForCompare(aiVal);
 }
 
-// ─── DETAIL SECTION (side-by-side comparison table) ─────────────────────────
-function DetailSection({ section, fields }) {
+// ─── DETAIL SECTION (side-by-side comparison table with checkboxes) ──────────
+function DetailSection({ section, fields, selectedFields, onToggleField }) {
   const [expanded, setExpanded] = useState(true);
 
   // Check if any field in this section has data
@@ -359,8 +359,19 @@ function DetailSection({ section, fields }) {
     return valuesConflict(manualVal, aiVal);
   }).length;
 
-  // Check if any field in this section has both manual and AI values
-  const hasComparisons = section.fields.some(f => f.manual && f.ai);
+  // Selectable fields in this section (must have both manual + ai keys, and an AI value)
+  const selectableFields = section.fields.filter(f => {
+    if (!f.manual || !f.ai) return false;
+    const aiVal = fields[f.ai];
+    return aiVal && aiVal !== '';
+  });
+
+  const allSelected = selectableFields.length > 0 && selectableFields.every(f => selectedFields.has(f.ai));
+  const someSelected = selectableFields.some(f => selectedFields.has(f.ai));
+
+  const handleSelectAll = () => {
+    selectableFields.forEach(f => onToggleField(f.ai, f.manual, fields[f.ai], !allSelected));
+  };
 
   return (
     <div className="detail-section">
@@ -378,6 +389,18 @@ function DetailSection({ section, fields }) {
         <div className="section-fields">
           {/* Column headers */}
           <div className="compare-header">
+            <div className="compare-col-check">
+              {selectableFields.length > 0 && (
+                <input
+                  type="checkbox"
+                  className="section-checkbox"
+                  checked={allSelected}
+                  ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                  onChange={handleSelectAll}
+                  title="Select all in this section"
+                />
+              )}
+            </div>
             <div className="compare-col-label">Field</div>
             <div className="compare-col-current">Current</div>
             <div className="compare-col-ai">AI (New)</div>
@@ -389,6 +412,9 @@ function DetailSection({ section, fields }) {
             if ((!aiVal || aiVal === '') && (!manualVal || manualVal === '')) return null;
 
             const hasConflict = valuesConflict(manualVal, aiVal);
+            // Can this row be selected? (needs manual field + AI value to copy)
+            const canSelect = field.manual && field.ai && aiVal && aiVal !== '';
+            const isSelected = canSelect && selectedFields.has(field.ai);
 
             // Wide fields (notes) render stacked, not in the table columns
             if (field.wide) {
@@ -413,9 +439,19 @@ function DetailSection({ section, fields }) {
               );
             }
 
-            // All non-wide fields use the two-column layout so data aligns under headers
+            // All non-wide fields use the two-column layout
             return (
-              <div key={idx} className={`compare-row ${hasConflict ? 'compare-conflict' : ''}`}>
+              <div key={idx} className={`compare-row ${hasConflict ? 'compare-conflict' : ''} ${isSelected ? 'compare-selected' : ''}`}>
+                <div className="compare-check">
+                  {canSelect && (
+                    <input
+                      type="checkbox"
+                      className="row-checkbox"
+                      checked={isSelected}
+                      onChange={() => onToggleField(field.ai, field.manual, aiVal, !isSelected)}
+                    />
+                  )}
+                </div>
                 <div className="compare-label">
                   {field.label}
                   {hasConflict && <i className="fa-solid fa-triangle-exclamation conflict-icon"></i>}
@@ -444,8 +480,61 @@ function DetailSection({ section, fields }) {
 }
 
 // ─── DETAIL PANEL ───────────────────────────────────────────────────────────
-function DetailPanel({ record, onStatusChange, statusUpdating }) {
+function DetailPanel({ record, onStatusChange, statusUpdating, onApplyFields, applyingFields }) {
   const f = record.fields;
+
+  // Track which fields are selected for update: Map of aiFieldName → { manual, value }
+  const [selectedFields, setSelectedFields] = useState(new Map());
+
+  // Reset selections when record changes
+  useEffect(() => {
+    setSelectedFields(new Map());
+  }, [record.id]);
+
+  const handleToggleField = (aiKey, manualKey, aiValue, selected) => {
+    setSelectedFields(prev => {
+      const next = new Map(prev);
+      if (selected) {
+        next.set(aiKey, { manual: manualKey, value: aiValue });
+      } else {
+        next.delete(aiKey);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    // Gather all selectable fields across all sections
+    const next = new Map();
+    FIELD_SECTIONS.forEach(section => {
+      section.fields.forEach(field => {
+        if (field.manual && field.ai) {
+          const aiVal = f[field.ai];
+          if (aiVal && aiVal !== '') {
+            next.set(field.ai, { manual: field.manual, value: aiVal });
+          }
+        }
+      });
+    });
+    setSelectedFields(next);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedFields(new Map());
+  };
+
+  const handleApply = async () => {
+    if (selectedFields.size === 0) return;
+    // Build the fields object: { manualFieldName: aiValue, ... }
+    const fieldsToUpdate = {};
+    selectedFields.forEach(({ manual, value }) => {
+      fieldsToUpdate[manual] = value;
+    });
+    const success = await onApplyFields(record.id, fieldsToUpdate);
+    if (success) {
+      setSelectedFields(new Map());
+    }
+  };
   const productName = f['Lender and product and version'] || f['Lender Product Name | Version (Final)'] || 'Untitled';
   const status = f['AI: Review Status'] || '';
   const lastRun = f['AI: Last Run Date'];
@@ -554,9 +643,39 @@ function DetailPanel({ record, onStatusChange, statusUpdating }) {
 
       <div className="detail-divider"></div>
 
+      {/* Selection toolbar */}
+      <div className="apply-toolbar">
+        <div className="apply-toolbar-left">
+          <button className="select-all-btn" onClick={handleSelectAll}>Select All</button>
+          <button className="select-all-btn" onClick={handleDeselectAll}>Deselect All</button>
+          {selectedFields.size > 0 && (
+            <span className="selected-count">{selectedFields.size} field{selectedFields.size > 1 ? 's' : ''} selected</span>
+          )}
+        </div>
+        {selectedFields.size > 0 && (
+          <button
+            className="apply-btn"
+            onClick={handleApply}
+            disabled={applyingFields}
+          >
+            {applyingFields ? (
+              <><i className="fa-solid fa-spinner fa-spin"></i> Applying...</>
+            ) : (
+              <><i className="fa-solid fa-check"></i> Apply Selected to Current</>
+            )}
+          </button>
+        )}
+      </div>
+
       {/* AI field sections */}
       {FIELD_SECTIONS.map((section, idx) => (
-        <DetailSection key={idx} section={section} fields={f} />
+        <DetailSection
+          key={idx}
+          section={section}
+          fields={f}
+          selectedFields={selectedFields}
+          onToggleField={handleToggleField}
+        />
       ))}
 
       {/* Source data (collapsed by default) */}
@@ -652,6 +771,7 @@ export default function App() {
   const [detailRecord, setDetailRecord] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [applyingFields, setApplyingFields] = useState(false);
 
   // Debounce timer for search
   const searchTimer = useRef(null);
@@ -753,6 +873,32 @@ export default function App() {
       alert('Failed to update status: ' + err.message);
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  // ─── APPLY SELECTED FIELDS ─────────────────────────────────────────────
+  // Copies selected AI values → Current (manual) fields in Airtable
+  const handleApplyFields = async (recordId, fieldsToUpdate) => {
+    setApplyingFields(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/update-record`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ recordId, fields: fieldsToUpdate }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      // Refresh the detail record to show updated values
+      await fetchDetail(recordId);
+      return true;
+    } catch (err) {
+      alert('Failed to apply fields: ' + err.message);
+      return false;
+    } finally {
+      setApplyingFields(false);
     }
   };
 
@@ -894,6 +1040,8 @@ export default function App() {
               record={detailRecord}
               onStatusChange={handleStatusChange}
               statusUpdating={statusUpdating}
+              onApplyFields={handleApplyFields}
+              applyingFields={applyingFields}
             />
           ) : null}
         </div>

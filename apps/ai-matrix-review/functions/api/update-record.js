@@ -86,9 +86,20 @@ function isAdmin(payload) {
 }
 
 // ─── ALLOWED FIELDS ─────────────────────────────────────────────────────────
-// Only these fields can be updated via this endpoint (safety measure)
+// Only these fields can be updated via this endpoint (safety measure).
+// Includes AI: Review Status + all manual "current" fields that AI values can be copied into.
 const UPDATABLE_FIELDS = [
   'AI: Review Status',
+  // FICO
+  'Min FICO', 'Min FICO (MH)',
+  // LTV
+  'Max LTV (Purch)', 'Max LTV (RT)', 'Max LTV (Cash Out)',
+  // CLTV / DTI
+  'Max CLTV', 'Max DTI',
+  // Loan Amounts
+  'Min Loan Amount',
+  // Borrower Eligibility
+  'FTHB Allowed?',
 ];
 
 // ─── HANDLER ────────────────────────────────────────────────────────────────
