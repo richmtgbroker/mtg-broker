@@ -23,6 +23,7 @@ const ALLOWED_ORIGINS = [
   'https://www.mtg.broker',
   'https://mtg-app.pages.dev',
   'https://mtg-app-staging.pages.dev',
+  'https://mtg-app-stage.pages.dev',
 ]
 
 // Admin emails allowed to ingest updates
