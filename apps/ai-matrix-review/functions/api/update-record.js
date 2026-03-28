@@ -206,7 +206,32 @@ export async function onRequestPatch(context) {
       }
     }
 
-    // Validate singleSelect values against known choices.
+    // ─── NORMALIZE VALUES ──────────────────────────────────────────────────
+    // Fix common AI formatting mismatches before validation.
+
+    // Fields that use "XX.XX%" format in Airtable
+    const PERCENT_FIELDS = [
+      'Max LTV (Purch)', 'Max LTV (RT)', 'Max LTV (Cash Out)', 'Max CLTV',
+    ];
+
+    // Normalize a percentage like "100%" → "100.00%", "89.99%" stays "89.99%"
+    function normalizePercent(val) {
+      if (!val || typeof val !== 'string') return val;
+      // Match a number followed by % (e.g., "100%", "75%", "89.99%")
+      const match = val.trim().match(/^(\d+(?:\.\d+)?)%$/);
+      if (!match) return val; // Not a simple percentage — leave as-is
+      const num = parseFloat(match[1]);
+      return num.toFixed(2) + '%';
+    }
+
+    // Apply normalization to field values
+    for (const [fieldName, value] of Object.entries(fields)) {
+      if (PERCENT_FIELDS.includes(fieldName)) {
+        fields[fieldName] = normalizePercent(value);
+      }
+    }
+
+    // ─── VALIDATE AGAINST CHOICES ───────────────────────────────────────────
     // Split fields into valid (will be written) and skipped (returned as warnings).
     const validFields = {};
     const skipped = [];
