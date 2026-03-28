@@ -248,8 +248,8 @@ export default function LendersPage() {
 
 // Tag pill styles — default and active (darker shade when selected)
 const TAG_STYLES = {
-  Broker: { default: "bg-[#FEF3C7] text-[#92400E]", active: "bg-[#F59E0B] text-white" },
-  NonDel: { default: "bg-[#DCFCE7] text-[#15803D]", active: "bg-[#16A34A] text-white" },
+  Broker: { default: "bg-[#FEF3C7] text-[#92400E]", active: "bg-[#F59E0B] text-white ring-2 ring-[#B45309] ring-offset-1" },
+  NonDel: { default: "bg-[#DCFCE7] text-[#15803D]", active: "bg-[#16A34A] text-white ring-2 ring-[#15803D] ring-offset-1" },
   NEXA: { default: "bg-[#1a1a1a] text-white", active: "bg-[#000000] text-white ring-2 ring-[#555] ring-offset-1" },
 };
 
