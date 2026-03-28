@@ -248,9 +248,9 @@ export default function LendersPage() {
 
 // Badge color config
 const BADGE_STYLES = {
-  Broker: "bg-[#DBEAFE] text-[#1D4ED8]",
+  Broker: "bg-[#FEF3C7] text-[#92400E]",
   NonDel: "bg-[#DCFCE7] text-[#15803D]",
-  NEXA: "bg-[#EDE9FE] text-[#6D28D9]",
+  NEXA: "bg-[#1a1a1a] text-white",
 };
 
 function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm, channelFilter, onChannelFilter }) {
@@ -307,59 +307,62 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
         </button>
       </Link>
 
-      {/* Lender Name */}
+      {/* Lender Name — flex-1 so it absorbs variable height */}
       <Link
         to={`/app/lenders/${slug}`}
-        className="block text-center px-3 pt-3 pb-1.5 no-underline"
+        className="flex-1 flex items-center justify-center text-center px-3 pt-3 pb-1.5 no-underline"
       >
         <h3 className="text-[13px] font-bold text-[#0f172a] leading-snug m-0">
           <span dangerouslySetInnerHTML={{ __html: highlightMatch(displayName, searchTerm) }} />
         </h3>
       </Link>
 
-      {/* Channel Badges - clickable to filter */}
-      {channels.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 px-3 py-2">
-          {channels.map((ch) => (
-            <button
-              key={ch}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onChannelFilter(channelFilter === ch ? null : ch);
-              }}
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
-            >
-              {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Bottom section — fixed position relative to card bottom */}
+      <div>
+        {/* Channel Badges - clickable to filter */}
+        {channels.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 px-3 pb-2">
+            {channels.map((ch) => (
+              <button
+                key={ch}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChannelFilter(channelFilter === ch ? null : ch);
+                }}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-md cursor-pointer border-none transition-colors ${BADGE_STYLES[ch] || "bg-gray-100 text-gray-600"} ${channelFilter === ch ? "ring-2 ring-primary-400 ring-offset-1" : "hover:opacity-80"}`}
+              >
+                {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {/* Action Buttons — pinned to bottom */}
-      <div className="flex items-center justify-center gap-2 px-3 py-2.5 mt-auto">
-        {lender.website && (
-          <a
-            href={lender.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
-          >
-            Website
-          </a>
-        )}
-        {lender.tpoPortal && (
-          <a
-            href={lender.tpoPortal}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
-          >
-            TPO Portal
-          </a>
-        )}
+        {/* Action Buttons */}
+        <div className="flex items-center justify-center gap-2 px-3 py-2.5">
+          {lender.website && (
+            <a
+              href={lender.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
+            >
+              Website
+            </a>
+          )}
+          {lender.tpoPortal && (
+            <a
+              href={lender.tpoPortal}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
+            >
+              TPO Portal
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
