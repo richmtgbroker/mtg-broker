@@ -738,7 +738,7 @@ function GuidelineSourceCard({ source, rank, onOpenProduct }) {
           )}
         </div>
         <span className="gs-source-view-link">
-          View Full Details <i className="fas fa-arrow-right"></i>
+          View Details <i className="fas fa-arrow-right"></i>
         </span>
       </div>
     </div>
