@@ -60,9 +60,9 @@ const FIELD_SECTIONS = [
       { label: 'Min FICO (MH)', manual: 'Min FICO (MH)', ai: 'AI: Min FICO (MH)' },
       { label: 'Min FICO (Investment)', ai: 'AI: Min FICO (Investment)' },
       { label: 'Min FICO (2nd Home)', ai: 'AI: Min FICO (2nd Home)' },
-      { label: 'Min FICO (FTHB)', ai: 'AI: Min FICO (FTHB)' },
-      { label: 'Min FICO (1st Time Investor)', ai: 'AI: Min FICO (1st Time Investor)' },
-      { label: 'Min FICO (Manual UW)', ai: 'AI: Min FICO (Manual UW)' },
+      { label: 'Min FICO (FTHB)', manual: 'Min FICO (FTHB)', ai: 'AI: Min FICO (FTHB)' },
+      { label: 'Min FICO (1st Time Investor)', manual: 'Min FICO (1st Time Investor)', ai: 'AI: Min FICO (1st Time Investor)' },
+      { label: 'Min FICO (Manual UW)', manual: 'Min FICO (Manual UW)', ai: 'AI: Min FICO (Manual UW)' },
       { label: 'Min Blended FICO', ai: 'AI: Min Blended FICO' },
       { label: '# of Scores Required', ai: 'AI: # of Scores Required' },
       { label: 'FICO Notes', ai: 'AI: FICO Notes', wide: true },
@@ -83,7 +83,7 @@ const FIELD_SECTIONS = [
       { label: 'Max CLTV (2nd Homes)', ai: 'AI: Max CLTV (2nd Homes)' },
       { label: 'Max DTI', manual: 'Max DTI', ai: 'AI: Max DTI' },
       { label: 'Max DTI (Manual UW)', ai: 'AI: Max DTI (Manual UW)' },
-      { label: 'Manual UW Allowed?', ai: 'AI: Manual UW Allowed?' },
+      { label: 'Manual UW Allowed?', manual: 'Manual UW Allowed?', ai: 'AI: Manual UW Allowed?' },
       { label: 'LTV and DTI Notes', ai: 'AI: LTV and DTI Notes', wide: true },
     ],
   },
@@ -92,9 +92,9 @@ const FIELD_SECTIONS = [
     icon: 'fa-solid fa-dollar-sign',
     fields: [
       { label: 'Min Loan Amount', manual: 'Min Loan Amount', ai: 'AI: Min Loan Amount' },
-      { label: 'Max Loan Amount', ai: 'AI: Max Loan Amount' },
-      { label: 'Max Cash-Out', ai: 'AI: Max Cash-Out' },
-      { label: 'Max Cash-Out (2 Unit)', ai: 'AI: Max Cash-Out (2 Unit)' },
+      { label: 'Max Loan Amount', manual: 'Max Loan Amount', ai: 'AI: Max Loan Amount' },
+      { label: 'Max Cash-Out', manual: 'Max Cash-Out', ai: 'AI: Max Cash-Out' },
+      { label: 'Max Cash-Out (2 Unit)', manual: 'Max Cash-Out (2 Unit)', ai: 'AI: Max Cash-Out (2 Unit)' },
       { label: 'Max Cash Back at Closing (RT Refi)', ai: 'AI: Max Cash Back at Closing (RT Refi)' },
       { label: 'Max Loan (1st Time Investor)', ai: 'AI: Max Loan (1st Time Investor)' },
       { label: 'Loan Amounts Notes', ai: 'AI: Loan Amounts Notes', wide: true },
@@ -105,12 +105,12 @@ const FIELD_SECTIONS = [
     icon: 'fa-solid fa-user-check',
     fields: [
       { label: 'FTHB Allowed?', manual: 'FTHB Allowed?', ai: 'AI: FTHB Allowed?' },
-      { label: 'FTHB Required?', ai: 'AI: FTHB Required?' },
-      { label: 'Homebuyer Education Reqd?', ai: 'AI: Homebuyer Education Reqd?' },
-      { label: 'Cash-Out Available?', ai: 'AI: Cash-Out Available?' },
-      { label: 'Vest in LLC', ai: 'AI: Vest in LLC' },
-      { label: 'Gift Funds Allowed', ai: 'AI: Gift Funds Allowed' },
-      { label: 'Max Seller Concessions', ai: 'AI: Max Seller Concessions' },
+      { label: 'FTHB Required?', manual: 'FTHB Required?', ai: 'AI: FTHB Required?' },
+      { label: 'Homebuyer Education Reqd?', manual: 'Homebuyer Education Reqd?', ai: 'AI: Homebuyer Education Reqd?' },
+      { label: 'Cash-Out Available?', manual: 'Cash-Out Available?', ai: 'AI: Cash-Out Available?' },
+      { label: 'Vest in LLC', manual: 'Vest in LLC', ai: 'AI: Vest in LLC' },
+      { label: 'Gift Funds Allowed', manual: 'Gift Funds Allowed', ai: 'AI: Gift Funds Allowed' },
+      { label: 'Max Seller Concessions', manual: 'Max Seller Concessions | Contributions', ai: 'AI: Max Seller Concessions' },
       { label: 'Borrower Requirements Notes', ai: 'AI: Borrower Requirements Notes', wide: true },
     ],
   },
@@ -119,9 +119,9 @@ const FIELD_SECTIONS = [
     icon: 'fa-solid fa-money-bill-trend-up',
     fields: [
       { label: 'Income Notes', ai: 'AI: Income Notes', wide: true },
-      { label: 'Reserves Required', ai: 'AI: Reserves Required' },
+      { label: 'Reserves Required', manual: 'Reserves Required', ai: 'AI: Reserves Required' },
       { label: 'Reserves Required (Cash-Out)', ai: 'AI: Reserves Required (Cash-Out)' },
-      { label: 'Cash-Out As Reserves Allowed?', ai: 'AI: Cash-Out As Reserves Allowed?' },
+      { label: 'Cash-Out As Reserves Allowed?', manual: 'Cash-Out As Reserves Allowed?', ai: 'AI: Cash-Out As Reserves Allowed?' },
       { label: 'Additional Reserves', ai: 'AI: Additional Reserves' },
       { label: 'Reserves Notes', ai: 'AI: Reserves Notes', wide: true },
     ],
@@ -130,11 +130,11 @@ const FIELD_SECTIONS = [
     title: 'Investor / Special Eligibility',
     icon: 'fa-solid fa-globe',
     fields: [
-      { label: 'First Time Investors Allowed?', ai: 'AI: First Time Investors Allowed?' },
+      { label: 'First Time Investors Allowed?', manual: 'First Time Investors Allowed?', ai: 'AI: First Time Investors Allowed?' },
       { label: 'NOCB Allowed?', ai: 'AI: NOCB Allowed?' },
-      { label: 'Non-Perm Residents?', ai: 'AI: Non-Perm Residents?' },
-      { label: 'Foreign National?', ai: 'AI: Foreign National?' },
-      { label: 'ITIN Allowed?', ai: 'AI: ITIN Allowed?' },
+      { label: 'Non-Perm Residents?', manual: 'Non-Permanent Residents Allowed?', ai: 'AI: Non-Perm Residents?' },
+      { label: 'Foreign National?', manual: 'Foreign National Eligible?', ai: 'AI: Foreign National?' },
+      { label: 'ITIN Allowed?', manual: 'ITIN Borrower Allowed?', ai: 'AI: ITIN Allowed?' },
       { label: 'DACA Eligible?', ai: 'AI: DACA Eligible?' },
       { label: 'Foreign Credit?', ai: 'AI: Foreign Credit?' },
       { label: 'Perm Resident Aliens', ai: 'AI: Perm Resident Aliens' },
@@ -144,7 +144,7 @@ const FIELD_SECTIONS = [
     title: 'Credit Events & Seasoning',
     icon: 'fa-solid fa-clock-rotate-left',
     fields: [
-      { label: 'FC | SS | DIL Seasoning', ai: 'AI: FC | SS | DIL Seasoning' },
+      { label: 'FC | SS | DIL Seasoning', manual: 'FC | SS | DIL Seasoning', ai: 'AI: FC | SS | DIL Seasoning' },
       { label: 'Bankruptcy Seasoning', ai: 'AI: Bankruptcy Seasoning' },
       { label: 'Current Bankruptcy', ai: 'AI: Current Bankruptcy' },
       { label: 'Discharged Bankruptcy', ai: 'AI: Discharged Bankruptcy' },
@@ -160,12 +160,12 @@ const FIELD_SECTIONS = [
     icon: 'fa-solid fa-house',
     fields: [
       { label: 'PROPERTY TYPES Notes', ai: 'AI: PROPERTY TYPES Notes', wide: true },
-      { label: 'Rural Allowed?', ai: 'AI: Rural Allowed?' },
-      { label: 'Max Acres', ai: 'AI: Max Acres' },
+      { label: 'Rural Allowed?', manual: 'Rural Properties Allowed?', ai: 'AI: Rural Allowed?' },
+      { label: 'Max Acres', manual: 'Max Property Size (Acres)', ai: 'AI: Max Acres' },
       { label: 'Max Acres (Investment)', ai: 'AI: Max Acres (Investment)' },
       { label: 'Min Sq Ft', ai: 'AI: Min Sq Ft' },
       { label: 'Max Multi-Units', ai: 'AI: Max Multi-Units' },
-      { label: 'Appraisal Transfers', ai: 'AI: Appraisal Transfers' },
+      { label: 'Appraisal Transfers', manual: 'Appraisal Transfers', ai: 'AI: Appraisal Transfers' },
       { label: 'Appraisal Waivers?', ai: 'AI: Appraisal Waivers?' },
     ],
   },
@@ -173,11 +173,11 @@ const FIELD_SECTIONS = [
     title: 'Financed Properties',
     icon: 'fa-solid fa-building',
     fields: [
-      { label: 'Max Financed Properties', ai: 'AI: Max Financed Properties' },
-      { label: 'Max Agency Financed', ai: 'AI: Max Agency Financed' },
-      { label: 'Max Lender Financed', ai: 'AI: Max Lender Financed' },
+      { label: 'Max Financed Properties', manual: 'Max Financed Properties', ai: 'AI: Max Financed Properties' },
+      { label: 'Max Agency Financed', manual: 'Max Agency Financed', ai: 'AI: Max Agency Financed' },
+      { label: 'Max Lender Financed', manual: 'Max Lender Financed', ai: 'AI: Max Lender Financed' },
       { label: 'Vesting Requirement', ai: 'AI: Vesting Requirement' },
-      { label: 'Must Own or Rent?', ai: 'AI: Must Own or Rent?' },
+      { label: 'Must Own or Rent?', manual: 'Must Currently Own or Rent', ai: 'AI: Must Own or Rent?' },
     ],
   },
   {
@@ -186,10 +186,10 @@ const FIELD_SECTIONS = [
     fields: [
       { label: 'Terms Available', ai: 'AI: Terms Available' },
       { label: 'Amortization', ai: 'AI: Amortization' },
-      { label: 'Interest Only?', ai: 'AI: Interest Only?' },
+      { label: 'Interest Only?', manual: 'Interest Only (IO) Option', ai: 'AI: Interest Only?' },
       { label: 'Buydowns', ai: 'AI: Buydowns' },
       { label: 'Buydowns Paid By', ai: 'AI: Buydowns Paid By' },
-      { label: 'Prepayment Penalty (PPP)', ai: 'AI: Prepayment Penalty (PPP)' },
+      { label: 'Prepayment Penalty (PPP)', manual: 'Prepayment Penalty (PPP)', ai: 'AI: Prepayment Penalty (PPP)' },
       { label: 'PPP Terms', ai: 'AI: PPP Terms' },
       { label: 'EPO Timeframe', ai: 'AI: EPO Timeframe' },
     ],
@@ -208,13 +208,13 @@ const FIELD_SECTIONS = [
     title: 'DSCR',
     icon: 'fa-solid fa-calculator',
     fields: [
-      { label: 'DSCR Min Ratio', ai: 'AI: DSCR Min Ratio' },
-      { label: 'DSCR Min Ratio (FTI)', ai: 'AI: DSCR Min Ratio (FTI)' },
-      { label: 'DSCR Min Ratio (STR)', ai: 'AI: DSCR Min Ratio (STR)' },
-      { label: 'DSCR STR Income?', ai: 'AI: DSCR STR Income?' },
+      { label: 'DSCR Min Ratio', manual: 'DSCR - Min Ratio Required', ai: 'AI: DSCR Min Ratio' },
+      { label: 'DSCR Min Ratio (FTI)', manual: 'DSCR - Min Ratio (1st Time Investor)', ai: 'AI: DSCR Min Ratio (FTI)' },
+      { label: 'DSCR Min Ratio (STR)', manual: 'DSCR - Min Ratio for STR', ai: 'AI: DSCR Min Ratio (STR)' },
+      { label: 'DSCR STR Income?', manual: 'DSCR - Short Term Rental (STR) Income', ai: 'AI: DSCR STR Income?' },
       { label: 'DSCR PPP Options', ai: 'AI: DSCR PPP Options' },
-      { label: 'DSCR Primary Home Req', ai: 'AI: DSCR Primary Home Req' },
-      { label: 'DSCR Asset Seasoning', ai: 'AI: DSCR Asset Seasoning' },
+      { label: 'DSCR Primary Home Req', manual: 'DSCR - Primary Home Requirement', ai: 'AI: DSCR Primary Home Req' },
+      { label: 'DSCR Asset Seasoning', manual: 'DSCR - Asset Seasoning', ai: 'AI: DSCR Asset Seasoning' },
       { label: 'DSCR Lease Payment?', ai: 'AI: DSCR Lease Payment?' },
       { label: 'DSCR No License States', ai: 'AI: DSCR No License States' },
       { label: 'DSCR Notes', ai: 'AI: DSCR Notes', wide: true },
@@ -359,9 +359,9 @@ function DetailSection({ section, fields, selectedFields, onToggleField }) {
     return valuesConflict(manualVal, aiVal);
   }).length;
 
-  // Selectable fields in this section (must have both manual + ai keys, and an AI value)
+  // Selectable fields in this section (any non-wide field with an AI value)
   const selectableFields = section.fields.filter(f => {
-    if (!f.manual || !f.ai) return false;
+    if (!f.ai || f.wide) return false;
     const aiVal = fields[f.ai];
     return aiVal && aiVal !== '';
   });
@@ -412,8 +412,8 @@ function DetailSection({ section, fields, selectedFields, onToggleField }) {
             if ((!aiVal || aiVal === '') && (!manualVal || manualVal === '')) return null;
 
             const hasConflict = valuesConflict(manualVal, aiVal);
-            // Can this row be selected? (needs manual field + AI value to copy)
-            const canSelect = field.manual && field.ai && aiVal && aiVal !== '';
+            // Can this row be selected? (any non-wide field with an AI value)
+            const canSelect = !field.wide && field.ai && aiVal && aiVal !== '';
             const isSelected = canSelect && selectedFields.has(field.ai);
 
             // Wide fields (notes) render stacked, not in the table columns
@@ -504,14 +504,14 @@ function DetailPanel({ record, onStatusChange, statusUpdating, onApplyFields, ap
   };
 
   const handleSelectAll = () => {
-    // Gather all selectable fields across all sections
+    // Gather all selectable fields across all sections (any non-wide field with AI data)
     const next = new Map();
     FIELD_SECTIONS.forEach(section => {
       section.fields.forEach(field => {
-        if (field.manual && field.ai) {
+        if (field.ai && !field.wide) {
           const aiVal = f[field.ai];
           if (aiVal && aiVal !== '') {
-            next.set(field.ai, { manual: field.manual, value: aiVal });
+            next.set(field.ai, { manual: field.manual || null, value: aiVal });
           }
         }
       });
@@ -525,13 +525,29 @@ function DetailPanel({ record, onStatusChange, statusUpdating, onApplyFields, ap
 
   const handleApply = async () => {
     if (selectedFields.size === 0) return;
-    // Build the fields object: { manualFieldName: aiValue, ... }
+    // Build the fields object — only include fields that have a manual counterpart
     const fieldsToUpdate = {};
+    let reviewOnlyCount = 0;
     selectedFields.forEach(({ manual, value }) => {
-      fieldsToUpdate[manual] = value;
+      if (manual) {
+        fieldsToUpdate[manual] = value;
+      } else {
+        reviewOnlyCount++;
+      }
     });
+
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      alert(`${reviewOnlyCount} field(s) checked are AI-only (no Current field to update). These are marked as reviewed.`);
+      setSelectedFields(new Map());
+      return;
+    }
+
     const success = await onApplyFields(record.id, fieldsToUpdate);
     if (success) {
+      const msg = reviewOnlyCount > 0
+        ? `Updated ${Object.keys(fieldsToUpdate).length} field(s). ${reviewOnlyCount} AI-only field(s) acknowledged.`
+        : `Updated ${Object.keys(fieldsToUpdate).length} field(s) successfully.`;
+      alert(msg);
       setSelectedFields(new Map());
     }
   };

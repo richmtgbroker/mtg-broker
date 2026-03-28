@@ -91,15 +91,35 @@ function isAdmin(payload) {
 const UPDATABLE_FIELDS = [
   'AI: Review Status',
   // FICO
-  'Min FICO', 'Min FICO (MH)',
-  // LTV
+  'Min FICO', 'Min FICO (MH)', 'Min FICO (FTHB)', 'Min FICO (1st Time Investor)',
+  'Min FICO (Manual UW)',
+  // LTV / CLTV / DTI
   'Max LTV (Purch)', 'Max LTV (RT)', 'Max LTV (Cash Out)',
-  // CLTV / DTI
-  'Max CLTV', 'Max DTI',
+  'Max CLTV', 'Max DTI', 'Manual UW Allowed?',
   // Loan Amounts
-  'Min Loan Amount',
+  'Min Loan Amount', 'Max Loan Amount', 'Max Cash-Out', 'Max Cash-Out (2 Unit)',
   // Borrower Eligibility
-  'FTHB Allowed?',
+  'FTHB Allowed?', 'FTHB Required?', 'Homebuyer Education Reqd?',
+  'Cash-Out Available?', 'Vest in LLC', 'Gift Funds Allowed',
+  'Max Seller Concessions | Contributions',
+  // Income & Reserves
+  'Reserves Required', 'Cash-Out As Reserves Allowed?',
+  // Investor / Special Eligibility
+  'First Time Investors Allowed?', 'Non-Permanent Residents Allowed?',
+  'Foreign National Eligible?', 'ITIN Borrower Allowed?',
+  // Credit Events
+  'FC | SS | DIL Seasoning',
+  // Property
+  'Rural Properties Allowed?', 'Max Property Size (Acres)', 'Appraisal Transfers',
+  // Financed Properties
+  'Max Financed Properties', 'Max Agency Financed', 'Max Lender Financed',
+  'Must Currently Own or Rent',
+  // Loan Features
+  'Interest Only (IO) Option', 'Prepayment Penalty (PPP)',
+  // DSCR
+  'DSCR - Min Ratio Required', 'DSCR - Min Ratio (1st Time Investor)',
+  'DSCR - Min Ratio for STR', 'DSCR - Short Term Rental (STR) Income',
+  'DSCR - Primary Home Requirement', 'DSCR - Asset Seasoning',
 ];
 
 // ─── HANDLER ────────────────────────────────────────────────────────────────
