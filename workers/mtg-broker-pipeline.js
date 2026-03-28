@@ -2315,6 +2315,8 @@ function openNewLoanModal() {
   collapseCoBorrower();
   showSection('main');
   document.getElementById('loan-modal').classList.remove('hidden');
+  /* Tell parent frame to hide sidebar when modal is open */
+  if (window.parent !== window) window.parent.postMessage({ type: 'pipeline-modal', open: true }, '*');
   /* Capture baseline for unsaved changes detection.
    * Use 500ms delay to ensure all async formatting (currency blur, module loads) settles. */
   setTimeout(captureFormSnapshot, 500);
@@ -2472,6 +2474,8 @@ async function openLoanModal(id) {
   if (hasCoBorrower) { expandCoBorrower(); } else { collapseCoBorrower(); }
   showSection('main');
   document.getElementById('loan-modal').classList.remove('hidden');
+  /* Tell parent frame to hide sidebar when modal is open */
+  if (window.parent !== window) window.parent.postMessage({ type: 'pipeline-modal', open: true }, '*');
   /* Capture baseline for unsaved changes detection.
    * Use 500ms delay to ensure all async formatting (currency blur, module loads) settles. */
   setTimeout(captureFormSnapshot, 500);
@@ -2527,6 +2531,8 @@ function closeModal() {
 }
 function forceCloseModal() {
   document.getElementById('loan-modal').classList.add('hidden');
+  /* Tell parent frame to restore sidebar when modal closes */
+  if (window.parent !== window) window.parent.postMessage({ type: 'pipeline-modal', open: false }, '*');
   closeCalcSidebar();
   closeRefiSidebar();
   currentLoanId = null;

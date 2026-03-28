@@ -21,6 +21,7 @@ export default function AppLayout() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -56,20 +57,29 @@ export default function AppLayout() {
     }, 500);
     const cleanup = setTimeout(() => clearInterval(timer), 10000);
 
+    // Listen for pipeline iframe messages to hide/show sidebar
+    function onPipelineMessage(e) {
+      if (e.data && e.data.type === "pipeline-modal") {
+        setSidebarHidden(e.data.open);
+      }
+    }
+    window.addEventListener("message", onPipelineMessage);
+
     return () => {
       window.removeEventListener("storage", onStorageChange);
+      window.removeEventListener("message", onPipelineMessage);
       clearInterval(timer);
       clearInterval(sidebarTimer);
       clearTimeout(cleanup);
     };
   }, []);
 
-  const sidebarWidth = sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
+  const sidebarWidth = sidebarHidden ? "0px" : sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       <Navbar />
-      <Sidebar />
+      {!sidebarHidden && <Sidebar />}
 
       {/* Main content area — offset by sidebar width */}
       <main
