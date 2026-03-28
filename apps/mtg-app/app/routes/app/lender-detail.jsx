@@ -9,6 +9,7 @@ import {
 import { isAdmin as checkIsAdmin, isNexaUser, checkNexaAccess } from "../../lib/auth";
 
 const LENDERS_API = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
+const PRODUCTS_API = "https://mtg-broker-api.rich-e00.workers.dev/api/loan-products";
 const CACHE_KEY_PREFIX = "mtg_lender_detail_";
 const CACHE_TTL = 30 * 60 * 1000;
 
@@ -64,6 +65,90 @@ function parseMarkdown(text) {
   return s;
 }
 
+/* ── Product Matrix helpers (match Worker JS) ── */
+
+function pmIsFieldEmpty(value) {
+  if (value === null || value === undefined) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "boolean") return false;
+  if (typeof value === "number") return false;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return true;
+    if (/^[-\u2014\u2013]+$/.test(trimmed)) return true;
+    if (/^n\/?a$/i.test(trimmed)) return true;
+  }
+  return false;
+}
+
+function pmGetGroupIcon(groupName) {
+  const name = (groupName || "").toLowerCase();
+  if (name.indexOf("loan info") !== -1 || name.indexOf("loan details") !== -1) return "fa-file-invoice-dollar";
+  if (name.indexOf("property") !== -1) return "fa-house";
+  if (name.indexOf("borrower") !== -1 || name.indexOf("credit") !== -1) return "fa-user";
+  if (name.indexOf("pricing") !== -1 || name.indexOf("rate") !== -1 || name.indexOf("comp") !== -1) return "fa-percent";
+  if (name.indexOf("ltv") !== -1 || name.indexOf("cltv") !== -1) return "fa-chart-simple";
+  if (name.indexOf("guideline") !== -1 || name.indexOf("eligible") !== -1 || name.indexOf("requirement") !== -1) return "fa-list-check";
+  if (name.indexOf("dscr") !== -1 || name.indexOf("investment") !== -1 || name.indexOf("rental") !== -1) return "fa-building";
+  if (name.indexOf("bank") !== -1 || name.indexOf("income") !== -1 || name.indexOf("p&l") !== -1 || name.indexOf("profit") !== -1) return "fa-money-bill-wave";
+  if (name.indexOf("dpa") !== -1 || name.indexOf("down payment") !== -1 || name.indexOf("assistance") !== -1) return "fa-hand-holding-dollar";
+  if (name.indexOf("heloc") !== -1 || name.indexOf("heloan") !== -1 || name.indexOf("2nd") !== -1) return "fa-layer-group";
+  if (name.indexOf("fix") !== -1 || name.indexOf("flip") !== -1 || name.indexOf("rehab") !== -1) return "fa-hammer";
+  if (name.indexOf("construction") !== -1 || name.indexOf("guc") !== -1) return "fa-hard-hat";
+  if (name.indexOf("nexa") !== -1) return "fa-shield-halved";
+  if (name.indexOf("other") !== -1) return "fa-ellipsis";
+  return "fa-sliders";
+}
+
+function pmFormatValueJsx(value, key) {
+  if (value === null || value === undefined || value === "") return "\u2014";
+  // Array of attachments (objects with url property)
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "\u2014";
+    if (typeof value[0] === "object" && value[0] !== null && value[0].url) {
+      return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {value.map((att, j) => {
+            const fname = att.filename || "Attachment";
+            const isImage = att.type && att.type.startsWith("image/");
+            if (isImage && att.thumbnails && att.thumbnails.large) {
+              return <a key={j} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", margin: "4px 4px 4px 0" }}><img src={att.thumbnails.large.url} alt={fname} style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, border: "1px solid #E2E8F0" }} /></a>;
+            }
+            return <a key={j} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", padding: "5px 12px", background: "#FFFFFF", color: "#1E3A5F", border: "1px solid #BFDBFE", borderRadius: 6, fontSize: 12, fontWeight: 600, textDecoration: "none" }}><i className="fa-solid fa-file" style={{ marginRight: 4 }} />{fname} &#8599;</a>;
+          })}
+        </div>
+      );
+    }
+    // Array of strings (pills/tags)
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {value.map((v, j) => <span key={j} style={{ display: "inline-block", padding: "5px 12px", background: "#FFFFFF", color: "#1E3A5F", border: "1px solid #BFDBFE", borderRadius: 6, fontSize: 12, fontWeight: 600 }}>{String(v)}</span>)}
+      </div>
+    );
+  }
+  // URL
+  if (typeof value === "string" && value.startsWith("http")) {
+    const linkText = key.toLowerCase().includes("matrix") ? "View Matrix" : "Open Link";
+    return <a href={value} target="_blank" rel="noopener noreferrer" style={{ color: "#2563EB", textDecoration: "none" }}>{linkText} &#8599;</a>;
+  }
+  // Boolean
+  if (typeof value === "boolean") return value ? "\u2713 Yes" : "\u2717 No";
+  // Long text / multi-line
+  const str = String(value);
+  if (str.length > 100 || str.indexOf("\n") !== -1) {
+    let h = str
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:|tel:)[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">$1</a>')
+      .replace(/&lt;(https?:\/\/[^&]+?)&gt;/g, '<a href="$1" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">$1</a>')
+      .replace(/\*\*([^*]+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[\s(>])_([^_]+?)_(?=[\s,.):<]|$)/gm, "$1<em>$2</em>")
+      .replace(/(^|[^"=/>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">$2</a>')
+      .replace(/\n/g, "<br>");
+    return <div style={{ whiteSpace: "normal", lineHeight: 1.7, fontSize: 13 }} dangerouslySetInnerHTML={{ __html: h }} />;
+  }
+  return str;
+}
+
 export function meta() {
   return [{ title: "Lender Detail — MtgBroker" }];
 }
@@ -82,6 +167,13 @@ export default function LenderDetailPage() {
   const [privateNotes, setPrivateNotes] = useState("");
   const [notesSaveStatus, setNotesSaveStatus] = useState("");
   const [nexaAuthorized, setNexaAuthorized] = useState(() => isNexaUser());
+
+  // Product Matrices state
+  const [matricesProducts, setMatricesProducts] = useState(null); // null = not fetched, [] = empty
+  const [matricesMeta, setMatricesMeta] = useState({});
+  const [matricesLoading, setMatricesLoading] = useState(false);
+  const [matricesSearch, setMatricesSearch] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   /* Async NEXA check (Outseta custom field fallback) */
   useEffect(() => {
@@ -133,6 +225,35 @@ export default function LenderDetailPage() {
     }
     load();
   }, [slug]);
+
+  /* Fetch product matrices once lender is loaded */
+  useEffect(() => {
+    if (!lender || matricesProducts !== null) return;
+    setMatricesLoading(true);
+    fetch(PRODUCTS_API)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success || !data.products) {
+          setMatricesProducts([]);
+          setMatricesLoading(false);
+          return;
+        }
+        const lenderName = (lender.name || "").toLowerCase().trim();
+        const filtered = data.products.filter((p) => {
+          let pLender = p["Lender Name (from Lender Name)"];
+          if (Array.isArray(pLender)) pLender = pLender[0];
+          if (!pLender) pLender = p["Lender"] || p["lender"] || "";
+          return String(pLender).toLowerCase().trim() === lenderName;
+        });
+        setMatricesProducts(filtered);
+        setMatricesMeta(data.fieldMetadata || {});
+        setMatricesLoading(false);
+      })
+      .catch(() => {
+        setMatricesProducts([]);
+        setMatricesLoading(false);
+      });
+  }, [lender, matricesProducts]);
 
   /* Load preferences from localStorage cache, then background-sync from Supabase */
   useEffect(() => {
@@ -235,9 +356,11 @@ export default function LenderDetailPage() {
   if (nexaAuthorized && lender.nexa100) badges.push({ label: "NEXA\u{1F4AF}", style: { background: "#1a1a1a", color: "#FFFFFF" } });
   if (nexaAuthorized && lender.nexaOnly) badges.push({ label: "NEXA Only", style: { background: "#EDE9FE", color: "#6D28D9" } });
 
+  const matricesCount = matricesProducts ? matricesProducts.length : 0;
   const tabs = [
     { id: "overview", label: "Overview" },
     { id: "products", label: "Loan Products" },
+    { id: "matrices", label: matricesProducts !== null ? `Product Matrices (${matricesCount})` : "Product Matrices" },
     { id: "contacts", label: "Contacts" },
   ];
 
@@ -396,6 +519,20 @@ export default function LenderDetailPage() {
           </div>
         )}
 
+        {/* ── Product Matrices Tab ── */}
+        {activeTab === "matrices" && (
+          <ProductMatricesPanel
+            products={matricesProducts}
+            fieldMetadata={matricesMeta}
+            loading={matricesLoading}
+            search={matricesSearch}
+            onSearchChange={setMatricesSearch}
+            onSelectProduct={setSelectedProduct}
+            lenderName={lender.name}
+            isAdmin={adminUser}
+          />
+        )}
+
         {/* ── Contacts Tab ── */}
         {activeTab === "contacts" && (
           <div>
@@ -469,6 +606,17 @@ export default function LenderDetailPage() {
       {/* AE Detail Modal */}
       {selectedAE && (
         <AEModal ae={selectedAE} onClose={() => setSelectedAE(null)} copyToClipboard={copyToClipboard} />
+      )}
+
+      {/* Product Matrix Detail Modal */}
+      {selectedProduct && (
+        <ProductMatrixModal
+          product={selectedProduct}
+          fieldMetadata={matricesMeta}
+          lenderName={lender.name}
+          isAdmin={adminUser}
+          onClose={() => setSelectedProduct(null)}
+        />
       )}
 
       {/* Copy Toast */}
@@ -904,7 +1052,7 @@ function ContactRow({ icon, label, href, onCopy }) {
 }
 
 /* ════════════════════════════════════════
-   Private Notes (localStorage)
+   Private Notes (Supabase-backed)
    ════════════════════════════════════════ */
 function PrivateNotes({ starRating, onStarClick, notes, onNotesChange, saveStatus }) {
   return (
@@ -933,6 +1081,257 @@ function PrivateNotes({ starRating, onStarClick, notes, onNotesChange, saveStatu
           style={{ width: "100%", minHeight: 120, marginTop: 12, padding: 10, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, fontFamily: "inherit", fontSize: 13, color: "#0F172A", resize: "vertical", boxSizing: "border-box" }}
         />
         {saveStatus && <div style={{ fontSize: 12, color: "#64748B", marginTop: 6 }}>{saveStatus}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Product Matrices Panel
+   ════════════════════════════════════════ */
+function ProductMatricesPanel({ products, fieldMetadata, loading, search, onSearchChange, onSelectProduct, lenderName, isAdmin }) {
+  if (loading || products === null) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748B", fontSize: 13, background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10 }}>
+        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 24, color: "#94A3B8", marginBottom: 10, display: "block" }} />
+        Loading product matrices...
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748B", fontSize: 13, background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 10 }}>
+        <i className="fa-solid fa-table-cells" style={{ fontSize: 28, color: "#94A3B8", marginBottom: 10, display: "block" }} />
+        No product specifics found for this lender.
+      </div>
+    );
+  }
+
+  // Group products by Loan Product type
+  const groups = {};
+  products.forEach((p, idx) => {
+    let loanType = p["Loan Product"] || p["loan_product"] || p["Product Name"] || "Other";
+    if (Array.isArray(loanType)) loanType = loanType[0] || "Other";
+    if (!groups[loanType]) groups[loanType] = [];
+    groups[loanType].push({ product: p, index: idx });
+  });
+  const groupNames = Object.keys(groups).sort();
+
+  const query = search.toLowerCase().trim();
+
+  return (
+    <div>
+      {/* Search box */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search product specifics\u2026"
+          style={{ width: "100%", padding: "10px 14px", border: "1px solid #E2E8F0", borderRadius: 10, fontSize: 14, fontFamily: "inherit", background: "#FFFFFF", color: "#0F172A", outline: "none", transition: "border-color 0.15s", boxSizing: "border-box" }}
+          onFocus={(e) => { e.target.style.borderColor = "#2563EB"; e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.12)"; }}
+          onBlur={(e) => { e.target.style.borderColor = "#E2E8F0"; e.target.style.boxShadow = "none"; }}
+        />
+      </div>
+
+      {/* Grouped product cards */}
+      {groupNames.map((groupName) => {
+        const items = groups[groupName];
+        // Filter items by search query
+        const filtered = items.filter((item) => {
+          const p = item.product;
+          const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
+          const displayName = version || (p["Loan Product"] || "Product Details");
+          const searchText = (displayName + " " + groupName).toLowerCase();
+          return !query || searchText.indexOf(query) !== -1;
+        });
+        if (filtered.length === 0) return null;
+
+        return (
+          <div key={groupName}>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#94A3B8", textTransform: "uppercase", margin: "16px 0 8px 0" }}>
+              {groupName} ({filtered.length})
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+              {filtered.map((item) => {
+                const p = item.product;
+                const version = p["Lender Product Name | Version (Final)"] || p["Lender Product Name | Version"] || "";
+                const displayName = version || (p["Loan Product"] || "Product Details");
+                return (
+                  <div
+                    key={item.index}
+                    onClick={() => onSelectProduct(p)}
+                    style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, cursor: "pointer", transition: "border-color 0.15s, background 0.15s, box-shadow 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#93C5FD"; e.currentTarget.style.background = "#F0F7FF"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(37,99,235,0.1)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.background = "#FFFFFF"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: 15, color: "#0F172A", fontWeight: 500, whiteSpace: "normal" }}>{displayName}</span>
+                      {version && version !== displayName && (
+                        <span style={{ fontSize: 12, color: "#64748B" }}>{groupName}</span>
+                      )}
+                    </div>
+                    <span style={{ color: "#2563EB", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                      <i className="fa-solid fa-chevron-right" />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   Product Matrix Detail Modal
+   ════════════════════════════════════════ */
+function ProductMatrixModal({ product, fieldMetadata, lenderName, isAdmin, onClose }) {
+  useEffect(() => {
+    function handleEsc(e) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("keydown", handleEsc);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  const lenderArr = product["Lender Name (from Lender Name)"];
+  const modalLender = Array.isArray(lenderArr) ? lenderArr[0] : (lenderArr || product["Lender"] || lenderName || "");
+  const loanType = product["Loan Product"] || product["Product Name"] || "Product Details";
+  const productVersion = product["Lender Product Name | Version (Final)"] || product["Lender Product Name | Version"] || "";
+  const airtableUrl = product["Link to this Airtable LOAN (Formula)"] || "";
+
+  // Build grouped field sections from fieldMetadata
+  const configuredFields = Object.keys(fieldMetadata || {});
+  let groupedSections = [];
+
+  if (configuredFields.length > 0) {
+    const groups = {};
+    configuredFields.forEach((key) => {
+      if (key === "id") return;
+      const meta = fieldMetadata[key];
+      if (!meta) return;
+      const groupName = meta.groupName || "Other Details";
+      const groupOrder = meta.groupOrder || 99;
+      if (!groups[groupName]) groups[groupName] = { order: groupOrder, fields: [] };
+      groups[groupName].fields.push({
+        key,
+        label: meta.label || key.replace(/_/g, " "),
+        value: product[key],
+        order: meta.fieldOrder || 99,
+      });
+    });
+    groupedSections = Object.entries(groups)
+      .sort((a, b) => a[1].order - b[1].order)
+      .map(([groupName, groupData]) => {
+        groupData.fields.sort((a, b) => a.order - b.order);
+        const nonEmpty = groupData.fields.filter((f) => !pmIsFieldEmpty(f.value));
+        return { groupName, fields: nonEmpty };
+      })
+      .filter((s) => s.fields.length > 0);
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+    >
+      {/* Backdrop */}
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} />
+
+      {/* Content */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: "relative", background: "#F1F5F9", borderRadius: 16, width: "100%", maxWidth: 1000, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 25px 50px rgba(0,0,0,0.15)", overflow: "hidden" }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "24px 28px", flexShrink: 0, background: "#0F172A" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {modalLender && (
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>{modalLender.toUpperCase()}</p>
+            )}
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF", margin: 0 }}>{loanType}</h2>
+            {productVersion && (
+              <p style={{ fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>{productVersion}</p>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+            {isAdmin && airtableUrl && (
+              <a
+                href={airtableUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", fontSize: 12, fontWeight: 600, color: "#fff", background: "#2563EB", borderRadius: 6, textDecoration: "none", whiteSpace: "nowrap" }}
+              >
+                <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 11 }} /> Edit in Airtable
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              style={{ width: 36, height: 36, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.1)", color: "#E2E8F0", fontSize: 24, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "20px 24px 24px", overflowY: "auto", flex: 1, background: "#F1F5F9" }}>
+          {groupedSections.length === 0 ? (
+            <p style={{ padding: 20, color: "#64748B" }}>No data available for this product.</p>
+          ) : (
+            groupedSections.map((section) => {
+              const isNexaGroup = section.groupName.toLowerCase().indexOf("nexa") !== -1;
+              const iconClass = pmGetGroupIcon(section.groupName);
+              return (
+                <div
+                  key={section.groupName}
+                  style={{
+                    background: "#FFFFFF",
+                    border: isNexaGroup ? "1px solid #334155" : "1px solid #E2E8F0",
+                    borderRadius: 16,
+                    marginBottom: 16,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Section title */}
+                  <h3 style={{
+                    fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em",
+                    margin: 0, padding: isNexaGroup ? "16px 24px" : "16px 24px 10px",
+                    borderBottom: isNexaGroup ? "none" : "2px solid #E2E8F0",
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: isNexaGroup ? "#0F172A" : "transparent",
+                    color: isNexaGroup ? "#F1F5F9" : "#0F172A",
+                  }}>
+                    <i className={`fa-solid ${iconClass}`} style={{ color: isNexaGroup ? "#60A5FA" : "#2563EB", fontSize: 14, flexShrink: 0 }} />
+                    {section.groupName}
+                    {isNexaGroup && (
+                      <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(96,165,250,0.2)", color: "#60A5FA", marginLeft: 8 }}>NEXA</span>
+                    )}
+                  </h3>
+
+                  {/* Fields grid */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, padding: 24 }}>
+                    {section.fields.map((field) => (
+                      <div key={field.key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.3px" }}>{field.label}</span>
+                        <span style={{ fontSize: 14, color: "#0F172A", wordBreak: "break-word" }}>
+                          {pmFormatValueJsx(field.value, field.key)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
