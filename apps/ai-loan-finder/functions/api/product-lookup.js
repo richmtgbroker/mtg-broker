@@ -4,11 +4,26 @@
 // v1.1 — Security: sanitized error messages (no internal details leaked to client),
 //         added JWT verification to prevent unauthenticated access.
 
-const ALLOWED_ORIGINS = ['https://mtg.broker', 'https://www.mtg.broker']
+const ALLOWED_ORIGINS = [
+  'https://mtg.broker',
+  'https://www.mtg.broker',
+  'https://mtg-loan-finder.pages.dev',
+  'https://mtg-app.pages.dev',
+  'https://mtg-app-staging.pages.dev',
+]
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app-staging\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-loan-finder\.pages\.dev$/.test(origin)) return true
+  return false
+}
 
 function getCorsHeaders(request) {
   const origin = request ? request.headers.get('Origin') : null
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

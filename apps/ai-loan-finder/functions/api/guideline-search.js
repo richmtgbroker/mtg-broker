@@ -20,12 +20,27 @@
 // Required env vars (set in Cloudflare Pages dashboard + .dev.vars):
 //   OPENAI_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY, ANTHROPIC_API_KEY
 
-const ALLOWED_ORIGINS = ['https://mtg.broker', 'https://www.mtg.broker']
+const ALLOWED_ORIGINS = [
+  'https://mtg.broker',
+  'https://www.mtg.broker',
+  'https://mtg-loan-finder.pages.dev',
+  'https://mtg-app.pages.dev',
+  'https://mtg-app-staging.pages.dev',
+]
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS.includes(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app-staging\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-app\.pages\.dev$/.test(origin)) return true
+  if (/^https:\/\/[a-f0-9]+\.mtg-loan-finder\.pages\.dev$/.test(origin)) return true
+  return false
+}
 
 // Return CORS headers reflecting the request origin if it's allowed
 function getCorsHeaders(request) {
   const origin = request ? request.headers.get('Origin') : null
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0]
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
