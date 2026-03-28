@@ -1,34 +1,191 @@
+import { Link } from "react-router";
+
 export function meta() {
   return [{ title: "Tools — MtgBroker" }];
 }
 
+const TOOLS = [
+  {
+    name: "Mortgage Calculators",
+    icon: "fa-solid fa-calculator",
+    link: "/app/calculators",
+    desc: "Payment, amortization, affordability, and refinance calculators",
+  },
+  {
+    name: "AI Loan Finder",
+    icon: "fa-solid fa-robot",
+    link: "/app/ai-search",
+    desc: "Describe your scenario and let AI find matching loan products",
+  },
+  {
+    name: "Loan Product Search",
+    icon: "fa-solid fa-magnifying-glass-dollar",
+    link: "/app/loan-search",
+    desc: "Search and compare loan products across all lenders",
+  },
+  {
+    name: "Property Types Guide",
+    icon: "fa-solid fa-house",
+    link: "/app/property-types",
+    desc: "Explore eligible property types and their guidelines",
+  },
+  {
+    name: "Goal Setting",
+    icon: "fa-solid fa-bullseye",
+    link: "/app/goal-setting",
+    desc: "Set and track your production goals",
+  },
+  {
+    name: "Social Media Kit",
+    icon: "fa-solid fa-share-nodes",
+    link: "/app/social-media",
+    desc: "Social media templates and compliance-approved content",
+  },
+];
+
+const styles = {
+  page: {
+    background: "#F8FAFC",
+    minHeight: "100%",
+  },
+  headerRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 16,
+    marginBottom: 32,
+  },
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    background: "#EFF6FF",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  headerIconI: {
+    fontSize: 22,
+    color: "#2563EB",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 700,
+    color: "#0F172A",
+    margin: 0,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    margin: 0,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: 16,
+  },
+  card: {
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+    padding: 20,
+    background: "#FFFFFF",
+    border: "1px solid #E2E8F0",
+    borderRadius: 10,
+    textDecoration: "none",
+    transition: "border-color 0.15s, background 0.15s",
+    cursor: "pointer",
+  },
+  cardHover: {
+    borderColor: "#93C5FD",
+    background: "#F0F7FF",
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    background: "#EFF6FF",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  iconCircleI: {
+    fontSize: 18,
+    color: "#2563EB",
+  },
+  cardBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cardName: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: "#0F172A",
+    margin: 0,
+    marginBottom: 2,
+  },
+  cardDesc: {
+    fontSize: 13,
+    color: "#64748B",
+    margin: 0,
+    lineHeight: 1.4,
+  },
+  chevron: {
+    fontSize: 14,
+    color: "#94A3B8",
+    flexShrink: 0,
+  },
+};
+
+function ToolCard({ tool }) {
+  return (
+    <Link
+      to={tool.link}
+      style={styles.card}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "#93C5FD";
+        e.currentTarget.style.background = "#F0F7FF";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "#E2E8F0";
+        e.currentTarget.style.background = "#FFFFFF";
+      }}
+    >
+      <div style={styles.iconCircle}>
+        <i className={tool.icon} style={styles.iconCircleI} />
+      </div>
+      <div style={styles.cardBody}>
+        <p style={styles.cardName}>{tool.name}</p>
+        <p style={styles.cardDesc}>{tool.desc}</p>
+      </div>
+      <i className="fa-solid fa-chevron-right" style={styles.chevron} />
+    </Link>
+  );
+}
+
 export default function ToolsPage() {
   return (
-    <div>
+    <div style={styles.page}>
       {/* Header */}
-      <div className="flex items-start gap-4 mb-8">
-        <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 shrink-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-          </svg>
+      <div style={styles.headerRow}>
+        <div style={styles.headerIcon}>
+          <i className="fa-solid fa-wrench" style={styles.headerIconI} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-text mb-1">Tools</h1>
-          <p className="text-text-muted text-sm">Utility tools and resources to help you work more efficiently.</p>
+          <h1 style={styles.title}>Tools & Resources</h1>
+          <p style={styles.subtitle}>
+            Utility tools and resources to help you work more efficiently.
+          </p>
         </div>
       </div>
 
-      {/* Coming soon card */}
-      <div className="bg-surface border border-border-light rounded-xl p-12 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8 text-primary-400">
-            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-          </svg>
-        </div>
-        <h2 className="text-lg font-bold text-text mb-2">Coming Soon</h2>
-        <p className="text-text-muted text-sm max-w-md mx-auto">
-          Additional tools and utilities to streamline your mortgage workflow are on the way.
-        </p>
+      {/* Tool grid */}
+      <div style={styles.grid}>
+        {TOOLS.map((tool) => (
+          <ToolCard key={tool.link} tool={tool} />
+        ))}
       </div>
     </div>
   );
