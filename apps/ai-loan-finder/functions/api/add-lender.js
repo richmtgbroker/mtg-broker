@@ -36,7 +36,6 @@ const EXTRACTABLE_FIELDS = [
   'VA ID',
   'USDA ID',
   'Licensed States',
-  'Licensed States URL',
   'Scenario Desk',
   'Facebook',
   'LinkedIn',
@@ -191,8 +190,7 @@ Use web search to find information about this company. Search their website, Lin
 5. **TPO/Broker Portal** — wholesale/TPO/broker portal login URL
 6. **FHA ID, VA ID, USDA ID** — government lender IDs if found
 7. **Licensed States** — comma-separated state abbreviations, or "All 50 States"
-8. **Licensed States URL** — URL on the lender's CORPORATE website only (not NMLS or third-party)
-9. **Scenario Desk** — email address if found
+8. **Scenario Desk** — email address if found
 10. **Social Media** — Facebook, LinkedIn, Instagram, YouTube, X/Twitter profile URLs
     - Prioritize wholesale/TPO-specific channels when available
     - Only include verified business accounts
@@ -200,7 +198,6 @@ Use web search to find information about this company. Search their website, Lin
 ## Rules
 
 - **Only use data you can verify.** Use null for anything you cannot confidently identify.
-- For licensed_states_url, ONLY use a URL from the lender's corporate website. NEVER use third-party sites.
 - For social media, only include actual company profile URLs, not share/intent links.
 
 ## Required Output
@@ -217,7 +214,6 @@ Return ONLY a JSON object with these exact keys. No other text before or after t
   "va_id": "VA lender ID or null",
   "usda_id": "USDA lender ID or null",
   "licensed_states": "Comma-separated abbreviations, 'All 50 States', or null",
-  "licensed_states_url": "Corporate website licensing page URL or null",
   "scenario_desk": "Email address or null",
   "facebook": "Facebook page URL or null",
   "linkedin": "LinkedIn company page URL or null",
@@ -431,7 +427,6 @@ function mapToAirtableFields(extracted, originalUrl) {
   if (extracted.va_id) fields['VA ID'] = String(extracted.va_id)
   if (extracted.usda_id) fields['USDA ID'] = String(extracted.usda_id)
   if (extracted.licensed_states) fields['Licensed States'] = extracted.licensed_states
-  if (extracted.licensed_states_url) fields['Licensed States URL'] = extracted.licensed_states_url
   if (extracted.scenario_desk) fields['Scenario Desk'] = extracted.scenario_desk
   if (extracted.facebook) fields['Facebook'] = extracted.facebook
   if (extracted.linkedin) fields['LinkedIn'] = extracted.linkedin
