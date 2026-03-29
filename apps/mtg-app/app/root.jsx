@@ -60,6 +60,20 @@ export default function Root() {
           }}
         />
         <script async src="https://r.wdfl.co/rw.js" data-rewardful="a3ca66"></script>
+
+        {/* Ybug feedback widget */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                window.ybug_settings = {"id":"rp6gm9qcm7g7qvw2vkb2"};
+                var ybug = document.createElement('script'); ybug.type = 'text/javascript'; ybug.async = true;
+                ybug.src = 'https://widget.ybug.io/button/'+window.ybug_settings.id+'.js';
+                var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ybug, s);
+              })();
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
         <Outlet />
