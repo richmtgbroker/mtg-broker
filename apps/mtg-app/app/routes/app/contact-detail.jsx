@@ -752,7 +752,22 @@ export default function ContactDetailPage() {
             {displayName}
           </h1>
           {c.job_title && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>{c.job_title}</div>}
-          {c.company_name && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>{c.company_name}</div>}
+          {c.company_name && (
+            <div style={{ fontSize: 13, marginBottom: 8 }}>
+              {c.lender_or_vendor ? (
+                <Link
+                  to={`/app/${c.lender_or_vendor === "Lender" ? "lenders" : "vendors"}/${c.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
+                  style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none", borderBottom: "1px solid rgba(255,255,255,0.3)" }}
+                  onMouseEnter={(e) => { e.target.style.color = "#fff"; e.target.style.borderBottomColor = "rgba(255,255,255,0.6)"; }}
+                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; e.target.style.borderBottomColor = "rgba(255,255,255,0.3)"; }}
+                >
+                  {c.company_name}
+                </Link>
+              ) : (
+                <span style={{ color: "rgba(255,255,255,0.6)" }}>{c.company_name}</span>
+              )}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {c.nmls && (
               <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,0.15)", color: "#CBD5E1" }}>
@@ -830,7 +845,7 @@ export default function ContactDetailPage() {
           <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #2563EB55" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#2563EB20", borderBottom: "1px solid #2563EB45" }}>
               <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#2563EB" }} />
-              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563EB" }}>Licensed States</span>
+              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563EB" }}>Territory</span>
             </div>
             <div style={{ padding: "16px", display: "flex", gap: 6, flexWrap: "wrap" }}>
               {c.territory_states.split(",").map((state) => state.trim()).filter(Boolean).map((state) => (
