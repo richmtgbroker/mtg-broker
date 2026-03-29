@@ -24,6 +24,7 @@ export default [
     route("/app/products/:slug", "routes/app/product-detail.jsx"),
     route("/app/property-types", "routes/app/property-types.jsx"),
     route("/app/vendors", "routes/app/vendors.jsx"),
+    route("/app/vendors/:slug", "routes/app/vendor-detail.jsx"),
     route("/app/contacts", "routes/app/contacts.jsx"),
     route("/app/pipeline", "routes/app/pipeline.jsx"),
     route("/app/calculators", "routes/app/calculators.jsx"),
