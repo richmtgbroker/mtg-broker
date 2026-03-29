@@ -112,6 +112,7 @@ export default function VAEntitlementCalculator() {
   const [loanUsage, setLoanUsage] = useState("first");
   const [feeExempt, setFeeExempt] = useState("no");
   const [loanPurpose, setLoanPurpose] = useState("purchase");
+  const [refiLoanAmount, setRefiLoanAmount] = useState(""); /* Loan amount for non-purchase scenarios */
   const [feeRateInput, setFeeRateInput] = useState("");
   const [feeRateOverride, setFeeRateOverride] = useState(false);
 
@@ -259,8 +260,10 @@ export default function VAEntitlementCalculator() {
       dpRequired = (priceVal - maxZeroDown) * 0.25;
     }
 
-    /* Base loan */
-    const baseLoan = Math.max(0, priceVal - dpVal);
+    /* Base loan — for purchases: Price - DP. For non-purchases: user-entered loan amount */
+    const isPurchase = loanPurpose === "purchase";
+    const refiLoanVal = parseRaw(refiLoanAmount) || 0;
+    const baseLoan = isPurchase ? Math.max(0, priceVal - dpVal) : refiLoanVal;
 
     /* Funding fee — use the rate from the input field */
     const feeRate = isExempt ? 0 : (parseFloat(feeRateInput) || 0);
@@ -270,6 +273,7 @@ export default function VAEntitlementCalculator() {
     return {
       isFull,
       isExempt,
+      isPurchase,
       countyVal,
       usedVal,
       maxGuaranty,
@@ -283,14 +287,15 @@ export default function VAEntitlementCalculator() {
       priceVal,
       dpVal,
       dpPct,
+      refiLoanVal,
     };
-  }, [entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, feeExempt, feeRateInput]);
+  }, [entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, feeExempt, feeRateInput, loanPurpose, refiLoanAmount]);
 
   /* --- Collect / populate form data for save/load --- */
   const collectFormData = useCallback(() => ({
     meta: { name: scenName, date: scenDate, borrower: borName },
-    calc: { entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride },
-  }), [scenName, scenDate, borName, entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride]);
+    calc: { entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride, refiLoanAmount },
+  }), [scenName, scenDate, borName, entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride, refiLoanAmount]);
 
   const populateForm = useCallback((data) => {
     if (!data) return;
@@ -312,6 +317,7 @@ export default function VAEntitlementCalculator() {
       if (c.loanPurpose) setLoanPurpose(c.loanPurpose);
       if (c.feeRateInput !== undefined) setFeeRateInput(c.feeRateInput);
       if (c.feeRateOverride !== undefined) setFeeRateOverride(c.feeRateOverride);
+      if (c.refiLoanAmount !== undefined) setRefiLoanAmount(c.refiLoanAmount);
     }
   }, []);
 
@@ -437,6 +443,7 @@ export default function VAEntitlementCalculator() {
     setLoanUsage("first"); setFeeExempt("no");
     setLoanPurpose("purchase");
     setFeeRateInput(""); setFeeRateOverride(false);
+    setRefiLoanAmount("");
     setSaveStatus({ state: "", text: "Ready" });
   }, []);
 
@@ -478,17 +485,22 @@ export default function VAEntitlementCalculator() {
     /* Loan Summary table */
     const purposeLabels = { purchase: "Purchase / Construction", cashout: "Cash-Out Refinance", irrrl: "IRRRL (Streamline Refi)", manufactured: "Manufactured Home" };
     let loanRows = `<tr><td>Loan Purpose</td><td>${purposeLabels[loanPurpose] || "Purchase"}</td></tr>`;
-    if (r.priceVal > 0) {
+    if (r.isPurchase && r.priceVal > 0) {
       loanRows +=
         `<tr><td>Purchase Price</td><td>${fmt(r.priceVal)}</td></tr>` +
         `<tr><td>Down Payment (${r.dpPct.toFixed(1)}%)</td><td>&minus;${fmt(r.dpVal)}</td></tr>` +
         `<tr><td>Base Loan Amount</td><td>${fmt(r.baseLoan)}</td></tr>` +
         `<tr><td>VA Funding Fee (${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</td><td>+${fmt(r.feeAmount)}</td></tr>` +
         `<tr class="print-total-row"><td>Total Loan Amount</td><td>${fmt(r.totalLoan)}</td></tr>`;
+    } else if (!r.isPurchase && r.refiLoanVal > 0) {
+      loanRows +=
+        `<tr><td>Loan Amount</td><td>${fmt(r.refiLoanVal)}</td></tr>` +
+        `<tr><td>VA Funding Fee (${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</td><td>+${fmt(r.feeAmount)}</td></tr>` +
+        `<tr class="print-total-row"><td>Total Loan Amount</td><td>${fmt(r.totalLoan)}</td></tr>`;
     } else {
       loanRows +=
         `<tr><td>Funding Fee Rate</td><td>${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"}</td></tr>` +
-        `<tr><td colspan="2" style="color:#94A3B8;font-style:italic">Enter a purchase price to see loan summary</td></tr>`;
+        `<tr><td colspan="2" style="color:#94A3B8;font-style:italic">Enter loan details to see summary</td></tr>`;
     }
     document.getElementById("vaPrintLoan").innerHTML = loanRows;
 
@@ -1103,10 +1115,44 @@ export default function VAEntitlementCalculator() {
                 </div>
               </div>
 
-              <div className="input-group" style={{ marginBottom: 0 }}>
-                <label>Funding Fee Amount</label>
-                <div className="computed-display">
-                  {r.isExempt ? "$0" : fmt(r.feeAmount)}
+              {/* Loan Amount field — only for non-purchase scenarios */}
+              {!r.isPurchase && (
+                <div className="input-group">
+                  <label>Loan Amount ($) <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    className={`calc-input${emptyClass(refiLoanAmount)}`}
+                    value={refiLoanAmount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/[+\-*/]/.test(val.replace(/,/g, ""))) { setRefiLoanAmount(val); }
+                      else { setRefiLoanAmount(formatNumberString(val)); }
+                    }}
+                    onBlur={() => {
+                      if (refiLoanAmount && /[+\-*/]/.test(refiLoanAmount.replace(/,/g, ""))) {
+                        const result = evaluateExpression(refiLoanAmount);
+                        if (!isNaN(result)) { setRefiLoanAmount(formatNumberString(String(result))); return; }
+                      }
+                      setRefiLoanAmount(formatNumberString(refiLoanAmount));
+                    }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }}
+                    placeholder="e.g. 350,000"
+                  />
+                </div>
+              )}
+
+              <div className="grid-2-compact" style={{ marginBottom: 0 }}>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label>Funding Fee Amount</label>
+                  <div className="computed-display">
+                    {r.isExempt ? "$0 (Exempt)" : r.baseLoan > 0 ? fmt(r.feeAmount) : "$0"}
+                  </div>
+                </div>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label>Total Loan (w/ Fee)</label>
+                  <div className="computed-display highlight">
+                    {r.baseLoan > 0 ? fmt(r.totalLoan) : "$0"}
+                  </div>
                 </div>
               </div>
 
@@ -1366,24 +1412,33 @@ export default function VAEntitlementCalculator() {
                 </>
               )}
 
-              {/* Loan Summary — only shown when purchase price is entered */}
-              {r.priceVal > 0 && (
+              {/* Loan Summary — shown when there's a loan amount (purchase or refi) */}
+              {r.baseLoan > 0 && (
                 <>
                   <hr className="divider" />
                   <div className="breakdown-section">
                     <div className="breakdown-title">Loan Summary</div>
-                    <div className="breakdown-row">
-                      <span>Purchase Price</span>
-                      <span>{fmt(r.priceVal)}</span>
-                    </div>
-                    <div className="breakdown-row negative">
-                      <span>Down Payment ({r.dpPct.toFixed(1)}%)</span>
-                      <span>&minus;{fmt(r.dpVal)}</span>
-                    </div>
-                    <div className="breakdown-row">
-                      <span>Base Loan Amount</span>
-                      <span>{fmt(r.baseLoan)}</span>
-                    </div>
+                    {r.isPurchase ? (
+                      <>
+                        <div className="breakdown-row">
+                          <span>Purchase Price</span>
+                          <span>{fmt(r.priceVal)}</span>
+                        </div>
+                        <div className="breakdown-row negative">
+                          <span>Down Payment ({r.dpPct.toFixed(1)}%)</span>
+                          <span>&minus;{fmt(r.dpVal)}</span>
+                        </div>
+                        <div className="breakdown-row">
+                          <span>Base Loan Amount</span>
+                          <span>{fmt(r.baseLoan)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="breakdown-row">
+                        <span>Loan Amount</span>
+                        <span>{fmt(r.baseLoan)}</span>
+                      </div>
+                    )}
                     <div className="breakdown-row">
                       <span>VA Funding Fee ({r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</span>
                       <span>+{fmt(r.feeAmount)}</span>
