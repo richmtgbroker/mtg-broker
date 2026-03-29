@@ -725,11 +725,19 @@ export default function ContactDetailPage() {
 
       {/* ── Header (matches lender/vendor detail pattern) ── */}
       <div style={{ background: "#1E3A5F", padding: "18px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", borderRadius: 12, marginBottom: 20 }}>
-        {/* Avatar */}
+        {/* Avatar — with onError fallback for broken images */}
         {c.headshot_url ? (
           <img
             src={c.headshot_url}
             alt={c.name}
+            onError={(e) => {
+              // Replace broken image with initials div
+              const parent = e.target.parentNode;
+              const fallback = document.createElement("div");
+              Object.assign(fallback.style, { width: "80px", height: "80px", borderRadius: "12px", border: "2px solid rgba(255,255,255,0.22)", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "28px", fontWeight: "700", color: "#fff" });
+              fallback.textContent = getInitials(c.name);
+              parent.replaceChild(fallback, e.target);
+            }}
             style={{ width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "2px solid rgba(255,255,255,0.22)", flexShrink: 0 }}
           />
         ) : (
@@ -793,10 +801,10 @@ export default function ContactDetailPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
 
         {/* ── Contact Info card ── */}
-        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0" }}>
-          <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-            <i className="fa-solid fa-address-card" style={{ color: "#fff", fontSize: 13 }} />
-            <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>Contact Information</span>
+        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #2563EB55" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#2563EB20", borderBottom: "1px solid #2563EB45" }}>
+            <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#2563EB" }} />
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563EB" }}>Contact Information</span>
           </div>
           <div style={{ padding: "4px 16px 12px" }}>
             {c.email && (
@@ -819,10 +827,10 @@ export default function ContactDetailPage() {
 
         {/* ── Licensed States card ── */}
         {c.territory_states && (
-          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0" }}>
-            <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-              <i className="fa-solid fa-map" style={{ color: "#fff", fontSize: 13 }} />
-              <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>Licensed States</span>
+          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #2563EB55" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#2563EB20", borderBottom: "1px solid #2563EB45" }}>
+              <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#2563EB" }} />
+              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563EB" }}>Licensed States</span>
             </div>
             <div style={{ padding: "16px", display: "flex", gap: 6, flexWrap: "wrap" }}>
               {c.territory_states.split(",").map((state) => state.trim()).filter(Boolean).map((state) => (
@@ -846,10 +854,10 @@ export default function ContactDetailPage() {
 
         {/* ── Bio card (full width) ── */}
         {c.bio && (
-          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0", gridColumn: "1 / -1" }}>
-            <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-              <i className="fa-solid fa-user" style={{ color: "#fff", fontSize: 13 }} />
-              <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>About</span>
+          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #2563EB55", gridColumn: "1 / -1" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#2563EB20", borderBottom: "1px solid #2563EB45" }}>
+              <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#2563EB" }} />
+              <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563EB" }}>About</span>
             </div>
             <div style={{ padding: "16px" }}>
               <p style={{ fontSize: 13, lineHeight: 1.7, color: "#334155", margin: 0, whiteSpace: "pre-wrap" }}>
