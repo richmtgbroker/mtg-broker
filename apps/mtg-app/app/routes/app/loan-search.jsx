@@ -275,19 +275,8 @@ export default function LoanSearchPage() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [categoryCounts]);
 
-  // --- Category-specific columns ---
-  const effectiveColumns = useMemo(() => {
-    const cat = CATEGORY_CONFIG.find((c) => c.id === activeCategory);
-    if (!cat || !cat.columnGroups || cat.columnGroups.length === 0) return visibleColumns;
-    const extraCols = allFields.filter((k) => {
-      const meta = fieldMeta[k];
-      if (!meta || !meta.groupName) return false;
-      if (visibleColumns.includes(k)) return false;
-      return cat.columnGroups.includes(meta.groupName);
-    });
-    extraCols.sort((a, b) => (fieldMeta[a]?.fieldOrder || 99) - (fieldMeta[b]?.fieldOrder || 99));
-    return [...visibleColumns, ...extraCols];
-  }, [visibleColumns, activeCategory, allFields, fieldMeta]);
+  // --- Effective columns (only user-selected via column picker) ---
+  const effectiveColumns = visibleColumns;
 
   // --- Filtering ---
   const filtered = useMemo(() => {
