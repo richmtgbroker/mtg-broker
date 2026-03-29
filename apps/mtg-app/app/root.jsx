@@ -18,7 +18,7 @@ export function links() {
     // Font Awesome (used by AI Loan Finder, Settings, Pipeline)
     { rel: "stylesheet", href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" },
     // Favicon
-    { rel: "icon", href: "https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69b4d53aa7b7dc239acc2e95_MtgBroker_Favicon_Adaptive.svg", type: "image/svg+xml" },
+    { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     // PWA
     { rel: "manifest", href: "https://mtg-broker-api.rich-e00.workers.dev/manifest.json" },
     { rel: "apple-touch-icon", href: "https://i.ibb.co/Rkg1kd76/web-app-manifest-192x192.png" },
