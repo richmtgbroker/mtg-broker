@@ -195,13 +195,14 @@ export default function LendersPage() {
         {/* TBD Underwriting Filter */}
         <button
           onClick={() => setShowTbdOnly(!showTbdOnly)}
+          title="To Be Determined (TBD) Underwriting"
           className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-colors ${
             showTbdOnly
-              ? "bg-orange-50 text-orange-700 border-orange-300"
-              : "bg-white text-text-secondary border-border hover:border-text-muted"
+              ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+              : "bg-white text-text-secondary border-border hover:border-orange-400 hover:text-orange-600"
           }`}
         >
-          <span className={`inline-block w-2.5 h-2.5 rounded-sm font-bold text-[9px] leading-[10px] text-center text-white ${showTbdOnly ? "bg-orange-500" : "bg-orange-400"}`}>T</span>
+          <span className={`inline-block w-2.5 h-2.5 rounded-sm font-bold text-[9px] leading-[10px] text-center ${showTbdOnly ? "bg-white text-orange-600" : "bg-orange-400 text-white"}`}>T</span>
           TBD UW
         </button>
 
