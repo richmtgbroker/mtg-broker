@@ -4,7 +4,7 @@ import { isNexaUser, checkNexaAccess } from "../../lib/auth";
 
 const LENDERS_API_PRIMARY = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const LENDERS_API_FALLBACK = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
-const CACHE_KEY = "mtg_lenders_v2";
+const CACHE_KEY = "mtg_lenders_v3";
 const CACHE_TTL = 30 * 60 * 1000;
 const FAVORITES_KEY = "mtg_lender_favorites";
 
