@@ -27,6 +27,7 @@ export default [
     route("/app/vendors", "routes/app/vendors.jsx"),
     route("/app/vendors/:slug", "routes/app/vendor-detail.jsx"),
     route("/app/contacts", "routes/app/contacts.jsx"),
+    route("/app/contacts/:slug", "routes/app/contact-detail.jsx"),
     route("/app/pipeline", "routes/app/pipeline.jsx"),
     route("/app/calculators", "routes/app/calculators.jsx"),
     route("/app/goal-setting", "routes/app/goal-setting.jsx"),

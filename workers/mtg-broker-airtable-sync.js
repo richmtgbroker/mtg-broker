@@ -4,13 +4,15 @@
  * Syncs Airtable tables → Supabase:
  *   1. Loan Products  (Airtable tblVSU5z4WSxreX7l → Supabase loan_products)
  *   2. Lenders         (Airtable tbl1mpg3KFakZsFK7 → Supabase lenders)
+ *   3. Contacts        (Airtable tblEEDPa1vXeR6cnT → Supabase contacts)
  *
  * SCHEDULE: Daily at 3 AM UTC (cron: 0 3 * * *)
  *
  * ENDPOINTS:
- *   GET /         → runs full sync (both tables) and returns results
+ *   GET /         → runs full sync (all tables) and returns results
  *   GET /products → syncs only loan_products
  *   GET /lenders  → syncs only lenders
+ *   GET /contacts → syncs only contacts
  *   GET /health   → returns status + confirms secrets are set
  *
  * REQUIRED SECRETS (set in Cloudflare dashboard → Workers → Settings → Variables):
@@ -48,6 +50,13 @@ const TABLES = {
     supabase_table:    'lenders',
     delete_filter:     'id=gt.0',  // Delete all rows (old rows lack airtable_id)
     mapper:            mapLenderRecord,
+  },
+  contacts: {
+    airtable_table_id: 'tblEEDPa1vXeR6cnT',
+    supabase_table:    'contacts',
+    delete_filter:     'airtable_id=not.is.null',
+    mapper:            mapContactRecord,
+    preserveFields:    ['edit_token', 'edit_token_expires_at', 'pending_review', 'pending_changes', 'last_self_edit_at'],
   },
 };
 
@@ -166,6 +175,52 @@ function mapLenderRecord(record) {
     tpo_portal_url:           fields['TPO Broker Portal (Final)'] || extractUrl(fields['TPO Portal']) || null,
     correspondent_portal_url: extractUrl(fields['Correspondent Portal']) || null,
     turn_times_url:           fields['Turn Times'] || extractUrl(fields['Turn Times URL']) || null,
+  };
+}
+
+
+// ============================================================
+// FIELD MAPPING — Contacts
+// Maps one Airtable record to a Supabase contacts row.
+// ============================================================
+function mapContactRecord(record) {
+  const fields = record.fields || {};
+
+  // Extract headshot URL from attachment field or formula fallback
+  let headshotUrl = null;
+  const profilePic = fields['Profile Pic'];
+  if (Array.isArray(profilePic) && profilePic.length > 0 && profilePic[0].url) {
+    headshotUrl = profilePic[0].url;
+  } else {
+    headshotUrl = fields['Profile Pic (Final)'] || null;
+  }
+
+  // Generate slug from name (matches Airtable's Webflow Slug formula)
+  const name = fields['Contact Name'] || '';
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || null;
+
+  return {
+    airtable_id:          record.id,
+    name:                 name || null,
+    preferred_name:       fields['Preferred Name'] || null,
+    slug:                 slug,
+    email:                fields['Email'] || null,
+    mobile:               fields['Mobile Number'] || null,
+    office:               fields['Office Number'] || null,
+    extension:            fields['Office Extension'] || null,
+    job_title:            fields['Title'] || null,
+    company_name:         fields['Company Name'] || null,
+    lender_or_vendor:     fields['Lender or Vendor'] || null,
+    bio:                  fields['Bio'] || null,
+    nmls:                 fields['NMLS#'] || null,
+    territory_states:     joinArray(fields['States (from Territory)']) || fields['Territory States'] || null,
+    nationwide_territory: fields['Nationwide Territory'] || false,
+    linkedin:             fields['LinkedIn'] || null,
+    zoom_room:            fields['Zoom Room Link'] || null,
+    headshot_url:         headshotUrl,
+    notes:                fields['Notes'] || null,
+    featured_ae:          fields['Featured AE'] || null,
+    spotlight_ae:         fields['Spotlight AE'] || null,
   };
 }
 
@@ -297,11 +352,56 @@ async function getSupabaseCount(supabaseTable, serviceKey) {
 
 
 // ============================================================
+// SUPABASE — fetch existing records for field preservation
+// ============================================================
+async function fetchExistingRecords(supabaseTable, fields, serviceKey) {
+  const selectFields = ['airtable_id', ...fields].join(',');
+  const allRecords = [];
+  let offset = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/${supabaseTable}?select=${selectFields}&offset=${offset}&limit=${pageSize}`,
+      {
+        headers: {
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+        },
+      }
+    );
+
+    if (!response.ok) return {};
+
+    const data = await response.json();
+    allRecords.push(...data);
+
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  // Build a map keyed by airtable_id
+  const map = {};
+  for (const row of allRecords) {
+    if (row.airtable_id) {
+      map[row.airtable_id] = {};
+      for (const f of fields) {
+        if (row[f] !== null && row[f] !== undefined) {
+          map[row.airtable_id][f] = row[f];
+        }
+      }
+    }
+  }
+  return map;
+}
+
+
+// ============================================================
 // SYNC ONE TABLE
 // Returns { success, airtable_count, inserted, errors, supabase_count, errorDetails }
 // ============================================================
 async function syncTable(tableConfig, apiKey, serviceKey, logLine) {
-  const { airtable_table_id, supabase_table, delete_filter, mapper } = tableConfig;
+  const { airtable_table_id, supabase_table, delete_filter, mapper, preserveFields } = tableConfig;
 
   // Fetch from Airtable
   logLine(`  Fetching from Airtable (${airtable_table_id})...`);
@@ -313,15 +413,37 @@ async function syncTable(tableConfig, apiKey, serviceKey, logLine) {
     throw new Error(`Airtable returned 0 records for ${supabase_table} — aborting to avoid wiping Supabase`);
   }
 
+  // If this table has fields to preserve (e.g. edit tokens), fetch them before deleting
+  let preservedData = {};
+  if (preserveFields && preserveFields.length > 0) {
+    logLine(`  Preserving fields: ${preserveFields.join(', ')}...`);
+    preservedData = await fetchExistingRecords(supabase_table, preserveFields, serviceKey);
+    const preservedCount = Object.keys(preservedData).length;
+    logLine(`  ✓ Preserved data for ${preservedCount} records`);
+  }
+
   // Clear Supabase table
   logLine(`  Clearing ${supabase_table}...`);
   await deleteAllSupabaseRecords(supabase_table, delete_filter, serviceKey);
   logLine(`  ✓ Table cleared`);
 
+  // If we have preserved data, create a wrapper mapper that merges it back
+  let finalMapper = mapper;
+  if (preserveFields && preserveFields.length > 0 && Object.keys(preservedData).length > 0) {
+    finalMapper = (record) => {
+      const mapped = mapper(record);
+      const saved = preservedData[record.id];
+      if (saved) {
+        Object.assign(mapped, saved);
+      }
+      return mapped;
+    };
+  }
+
   // Insert all records
   logLine(`  Inserting ${airtableRecords.length} records into ${supabase_table}...`);
   const { inserted, errors, errorDetails } = await insertSupabaseRecords(
-    supabase_table, airtableRecords, mapper, serviceKey
+    supabase_table, airtableRecords, finalMapper, serviceKey
   );
 
   const finalCount = await getSupabaseCount(supabase_table, serviceKey);
@@ -408,7 +530,7 @@ async function runSync(env, tablesToSync) {
 export default {
   // Cron trigger — runs daily at 3 AM UTC, syncs all tables
   async scheduled(event, env, ctx) {
-    const result = await runSync(env, ['loan_products', 'lenders']);
+    const result = await runSync(env, ['loan_products', 'lenders', 'contacts']);
     if (!result.success) {
       console.error('SYNC FAILED:', JSON.stringify(result));
     }
@@ -456,8 +578,13 @@ export default {
       return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
     }
 
+    if (url.pathname === '/contacts') {
+      const result = await runSync(env, ['contacts']);
+      return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
+    }
+
     // Default: sync all tables
-    const result = await runSync(env, ['loan_products', 'lenders']);
+    const result = await runSync(env, ['loan_products', 'lenders', 'contacts']);
     return Response.json(result, { status: result.success ? 200 : 500, headers: corsHeaders });
   },
 };
