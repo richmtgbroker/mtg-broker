@@ -1032,11 +1032,11 @@ export default function VAEntitlementCalculator() {
                       ))}
                     </div>
 
-                    <div className="input-group" style={{ marginTop: 16, marginBottom: 0 }}>
-                      <label>Entitlement Already Used ($)</label>
+                    <div className="input-group" style={{ marginTop: 16 }}>
+                      <label>Entitlement Already Used ($) <i className="fa-solid fa-circle-info" style={{ color: "#94A3B8", cursor: "help" }} title="Found on your COE under 'Prior Loans charged to entitlement' in the 'Entitlement Charged' column."></i></label>
                       <input
                         type="text"
-                        className="calc-input"
+                        className={`calc-input${emptyClass(entitlementUsed)}`}
                         value={entitlementUsed}
                         onChange={(e) => handleCurrencyChange(e.target.value, setEntitlementUsed)}
                         onBlur={() => handleCalcFieldBlur(entitlementUsed, setEntitlementUsed)}
@@ -1045,7 +1045,24 @@ export default function VAEntitlementCalculator() {
                       />
                     </div>
 
-                    <div style={{ marginTop: 10 }}>
+                    {/* REMAINING ENTITLEMENT — primary result shown inline */}
+                    <div style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", borderRadius: 12, padding: "20px 20px", marginBottom: 16 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Remaining Entitlement</div>
+                          <div style={{ fontSize: 24, fontWeight: 800, color: "#38BDF8" }}>{fmt(r.remaining >= 0 ? r.remaining : 0)}</div>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Max $0-Down Purchase</div>
+                          <div style={{ fontSize: 24, fontWeight: 800, color: "#34D399" }}>{fmt(r.maxZeroDown)}</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: "#94A3B8" }}>
+                        Max Guaranty: {fmt(r.maxGuaranty)} (25% of {fmt(r.countyVal)})
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 4 }}>
                       <a href="https://www.fhfa.gov/data/conforming-loan-limit" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
                         <i className="fa-solid fa-arrow-up-right-from-square" style={{ marginRight: 4, fontSize: 10 }}></i>
                         Look up county limits on FHFA.gov
@@ -1198,7 +1215,7 @@ export default function VAEntitlementCalculator() {
                       <strong>Exempt:</strong> Veterans receiving VA disability compensation, Purple Heart recipients, and surviving spouses are exempt from the funding fee.
                     </div>
                     <div style={{ marginTop: 8 }}>
-                      <a href="https://www.va.gov/housing-assistance/home-loans/funding-fee/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
+                      <a href="https://www.va.gov/housing-assistance/home-loans/funding-fee-and-closing-costs/" target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: "#2563EB", fontWeight: 600, textDecoration: "none" }}>
                         <i className="fa-solid fa-arrow-up-right-from-square" style={{ marginRight: 4, fontSize: 10 }}></i>
                         VA.gov Funding Fee Details
                       </a>
@@ -1208,8 +1225,8 @@ export default function VAEntitlementCalculator() {
               </div>
             </div>
 
-            {/* CARD 4: PURCHASE SCENARIO — optional add-on */}
-            <div className="floating-card">
+            {/* CARD 4: PURCHASE SCENARIO — only shown for Purchase/Construction */}
+            {r.isPurchase && <div className="floating-card">
               <h3 className="card-title">
                 <i className="fa-solid fa-house-chimney"></i> Purchase Scenario
                 <span className="addon-badge">Optional</span>
@@ -1273,7 +1290,7 @@ export default function VAEntitlementCalculator() {
                   </div>
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* CARD 5: HOW VA ENTITLEMENT WORKS */}
             <div className="floating-card">
