@@ -92,6 +92,13 @@ export default function Navbar() {
 
   const isAppPage = location.pathname.startsWith("/app");
 
+  // Detect staging environment by hostname
+  const isStaging = typeof window !== "undefined" && (
+    window.location.hostname.includes("mtg-app-stage") ||
+    window.location.hostname.includes("mtg-app-staging") ||
+    window.location.hostname === "localhost"
+  );
+
   return (
     <>
       {/* Spacer to push content below fixed navbar */}
@@ -104,6 +111,12 @@ export default function Navbar() {
             <a href={loggedIn ? "/app/dashboard" : "/"} style={{ display: "flex", alignItems: "center", height: "44px", textDecoration: "none", flexShrink: 0 }} aria-label="MtgBroker dashboard">
               <Logo height={28} />
             </a>
+
+            {isStaging && (
+              <span className="text-[11px] font-bold tracking-wide uppercase px-2.5 py-0.5 rounded-md bg-red-600 text-white border border-red-700 animate-pulse">
+                STAGING
+              </span>
+            )}
 
             {loggedIn && plan && (
               <div className="flex items-center gap-1.5 max-md:hidden">
