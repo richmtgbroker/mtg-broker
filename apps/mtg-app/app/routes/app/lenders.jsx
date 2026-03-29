@@ -51,7 +51,7 @@ export default function LendersPage() {
       try {
         let lenderList = null;
         try {
-          const res = await fetch(LENDERS_API_PRIMARY);
+          const res = await fetch(LENDERS_API_PRIMARY + "?_v=3");
           if (res.ok) {
             const data = await res.json();
             if (data.success && Array.isArray(data.lenders)) lenderList = data.lenders;
