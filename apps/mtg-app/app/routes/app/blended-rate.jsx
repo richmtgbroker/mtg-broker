@@ -104,9 +104,15 @@ export default function BlendedRateCalculator() {
     setLoans((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
-  /* --- Live currency formatting for balance fields --- */
+  /* --- Live currency formatting for balance fields ---
+     Only format if no math operators present; otherwise let
+     the user type their expression freely (eval on blur/Enter) */
   const handleBalanceInput = useCallback((idx, rawValue) => {
-    updateLoan(idx, "balance", formatNumberString(rawValue));
+    if (/[+\-*/]/.test(rawValue.replace(/,/g, ""))) {
+      updateLoan(idx, "balance", rawValue);
+    } else {
+      updateLoan(idx, "balance", formatNumberString(rawValue));
+    }
   }, [updateLoan]);
 
   /* --- Expression eval on blur for balance fields --- */
