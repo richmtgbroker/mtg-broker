@@ -4,7 +4,7 @@ import { isAdmin as checkIsAdmin, getAccessToken } from "../../lib/auth";
 
 const SUPABASE_URL = "https://tcmahfwhdknxhhdvqpum.supabase.co";
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbWFoZndoZGtueGhoZHZxcHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgwMjA0NzUsImV4cCI6MjA1MzU5NjQ3NX0.vnN2XKDNFBfMzMED2DnoOp-ax1gGXerGU2JCFtGGF_w";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjbWFoZndoZGtueGhoZHZxcHVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwMzQ5MTgsImV4cCI6MjA4NDYxMDkxOH0.xtc5YiU0Gzemj3SJN5UHXUiG9ys7O6mjz1qlmk-3qlQ";
 const MAGIC_LINK_API = "/api/contact-edit";
 const CACHE_KEY_PREFIX = "mtg_contact_detail_";
 const CACHE_TTL = 10 * 60 * 1000;
