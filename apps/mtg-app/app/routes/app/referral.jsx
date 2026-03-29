@@ -138,9 +138,9 @@ const PROGRAM_TERMS = [
 // HELPERS
 // ============================================================
 function authHeaders() {
-  const email = getUserEmail();
+  const token = getAccessToken();
   return {
-    Authorization: `Bearer ${email}`,
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
 }

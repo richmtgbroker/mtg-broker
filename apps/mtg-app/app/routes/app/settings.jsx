@@ -44,6 +44,16 @@ function getJwtData() {
   }
 }
 
+/** Get the raw JWT token from Outseta localStorage */
+function getJwtToken() {
+  try {
+    var token = localStorage.getItem('Outseta.nocode.accessToken')
+    return token || null
+  } catch (e) {
+    return null
+  }
+}
+
 /** Get user email from JWT or Outseta cache */
 async function getUserEmail() {
   var jwt = getJwtData()
@@ -57,13 +67,13 @@ async function getUserEmail() {
   return null
 }
 
-/** API call helper — uses email as Bearer token */
+/** API call helper — uses JWT token as Bearer token */
 async function apiCall(endpoint, method, body) {
   method = method || 'GET'
   body = body || null
-  var email = await getUserEmail()
-  if (!email) throw new Error('Not logged in')
-  var opts = { method: method, headers: { Authorization: 'Bearer ' + email } }
+  var token = getJwtToken()
+  if (!token) throw new Error('Not logged in')
+  var opts = { method: method, headers: { Authorization: 'Bearer ' + token } }
   if (body && !(body instanceof FormData)) {
     opts.headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(body)

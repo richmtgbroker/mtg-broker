@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getUserEmail, isAdmin } from "../../lib/auth";
+import { getUserEmail, isAdmin, getAccessToken } from "../../lib/auth";
 
 export function meta() {
   return [{ title: "Contacts — MtgBroker" }];
@@ -468,7 +468,7 @@ export default function ContactsPage() {
     async function loadFavs() {
       try {
         const res = await fetch(`${FAVORITES_API}?type=Contact`, {
-          headers: { Authorization: `Bearer ${email}` },
+          headers: { Authorization: `Bearer ${getAccessToken()}` },
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -501,7 +501,7 @@ export default function ContactsPage() {
           if (favEntry?.recordId) {
             await fetch(`${FAVORITES_API}/${favEntry.recordId}`, {
               method: "DELETE",
-              headers: { Authorization: `Bearer ${email}` },
+              headers: { Authorization: `Bearer ${getAccessToken()}` },
             });
           }
         } catch {
@@ -519,7 +519,7 @@ export default function ContactsPage() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${email}`,
+              Authorization: `Bearer ${getAccessToken()}`,
             },
             body: JSON.stringify({
               itemType: "Contact",

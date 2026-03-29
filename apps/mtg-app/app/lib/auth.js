@@ -155,7 +155,7 @@ export async function getAvatarUrl() {
   try {
     const resp = await fetch(
       "https://mtg-broker-api.rich-e00.workers.dev/api/broker-profile",
-      { headers: { Authorization: "Bearer " + email } }
+      { headers: { Authorization: "Bearer " + getAccessToken() } }
     );
     if (resp.ok) {
       const data = await resp.json();

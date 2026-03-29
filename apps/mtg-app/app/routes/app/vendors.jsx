@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router";
-import { getUserEmail } from "../../lib/auth";
+import { getUserEmail, getAccessToken } from "../../lib/auth";
 
 export function meta() {
   return [{ title: "Vendors — MtgBroker" }];
@@ -163,7 +163,7 @@ export default function VendorsPage() {
     async function loadFavs() {
       try {
         const res = await fetch(`${FAVORITES_API}?type=Vendor`, {
-          headers: { Authorization: `Bearer ${email}` },
+          headers: { Authorization: `Bearer ${getAccessToken()}` },
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -195,7 +195,7 @@ export default function VendorsPage() {
           if (favEntry?.recordId) {
             await fetch(`${FAVORITES_API}/${favEntry.recordId}`, {
               method: "DELETE",
-              headers: { Authorization: `Bearer ${email}` },
+              headers: { Authorization: `Bearer ${getAccessToken()}` },
             });
           }
         } catch {
@@ -211,7 +211,7 @@ export default function VendorsPage() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${email}`,
+              Authorization: `Bearer ${getAccessToken()}`,
             },
             body: JSON.stringify({
               itemType: "Vendor",

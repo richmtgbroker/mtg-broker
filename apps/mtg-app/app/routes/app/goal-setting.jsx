@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { getUserEmail } from "../../lib/auth";
+import { getUserEmail, getAccessToken } from "../../lib/auth";
 
 export function meta() {
   return [{ title: "Goal Setting — MtgBroker" }];
@@ -135,7 +135,7 @@ export default function GoalSetting() {
     if (!email) { setLoading(false); setSaveStatus("ready"); return; }
 
     fetch(API_BASE + "/api/goal-plan", {
-      headers: { Authorization: "Bearer " + email },
+      headers: { Authorization: "Bearer " + getAccessToken() },
     })
       .then(function (r) { return r.json(); })
       .then(function (json) {
@@ -168,7 +168,7 @@ export default function GoalSetting() {
       method: method,
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer " + email,
+        Authorization: "Bearer " + getAccessToken(),
       },
       body: JSON.stringify({ planData: data }),
     })
