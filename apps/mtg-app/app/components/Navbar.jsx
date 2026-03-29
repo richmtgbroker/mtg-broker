@@ -19,9 +19,20 @@ export default function Navbar() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [isStaging, setIsStaging] = useState(false);
 
   const helpRef = useRef(null);
   const userRef = useRef(null);
+
+  // Detect staging environment (must run client-side after hydration)
+  useEffect(() => {
+    const host = window.location.hostname;
+    setIsStaging(
+      host.includes("mtg-app-stage") ||
+      host.includes("mtg-app-staging") ||
+      host === "localhost"
+    );
+  }, []);
 
   useEffect(() => {
     setLoggedIn(isLoggedIn());
@@ -91,13 +102,6 @@ export default function Navbar() {
       : "?";
 
   const isAppPage = location.pathname.startsWith("/app");
-
-  // Detect staging environment by hostname
-  const isStaging = typeof window !== "undefined" && (
-    window.location.hostname.includes("mtg-app-stage") ||
-    window.location.hostname.includes("mtg-app-staging") ||
-    window.location.hostname === "localhost"
-  );
 
   return (
     <>
