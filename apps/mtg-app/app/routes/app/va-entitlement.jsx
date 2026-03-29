@@ -62,6 +62,7 @@ export default function VAEntitlementCalculator() {
   useEffect(() => {
     setUserEmail(getUserEmail() || "");
     setUserPlanName(getUserPlan() || "LITE");
+    setScenDate(new Date().toISOString().split("T")[0]);
   }, []);
 
   const saveLimit = useMemo(() => ({ LITE: 0, PLUS: 10, PRO: Infinity })[userPlanName] || 0, [userPlanName]);
@@ -80,7 +81,7 @@ export default function VAEntitlementCalculator() {
   /* --- Form state --- */
   const [entitlementType, setEntitlementType] = useState("full");
   const [scenName, setScenName] = useState("");
-  const [scenDate, setScenDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [scenDate, setScenDate] = useState("");
   const [borName, setBorName] = useState("");
   const [countyLimit, setCountyLimit] = useState("832,750");
   const [entitlementUsed, setEntitlementUsed] = useState("0");

@@ -72,6 +72,7 @@ export default function BlendedRateCalculator() {
   useEffect(() => {
     setUserEmail(getUserEmail() || "");
     setUserPlanName(getUserPlan() || "LITE");
+    setScenDate(new Date().toISOString().split("T")[0]);
   }, []);
   const saveLimit = useMemo(() => ({ LITE: 0, PLUS: 10, PRO: Infinity })[userPlanName] || 0, [userPlanName]);
 
@@ -88,7 +89,7 @@ export default function BlendedRateCalculator() {
 
   /* --- Form state --- */
   const [scenName, setScenName] = useState("");
-  const [scenDate, setScenDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [scenDate, setScenDate] = useState("");
   const [borName, setBorName] = useState("");
   const [loans, setLoans] = useState([emptyLoan(), emptyLoan()]);
 
