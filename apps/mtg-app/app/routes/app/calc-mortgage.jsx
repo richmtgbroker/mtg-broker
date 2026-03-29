@@ -87,15 +87,15 @@ export default function MortgageCalculator() {
   const [borName, setBorName] = useState("");
   const [propAddress, setPropAddress] = useState("");
 
-  /* --- Form state: Loan Information --- */
-  const [loanAmount, setLoanAmount] = useState("350,000");
-  const [intRate, setIntRate] = useState("6.5");
-  const [loanTerm, setLoanTerm] = useState("30");
-  const [annualIns, setAnnualIns] = useState("1,200");
-  const [annualTax, setAnnualTax] = useState("4,500");
-  const [annualSuppIns, setAnnualSuppIns] = useState("0");
-  const [annualHOA, setAnnualHOA] = useState("0");
-  const [pmiRate, setPmiRate] = useState("0.0");
+  /* --- Form state: Loan Information (ALL start blank) --- */
+  const [loanAmount, setLoanAmount] = useState("");
+  const [intRate, setIntRate] = useState("");
+  const [loanTerm, setLoanTerm] = useState("");
+  const [annualIns, setAnnualIns] = useState("");
+  const [annualTax, setAnnualTax] = useState("");
+  const [annualSuppIns, setAnnualSuppIns] = useState("");
+  const [annualHOA, setAnnualHOA] = useState("");
+  const [pmiRate, setPmiRate] = useState("");
 
   /* ==============================================
      CALCULATIONS
@@ -276,14 +276,14 @@ export default function MortgageCalculator() {
     } catch { alert("Rename failed."); }
   }, [renameValue, renameTargetId, userEmail, currentScenarioId, openLoadModal]);
 
-  /* --- Clear --- */
+  /* --- Clear (all fields to empty strings) --- */
   const clearForm = useCallback(() => {
     if (!confirm("Clear all fields and start fresh?")) return;
     setCurrentScenarioId(null);
     setScenName(""); setScenDate(new Date().toISOString().split("T")[0]); setBorName("");
     setPropAddress("");
-    setLoanAmount("350,000"); setIntRate("6.5"); setLoanTerm("30");
-    setAnnualIns("1,200"); setAnnualTax("4,500"); setAnnualSuppIns("0"); setAnnualHOA("0"); setPmiRate("0.0");
+    setLoanAmount(""); setIntRate(""); setLoanTerm("");
+    setAnnualIns(""); setAnnualTax(""); setAnnualSuppIns(""); setAnnualHOA(""); setPmiRate("");
     setSaveStatus({ state: "", text: "Ready" });
   }, []);
 
@@ -303,7 +303,7 @@ export default function MortgageCalculator() {
       `<div><div class="print-info-label">Borrower</div><div class="print-info-value">${escapeHtml(borrower)}</div></div>` +
       `<div><div class="print-info-label">Property</div><div class="print-info-value">${escapeHtml(address)}</div></div>`;
 
-    // Loan Information table
+    // Loan Information table (Insurance BEFORE Tax)
     document.getElementById("printLoanTable").innerHTML =
       `<tr><td>Loan Amount</td><td>${fmt(r.amount)}</td></tr>` +
       `<tr><td>Interest Rate</td><td>${r.rate}%</td></tr>` +
@@ -343,7 +343,7 @@ export default function MortgageCalculator() {
   return (
     <>
       {/* ================================================
-          SCOPED CSS
+          SCOPED CSS — matches Affordability/DSCR design system
           ================================================ */}
       <style>{`
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
@@ -356,17 +356,17 @@ export default function MortgageCalculator() {
         .calc-breadcrumb .bc-current { color: #0F172A; font-weight: 600; }
 
         /* Container */
-        .calc-container { width: 100%; max-width: 1280px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif; color: #0f172a; box-sizing: border-box; }
+        .calc-container { width: 100%; max-width: 1280px; margin: 0 auto; font-family: 'Host Grotesk', system-ui, -apple-system, sans-serif; color: #0f172a; box-sizing: border-box; }
         .calc-container * { box-sizing: border-box; }
 
-        /* Dark header bar — SHARP bottom corners, connected to card body */
-        .calc-header { background: #0F172A; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; box-shadow: 0 4px 16px rgba(15,23,42,0.12); }
+        /* Dark header bar — ALL 4 corners rounded, separate floating element */
+        .calc-header { background: #0F172A; padding: 16px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(15,23,42,0.12); }
         .header-left { flex: 1 1 auto; min-width: 200px; }
         .calc-title { color: white; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
         .calc-subtitle { color: #94A3B8; margin: 4px 0 0 0; font-size: 13px; font-weight: 400; }
         .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .btn-group { display: flex; gap: 8px; }
-        .action-btn { border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: white; transition: filter 0.2s, transform 0.1s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-family: system-ui, -apple-system, sans-serif; }
+        .action-btn { border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: white; transition: filter 0.2s, transform 0.1s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-family: 'Host Grotesk', system-ui, sans-serif; }
         .action-btn:hover { filter: brightness(110%); }
         .action-btn:active { transform: translateY(1px); }
         .action-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
@@ -385,57 +385,45 @@ export default function MortgageCalculator() {
         .save-status-text { color: #94A3B8; font-size: 12px; font-weight: 500; white-space: nowrap; }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        /* Card body — connected to header, SHARP top corners */
-        .app-card-body { background: #FFFFFF; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 12px 12px; padding: 32px; }
-
-        /* Scenario details box */
-        .standard-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; margin-bottom: 28px; }
-        .standard-box .mini-header { font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 16px 0; }
+        /* Floating cards */
+        .floating-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: box-shadow 0.2s ease; }
+        .floating-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+        .card-title { font-size: 14px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #E2E8F0; display: flex; align-items: center; gap: 8px; }
+        .card-title i { color: #2563EB; font-size: 14px; }
 
         /* Input group */
         .input-group { margin-bottom: 16px; }
-        .input-group:last-child { margin-bottom: 0; }
         .input-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-        .calc-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-family: system-ui, -apple-system, sans-serif; color: #0f172a; background: #FFFFFF; transition: border-color 0.2s, box-shadow 0.2s; }
+        .calc-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-family: 'Host Grotesk', system-ui, sans-serif; color: #0f172a; background: #FFFFFF; transition: border-color 0.2s, box-shadow 0.2s; }
         .calc-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .calc-input::placeholder { color: #94A3B8; }
         .calc-input.field-empty { background-color: #FFFBEB; border-color: #FDE68A; }
-        .calc-input.readonly { background: #F1F5F9; color: #64748B; cursor: not-allowed; }
         .req { color: #DC2626; }
 
         /* Grid layouts */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .grid-full { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .grid-2-compact { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3-compact { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .calc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 
         /* Address row with Zillow button */
         .address-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
-        .zillow-btn { padding: 10px 16px; border: none; border-radius: 8px; background: #2563EB; color: white; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; font-family: system-ui, -apple-system, sans-serif; }
+        .zillow-btn { padding: 10px 16px; border: none; border-radius: 8px; background: #2563EB; color: white; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; font-family: 'Host Grotesk', system-ui, sans-serif; }
         .zillow-btn:hover { background: #1D4ED8; }
 
-        /* Calc grid — two columns */
-        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-        .col-inputs { padding-right: 48px; border-right: 1px solid #E2E8F0; }
-        .col-results { padding-left: 48px; }
-        .col-title { font-size: 14px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #E2E8F0; display: flex; align-items: center; gap: 8px; }
-        .col-title i { color: #2563EB; font-size: 14px; }
-
-        /* Input helper */
+        /* Input helper text */
         .input-helper { font-size: 12px; color: #94A3B8; margin-top: 4px; }
-        .input-with-suffix { position: relative; display: flex; align-items: center; }
-        .input-with-suffix input { padding-right: 36px; }
-        .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 13px; font-weight: 600; pointer-events: none; }
 
-        /* Result box (light blue) */
-        .result-box { background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px; }
-        .result-label-sm { font-size: 13px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
-        .result-big { font-size: 42px; font-weight: 800; color: #0C4A6E; line-height: 1.1; letter-spacing: -0.02em; }
-
-        /* Breakdown list */
-        .breakdown-list { margin-top: 8px; }
-        .breakdown-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #E2E8F0; }
-        .breakdown-row:last-child { border-bottom: none; }
-        .breakdown-row .bd-label { font-size: 14px; color: #475569; }
-        .breakdown-row .bd-value { font-size: 14px; font-weight: 700; color: #0F172A; }
+        /* Dark results card */
+        .result-card-main { background: #0F172A; border-radius: 16px; padding: 32px; box-shadow: 0 8px 32px rgba(15,23,42,0.2); color: white; position: sticky; top: 20px; }
+        .res-label-main { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 4px; font-weight: 700; }
+        .res-val-main { font-size: 48px; font-weight: 800; color: #38BDF8; line-height: 1; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .result-card-main .divider { border: 0; border-top: 1px solid rgba(255,255,255,0.15); margin: 16px 0; }
+        .pitia-breakdown { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 16px; }
+        .pitia-breakdown-title { font-size: 11px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+        .pitia-row { display: flex; justify-content: space-between; font-size: 14px; color: #E2E8F0; padding: 8px 0; }
+        .pitia-row span:last-child { font-weight: 600; color: white; }
+        .pitia-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: white; padding: 12px 0 4px 0; border-top: 2px solid rgba(255,255,255,0.2); margin-top: 4px; }
+        .pitia-total span:last-child { color: #38BDF8; }
 
         /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; }
@@ -464,67 +452,59 @@ export default function MortgageCalculator() {
         .modal-empty-text { font-size: 13px; color: #94A3B8; margin: 0; }
         .modal-upgrade { padding: 16px 20px; background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%); border-top: 1px solid #BFDBFE; text-align: center; }
         .modal-upgrade-text { font-size: 13px; color: #1E40AF; margin: 0 0 8px 0; }
-        .modal-upgrade-btn { display: inline-block; padding: 8px 20px; background: #2563EB; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .modal-upgrade-btn { display: inline-block; padding: 8px 20px; background: #2563EB; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
         .modal-upgrade-btn:hover { background: #1D4ED8; }
-
-        /* Rename modal */
-        .rename-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 14px; margin: 16px 0; font-family: system-ui, -apple-system, sans-serif; }
-        .rename-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-        .rename-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 20px 16px; }
-        .rename-cancel { padding: 8px 16px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .rename-cancel:hover { background: #F8FAFC; }
-        .rename-confirm { padding: 8px 16px; border: none; border-radius: 6px; background: #2563EB; color: white; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .rename-confirm:hover { background: #1D4ED8; }
 
         /* Responsive */
         @media (max-width: 768px) {
           .calc-header { flex-direction: column; align-items: flex-start; }
           .header-left { width: 100%; margin-bottom: 8px; }
           .header-actions { width: 100%; justify-content: space-between; }
-          .calc-grid { grid-template-columns: 1fr; }
-          .col-inputs { padding-right: 0; border-right: none; border-bottom: 1px solid #E2E8F0; padding-bottom: 28px; margin-bottom: 28px; }
-          .col-results { padding-left: 0; }
-          .grid-2 { grid-template-columns: 1fr; }
+          .calc-grid-2 { grid-template-columns: 1fr; gap: 0; }
+          .grid-2-compact { grid-template-columns: 1fr; }
+          .grid-3-compact { grid-template-columns: 1fr; }
+          .res-val-main { font-size: 36px; }
+          .floating-card { padding: 20px 16px; border-radius: 12px; }
+          .result-card-main { position: static; }
           .address-row { grid-template-columns: 1fr; }
-          .app-card-body { padding: 20px 16px; }
         }
         @media (max-width: 480px) {
           .header-actions { flex-direction: column; gap: 12px; }
           .btn-group { width: 100%; justify-content: space-between; gap: 6px; }
           .action-btn { flex: 1; text-align: center; padding: 10px 6px; justify-content: center; font-size: 12px; }
           .save-status { width: 100%; justify-content: center; }
-          .app-card-body { padding: 16px 14px; }
+          .floating-card { padding: 16px 14px; }
         }
 
         /* Print styles */
         .print-summary { display: none; }
         @media print {
           body * { visibility: hidden !important; }
+          /* Collapse ALL non-print content to zero height so only 1 page prints */
           .calc-container > *:not(.print-summary),
-          .calc-header, .app-card-body, .calc-grid, .calc-breadcrumb,
+          .calc-header, .floating-card, .calc-grid-2, .calc-breadcrumb,
+          .result-card-main,
           nav, footer, header, aside, [class*="sidebar"], [class*="navbar"], [class*="footer"] {
             height: 0 !important; max-height: 0 !important; min-height: 0 !important;
             padding: 0 !important; margin: 0 !important; overflow: hidden !important;
           }
           .print-summary, .print-summary * { visibility: visible !important; }
-          .print-summary { display: block !important; position: fixed !important; top: 0; left: 0; width: 100% !important; background: white !important; z-index: 99999 !important; padding: 0.4in 0.6in !important; font-family: system-ui, -apple-system, sans-serif !important; color: #0f172a !important; font-size: 11pt !important; }
+          .print-summary { display: block !important; position: fixed !important; top: 0; left: 0; width: 100% !important; background: white !important; z-index: 99999 !important; padding: 0.4in 0.6in !important; font-family: 'Host Grotesk', system-ui, sans-serif !important; color: #0f172a !important; font-size: 11pt !important; }
           .print-header { display: flex !important; justify-content: space-between !important; align-items: center !important; border-bottom: 2px solid #0F172A !important; padding-bottom: 10px !important; margin-bottom: 16px !important; }
           .print-logo { height: 32px !important; width: auto !important; }
           .print-doc-title { font-size: 14pt !important; font-weight: 700 !important; color: #475569 !important; }
           .print-scenario-info { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 8px 24px !important; background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; border-radius: 8px !important; padding: 12px 16px !important; margin-bottom: 16px !important; }
           .print-info-label { font-size: 7pt !important; font-weight: 700 !important; color: #64748B !important; text-transform: uppercase !important; }
           .print-info-value { font-size: 10pt !important; font-weight: 600 !important; color: #0F172A !important; }
+          .print-body { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 24px !important; }
           .print-section-title { font-size: 11pt !important; font-weight: 700 !important; border-bottom: 1px solid #CBD5E1 !important; padding-bottom: 4px !important; margin-bottom: 8px !important; }
-          .print-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; margin-bottom: 16px !important; }
+          .print-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; }
           .print-table tr { border-bottom: 1px solid #E2E8F0 !important; }
-          .print-table td, .print-table th { padding: 5px 0 !important; }
-          .print-table th { font-size: 8pt !important; font-weight: 700 !important; color: #64748B !important; text-transform: uppercase !important; text-align: left !important; }
-          .print-table th:last-child, .print-table td:last-child { text-align: right !important; }
+          .print-table td { padding: 5px 0 !important; }
           .print-table td:first-child { color: #475569 !important; }
-          .print-table td:last-child { font-weight: 700 !important; }
+          .print-table td:last-child { text-align: right !important; font-weight: 700 !important; }
           .print-table tr.print-total-row { border-top: 2px solid #0F172A !important; }
           .print-table tr.print-total-row td { padding-top: 8px !important; font-size: 12pt !important; font-weight: 800 !important; }
-          .print-two-col { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; margin-bottom: 16px !important; }
           .print-footer { margin-top: 16px !important; padding-top: 8px !important; border-top: 1px solid #E2E8F0 !important; font-size: 8pt !important; color: #94A3B8 !important; text-align: center !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           @page { size: letter portrait; margin: 0.25in; }
@@ -540,7 +520,9 @@ export default function MortgageCalculator() {
           <span className="bc-current">Mortgage Calculator</span>
         </div>
 
-        {/* DARK HEADER BAR — connected to card body below */}
+        {/* ============================
+            HEADER BAR (separate, all 4 corners rounded)
+            ============================ */}
         <div className="calc-header">
           <div className="header-left">
             <h1 className="calc-title">Mortgage Calculator</h1>
@@ -560,111 +542,187 @@ export default function MortgageCalculator() {
           </div>
         </div>
 
-        {/* CARD BODY — connected to header above */}
-        <div className="app-card-body">
-
-          {/* SCENARIO DETAILS BOX */}
-          <div className="standard-box">
-            <div className="mini-header">Scenario Details</div>
-            <div className="grid-2" style={{ marginBottom: 16 }}>
-              <div className="input-group">
-                <label>Scenario Name <span className="req">*</span></label>
-                <input
-                  type="text"
-                  className={"calc-input" + emptyClass(scenName)}
-                  placeholder="e.g. Smith Purchase"
-                  value={scenName}
-                  onChange={(e) => setScenName(e.target.value)}
-                />
+        {/* ============================
+            LOAD SCENARIOS MODAL
+            ============================ */}
+        {showLoadModal && (
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLoadModal(false); }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Saved Scenarios</h3>
+                <button onClick={() => setShowLoadModal(false)} className="close-modal">&times;</button>
               </div>
-              <div className="input-group">
-                <label>Date</label>
-                <input
-                  type="date"
-                  className="calc-input"
-                  value={scenDate}
-                  onChange={(e) => setScenDate(e.target.value)}
-                />
+              <div className="modal-subheader">
+                {!userEmail ? "" :
+                  saveLimit === 0 ? <><i className="fa-solid fa-lock" style={{ marginRight: 4 }}></i> Saving is available on PLUS and PRO plans</> :
+                  saveLimit === Infinity ? <><i className="fa-solid fa-infinity" style={{ marginRight: 4 }}></i> {scenarios.length} saved scenarios (unlimited)</> :
+                  <><i className="fa-solid fa-cloud" style={{ marginRight: 4 }}></i> {scenarios.length} of {saveLimit} saves used</>
+                }
               </div>
-            </div>
-            <div className="grid-full" style={{ marginBottom: 16 }}>
-              <div className="input-group">
-                <label>Borrower Name</label>
-                <input
-                  type="text"
-                  className={"calc-input" + emptyClass(borName)}
-                  placeholder="Full name"
-                  value={borName}
-                  onChange={(e) => setBorName(e.target.value)}
-                />
+              <div className="modal-list">
+                {loadingScenarios ? (
+                  <div className="modal-loading"><div className="modal-spinner"></div><span>Loading scenarios...</span></div>
+                ) : !userEmail ? (
+                  <div className="modal-empty">
+                    <div className="modal-empty-icon"><i className="fa-solid fa-lock"></i></div>
+                    <p className="modal-empty-title">Log in to view saved scenarios</p>
+                    <p className="modal-empty-text">Your scenarios are saved to the cloud and sync across devices.</p>
+                  </div>
+                ) : scenarios.length === 0 ? (
+                  <>
+                    <div className="modal-empty">
+                      <div className="modal-empty-icon"><i className="fa-solid fa-folder-open"></i></div>
+                      <p className="modal-empty-title">No saved scenarios</p>
+                      <p className="modal-empty-text">Save your first scenario using the Save button above.</p>
+                    </div>
+                    {saveLimit === 0 && (
+                      <div className="modal-upgrade">
+                        <p className="modal-upgrade-text">Upgrade to save scenarios and access them on any device.</p>
+                        <button className="modal-upgrade-btn" onClick={() => { setShowLoadModal(false); window.location.href = "/pricing"; }}>View Plans</button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {scenarios.map((s) => {
+                      let dateStr = "";
+                      if (s.dateCreated) { try { dateStr = new Date(s.dateCreated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch {} }
+                      return (
+                        <div key={s.id} className="scenario-item">
+                          <div className="scenario-item-info" onClick={() => loadScenario(s.id)}>
+                            <div className="scenario-item-name">{s.scenarioName}</div>
+                            {dateStr && <div className="scenario-item-date">{dateStr}</div>}
+                          </div>
+                          <div className="scenario-item-actions">
+                            <button className="scenario-action-btn" onClick={(e) => { e.stopPropagation(); startRename(s.id, s.scenarioName); }} title="Rename"><i className="fa-solid fa-pen"></i></button>
+                            <button className="scenario-action-btn delete" onClick={(e) => { e.stopPropagation(); deleteScenario(s.id, s.scenarioName); }} title="Delete"><i className="fa-solid fa-trash"></i></button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {saveLimit !== Infinity && saveLimit !== 0 && currentSaveCount >= saveLimit && (
+                      <div className="modal-upgrade">
+                        <p className="modal-upgrade-text">You've reached your {saveLimit}-scenario limit. Upgrade to PRO for unlimited saves.</p>
+                        <button className="modal-upgrade-btn" onClick={() => { setShowLoadModal(false); window.location.href = "/pricing"; }}>Upgrade to PRO</button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            </div>
-            <div className="address-row">
-              <div className="input-group" style={{ marginBottom: 0 }}>
-                <label>Property Address</label>
-                <input
-                  type="text"
-                  className={"calc-input" + emptyClass(propAddress)}
-                  placeholder="123 Main St, City, State"
-                  value={propAddress}
-                  onChange={(e) => setPropAddress(e.target.value)}
-                />
-              </div>
-              <button className="zillow-btn" onClick={openZillow}>
-                <i className="fa-solid fa-magnifying-glass"></i> Zillow Lookup
-              </button>
             </div>
           </div>
+        )}
 
-          {/* CALC GRID — two columns */}
-          <div className="calc-grid">
+        {/* ============================
+            RENAME MODAL
+            ============================ */}
+        {showRenameModal && (
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setShowRenameModal(false); setRenameTargetId(null); } }}>
+            <div className="modal-content" style={{ width: 360 }}>
+              <div className="modal-header">
+                <h3>Rename Scenario</h3>
+                <button onClick={() => { setShowRenameModal(false); setRenameTargetId(null); }} className="close-modal">&times;</button>
+              </div>
+              <div style={{ padding: 20 }}>
+                <div className="input-group" style={{ marginBottom: 16 }}>
+                  <label>New Name</label>
+                  <input
+                    type="text"
+                    className="calc-input"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") confirmRename(); }}
+                    placeholder="Enter new name..."
+                    autoFocus
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button onClick={() => { setShowRenameModal(false); setRenameTargetId(null); }} className="action-btn" style={{ background: "#64748B" }}>Cancel</button>
+                  <button onClick={confirmRename} className="action-btn btn-save">Rename</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-            {/* LEFT COLUMN — Loan Information */}
-            <div className="col-inputs">
-              <div className="col-title"><i className="fa-solid fa-landmark"></i> Loan Information</div>
+        {/* ============================
+            CARD 1: SCENARIO DETAILS
+            ============================ */}
+        <div className="floating-card">
+          <h3 className="card-title"><i className="fa-solid fa-file-lines"></i> Scenario Details</h3>
+          <div className="grid-3-compact" style={{ marginBottom: 16 }}>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label>Scenario Name <span className="req">*</span></label>
+              <input type="text" className={`calc-input${emptyClass(scenName)}`} value={scenName} onChange={(e) => setScenName(e.target.value)} placeholder="e.g. Smith Purchase" />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label>Date</label>
+              <input type="date" className="calc-input" value={scenDate} onChange={(e) => setScenDate(e.target.value)} />
+            </div>
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label>Borrower Name</label>
+              <input type="text" className={`calc-input${emptyClass(borName)}`} value={borName} onChange={(e) => setBorName(e.target.value)} placeholder="e.g. John & Jane Smith" />
+            </div>
+          </div>
+          <div className="address-row">
+            <div className="input-group" style={{ marginBottom: 0 }}>
+              <label>Property Address</label>
+              <input type="text" className={`calc-input${emptyClass(propAddress)}`} value={propAddress} onChange={(e) => setPropAddress(e.target.value)} placeholder="123 Main St, City, State" />
+            </div>
+            <button className="zillow-btn" onClick={openZillow}>
+              <i className="fa-solid fa-magnifying-glass"></i> Zillow Lookup
+            </button>
+          </div>
+        </div>
 
-              {/* Loan Amount */}
+        {/* ============================
+            TWO-COLUMN LAYOUT
+            ============================ */}
+        <div className="calc-grid-2">
+
+          {/* LEFT COLUMN: Input cards */}
+          <div>
+
+            {/* CARD 2: LOAN INFORMATION */}
+            <div className="floating-card">
+              <h3 className="card-title"><i className="fa-solid fa-landmark"></i> Loan Information</h3>
               <div className="input-group">
                 <label>Loan Amount ($)</label>
                 <input
                   type="text"
-                  className={"calc-input" + emptyClass(loanAmount)}
-                  placeholder="350,000"
+                  className={`calc-input${emptyClass(loanAmount)}`}
+                  placeholder="e.g. 350,000"
                   value={loanAmount}
                   onChange={(e) => handleCurrencyInput(e.target.value, setLoanAmount)}
                   onBlur={() => handleCurrencyBlur(loanAmount, setLoanAmount)}
                   onKeyDown={(e) => handleCalcFieldKeyDown(e, loanAmount, setLoanAmount, "currency")}
                 />
               </div>
-
-              {/* Interest Rate + Term */}
-              <div className="grid-2">
-                <div className="input-group">
+              <div className="grid-2-compact">
+                <div className="input-group" style={{ marginBottom: 0 }}>
                   <label>Interest Rate (%)</label>
-                  <div className="input-with-suffix">
-                    <input
-                      type="text"
-                      className={"calc-input" + emptyClass(intRate)}
-                      placeholder="6.5"
-                      value={intRate}
-                      onChange={(e) => setIntRate(e.target.value)}
-                      onBlur={() => {
-                        if (intRate && /[+\-*/]/.test(intRate.replace(/,/g, ""))) {
-                          const result = evaluateExpression(intRate);
-                          if (!isNaN(result)) { setIntRate(String(result)); return; }
-                        }
-                      }}
-                      onKeyDown={(e) => handleCalcFieldKeyDown(e, intRate, setIntRate, "rate")}
-                      step="0.125"
-                    />
-                    <span className="input-suffix">%</span>
-                  </div>
+                  <input
+                    type="text"
+                    className={`calc-input${emptyClass(intRate)}`}
+                    placeholder="e.g. 6.5"
+                    value={intRate}
+                    onChange={(e) => setIntRate(e.target.value)}
+                    onBlur={() => {
+                      if (intRate && /[+\-*/]/.test(intRate.replace(/,/g, ""))) {
+                        const result = evaluateExpression(intRate);
+                        if (!isNaN(result)) { setIntRate(String(result)); return; }
+                      }
+                    }}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, intRate, setIntRate, "rate")}
+                    step="0.125"
+                  />
                 </div>
-                <div className="input-group">
+                <div className="input-group" style={{ marginBottom: 0 }}>
                   <label>Term (Years)</label>
                   <input
                     type="number"
-                    className="calc-input"
+                    className={`calc-input${emptyClass(loanTerm)}`}
+                    placeholder="e.g. 30"
                     value={loanTerm}
                     onChange={(e) => setLoanTerm(e.target.value)}
                     min="1"
@@ -672,15 +730,18 @@ export default function MortgageCalculator() {
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Home Insurance + Property Tax (Insurance BEFORE Tax!) */}
-              <div className="grid-2">
+            {/* CARD 3: INSURANCE, TAXES & HOA (Insurance BEFORE Tax) */}
+            <div className="floating-card">
+              <h3 className="card-title"><i className="fa-solid fa-house-chimney"></i> Insurance, Taxes &amp; HOA</h3>
+              <div className="grid-2-compact">
                 <div className="input-group">
-                  <label>Home Ins (HOI) / Yr ($)</label>
+                  <label>Home Insurance (HOI) / Yr ($)</label>
                   <input
                     type="text"
-                    className={"calc-input" + emptyClass(annualIns)}
-                    placeholder="1,200"
+                    className={`calc-input${emptyClass(annualIns)}`}
+                    placeholder="e.g. 1,200"
                     value={annualIns}
                     onChange={(e) => handleCurrencyInput(e.target.value, setAnnualIns)}
                     onBlur={() => handleCurrencyBlur(annualIns, setAnnualIns)}
@@ -689,11 +750,11 @@ export default function MortgageCalculator() {
                   <div className="input-helper">{fmtDec(parseRaw(annualIns) / 12)}/mo</div>
                 </div>
                 <div className="input-group">
-                  <label>Prop Tax / Yr ($)</label>
+                  <label>Property Tax / Yr ($)</label>
                   <input
                     type="text"
-                    className={"calc-input" + emptyClass(annualTax)}
-                    placeholder="4,500"
+                    className={`calc-input${emptyClass(annualTax)}`}
+                    placeholder="e.g. 4,500"
                     value={annualTax}
                     onChange={(e) => handleCurrencyInput(e.target.value, setAnnualTax)}
                     onBlur={() => handleCurrencyBlur(annualTax, setAnnualTax)}
@@ -702,15 +763,13 @@ export default function MortgageCalculator() {
                   <div className="input-helper">{fmtDec(parseRaw(annualTax) / 12)}/mo</div>
                 </div>
               </div>
-
-              {/* Supplemental Insurance + HOA */}
-              <div className="grid-2">
+              <div className="grid-2-compact">
                 <div className="input-group">
                   <label>Supplemental Ins / Yr ($)</label>
                   <input
                     type="text"
-                    className={"calc-input" + emptyClass(annualSuppIns)}
-                    placeholder="0"
+                    className={`calc-input${emptyClass(annualSuppIns)}`}
+                    placeholder="e.g. 0"
                     value={annualSuppIns}
                     onChange={(e) => handleCurrencyInput(e.target.value, setAnnualSuppIns)}
                     onBlur={() => handleCurrencyBlur(annualSuppIns, setAnnualSuppIns)}
@@ -722,8 +781,8 @@ export default function MortgageCalculator() {
                   <label>HOA / Yr ($)</label>
                   <input
                     type="text"
-                    className={"calc-input" + emptyClass(annualHOA)}
-                    placeholder="0"
+                    className={`calc-input${emptyClass(annualHOA)}`}
+                    placeholder="e.g. 0"
                     value={annualHOA}
                     onChange={(e) => handleCurrencyInput(e.target.value, setAnnualHOA)}
                     onBlur={() => handleCurrencyBlur(annualHOA, setAnnualHOA)}
@@ -732,85 +791,63 @@ export default function MortgageCalculator() {
                   <div className="input-helper">{fmtDec(parseRaw(annualHOA) / 12)}/mo</div>
                 </div>
               </div>
-
-              {/* PMI Rate */}
-              <div className="input-group">
+              <div className="input-group" style={{ marginBottom: 0 }}>
                 <label>Mortgage Insurance (PMI) %</label>
-                <div className="input-with-suffix">
-                  <input
-                    type="text"
-                    className={"calc-input" + emptyClass(pmiRate)}
-                    placeholder="0.0"
-                    value={pmiRate}
-                    onChange={(e) => setPmiRate(e.target.value)}
-                    onBlur={() => {
-                      if (pmiRate && /[+\-*/]/.test(pmiRate.replace(/,/g, ""))) {
-                        const result = evaluateExpression(pmiRate);
-                        if (!isNaN(result)) { setPmiRate(String(result)); return; }
-                      }
-                    }}
-                    onKeyDown={(e) => handleCalcFieldKeyDown(e, pmiRate, setPmiRate, "rate")}
-                    step="0.01"
-                  />
-                  <span className="input-suffix">%</span>
-                </div>
+                <input
+                  type="text"
+                  className={`calc-input${emptyClass(pmiRate)}`}
+                  placeholder="e.g. 0.85"
+                  value={pmiRate}
+                  onChange={(e) => setPmiRate(e.target.value)}
+                  onBlur={() => {
+                    if (pmiRate && /[+\-*/]/.test(pmiRate.replace(/,/g, ""))) {
+                      const result = evaluateExpression(pmiRate);
+                      if (!isNaN(result)) { setPmiRate(String(result)); return; }
+                    }
+                  }}
+                  onKeyDown={(e) => handleCalcFieldKeyDown(e, pmiRate, setPmiRate, "rate")}
+                  step="0.01"
+                />
                 {parseFloat(pmiRate) > 0 && (
                   <div className="input-helper">{fmtDec(r.monthlyPMI)}/mo</div>
                 )}
               </div>
             </div>
 
-            {/* RIGHT COLUMN — Monthly Breakdown */}
-            <div className="col-results">
-              <div className="col-title"><i className="fa-solid fa-calculator"></i> Monthly Breakdown</div>
+          </div>
 
-              {/* Big result box */}
-              <div className="result-box">
-                <div className="result-label-sm">Total Monthly Payment</div>
-                <div className="result-big">{fmtDec(r.total)}</div>
-              </div>
-
-              {/* Breakdown rows — Insurance BEFORE Tax */}
-              <div className="breakdown-list">
-                <div className="breakdown-row">
-                  <span className="bd-label">Principal & Interest</span>
-                  <span className="bd-value">{fmtDec(r.pi)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span className="bd-label">Home Insurance (HOI)</span>
-                  <span className="bd-value">{fmtDec(r.monthlyIns)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span className="bd-label">Property Tax</span>
-                  <span className="bd-value">{fmtDec(r.monthlyTax)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span className="bd-label">Supplemental Insurance</span>
-                  <span className="bd-value">{fmtDec(r.monthlySuppIns)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span className="bd-label">HOA</span>
-                  <span className="bd-value">{fmtDec(r.monthlyHOA)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span className="bd-label">Mortgage Insurance (PMI)</span>
-                  <span className="bd-value">{fmtDec(r.monthlyPMI)}</span>
-                </div>
+          {/* RIGHT COLUMN: Dark results card */}
+          <div>
+            <div className="result-card-main">
+              <span className="res-label-main">Total Monthly Payment</span>
+              <div className="res-val-main">{fmtDec(r.total)}</div>
+              <hr className="divider" />
+              <div className="pitia-breakdown">
+                <div className="pitia-breakdown-title">Monthly Breakdown</div>
+                {/* Insurance BEFORE Tax */}
+                <div className="pitia-row"><span>Principal &amp; Interest</span><span>{fmtDec(r.pi)}</span></div>
+                <div className="pitia-row"><span>Home Insurance (HOI)</span><span>{fmtDec(r.monthlyIns)}</span></div>
+                <div className="pitia-row"><span>Property Tax</span><span>{fmtDec(r.monthlyTax)}</span></div>
+                <div className="pitia-row"><span>Supplemental Insurance</span><span>{fmtDec(r.monthlySuppIns)}</span></div>
+                <div className="pitia-row"><span>HOA</span><span>{fmtDec(r.monthlyHOA)}</span></div>
+                <div className="pitia-row"><span>Mortgage Insurance (PMI)</span><span>{fmtDec(r.monthlyPMI)}</span></div>
+                <div className="pitia-total"><span>Total Monthly Payment</span><span>{fmtDec(r.total)}</span></div>
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* ================================================
+        {/* ============================
             PRINT SUMMARY (hidden on screen, shown on print)
-            ================================================ */}
+            ============================ */}
         <div className="print-summary">
           <div className="print-header">
-            <img src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/694e4aaf5f511ad7901b7530_mtg.broker%20logo.svg" alt="mtg.broker" className="print-logo" />
-            <div className="print-doc-title">Mortgage Payment Summary</div>
+            <img className="print-logo" src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/69576dcb21edb9d479222c02_Logo_Horizontal_Blue.png" alt="mtg.broker" />
+            <div className="print-doc-title">Mortgage Calculator</div>
           </div>
           <div className="print-scenario-info" id="printScenarioInfo"></div>
-          <div className="print-two-col">
+          <div className="print-body">
             <div>
               <div className="print-section-title">Loan Information</div>
               <table className="print-table"><tbody id="printLoanTable"></tbody></table>
@@ -820,96 +857,8 @@ export default function MortgageCalculator() {
               <table className="print-table"><tbody id="printBreakdownTable"></tbody></table>
             </div>
           </div>
-          <div className="print-footer">Generated from mtg.broker &middot; <span id="printDate"></span></div>
+          <div className="print-footer">Generated from mtg.broker &mdash; <span id="printDate"></span></div>
         </div>
-
-        {/* ================================================
-            LOAD MODAL
-            ================================================ */}
-        {showLoadModal && (
-          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLoadModal(false); }}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h3>Saved Scenarios</h3>
-                <button onClick={() => setShowLoadModal(false)} className="close-modal">&times;</button>
-              </div>
-              <div className="modal-subheader">
-                {!userEmail ? "" :
-                  saveLimit === 0 ? <><i className="fa-solid fa-lock" style={{ marginRight: 4 }}></i> Saving is available on PLUS and PRO plans</> :
-                  saveLimit === Infinity ? <><i className="fa-solid fa-infinity" style={{ marginRight: 4 }}></i> {scenarios.length} saved (unlimited)</> :
-                  <><i className="fa-solid fa-cloud" style={{ marginRight: 4 }}></i> {scenarios.length} of {saveLimit} saves used</>}
-              </div>
-              <div className="modal-list">
-                {loadingScenarios ? (
-                  <div className="modal-loading"><div className="modal-spinner"></div> Loading scenarios...</div>
-                ) : !userEmail ? (
-                  <div className="modal-empty">
-                    <div className="modal-empty-icon"><i className="fa-solid fa-user-lock"></i></div>
-                    <p className="modal-empty-title">Please log in</p>
-                    <p className="modal-empty-text">Log in to access your saved scenarios.</p>
-                  </div>
-                ) : scenarios.length === 0 ? (
-                  <div className="modal-empty">
-                    <div className="modal-empty-icon"><i className="fa-solid fa-folder-open"></i></div>
-                    <p className="modal-empty-title">No saved scenarios</p>
-                    <p className="modal-empty-text">Save your first scenario using the Save button.</p>
-                  </div>
-                ) : (
-                  scenarios.map((s) => (
-                    <div key={s.id} className="scenario-item" onClick={() => loadScenario(s.id)}>
-                      <div className="scenario-item-info">
-                        <div className="scenario-item-name">{s.scenarioName}</div>
-                        <div className="scenario-item-date">{new Date(s.updatedAt || s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
-                      </div>
-                      <div className="scenario-item-actions">
-                        <button className="scenario-action-btn" onClick={(e) => { e.stopPropagation(); startRename(s.id, s.scenarioName); }} title="Rename">
-                          <i className="fa-solid fa-pen"></i>
-                        </button>
-                        <button className="scenario-action-btn delete" onClick={(e) => { e.stopPropagation(); deleteScenario(s.id, s.scenarioName); }} title="Delete">
-                          <i className="fa-solid fa-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              {userEmail && saveLimit === 0 && (
-                <div className="modal-upgrade">
-                  <p className="modal-upgrade-text">Upgrade to PLUS or PRO to save scenarios</p>
-                  <a href="https://mtg.broker/pricing" target="_blank" rel="noopener noreferrer" className="modal-upgrade-btn">View Plans</a>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================================================
-            RENAME MODAL
-            ================================================ */}
-        {showRenameModal && (
-          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowRenameModal(false); }}>
-            <div className="modal-content" style={{ width: 380 }}>
-              <div className="modal-header">
-                <h3>Rename Scenario</h3>
-                <button onClick={() => setShowRenameModal(false)} className="close-modal">&times;</button>
-              </div>
-              <div style={{ padding: "0 20px" }}>
-                <input
-                  type="text"
-                  className="rename-input"
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") confirmRename(); }}
-                  autoFocus
-                />
-              </div>
-              <div className="rename-actions">
-                <button className="rename-cancel" onClick={() => setShowRenameModal(false)}>Cancel</button>
-                <button className="rename-confirm" onClick={confirmRename}>Rename</button>
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     </>
