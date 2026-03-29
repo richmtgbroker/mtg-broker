@@ -133,7 +133,7 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {Array.from({ length: 21 }).map((_, i) => (
             <div key={i} className="aspect-[3/4] rounded-2xl bg-surface-active animate-pulse" />
           ))}
@@ -246,7 +246,7 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
@@ -340,7 +340,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       <div>
         {/* Channel Tags - small rounded pills, distinct from squared action buttons */}
         {channels.length > 0 && (
-          <div className="flex items-center justify-center flex-wrap gap-1 px-2 pb-2">
+          <div className="flex items-center justify-center gap-1.5 px-2 pb-2">
             {channels.map((ch) => (
               <button
                 key={ch}
