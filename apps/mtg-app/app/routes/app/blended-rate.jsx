@@ -484,8 +484,14 @@ export default function BlendedRateCalculator() {
         .print-summary { display: none; }
         @media print {
           body * { visibility: hidden !important; }
-          .main-content-section { height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
-          nav, footer, header, aside { height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+          /* Collapse ALL non-print content to zero height so only 1 page prints */
+          body > *, body > * > *, .main-content-section, .main-content-section > *,
+          .calc-container, .calc-container > *:not(.print-summary),
+          nav, footer, header, aside, [class*="sidebar"], [class*="navbar"], [class*="footer"] {
+            height: 0 !important; max-height: 0 !important; min-height: 0 !important;
+            padding: 0 !important; margin: 0 !important; overflow: hidden !important;
+            border: none !important; line-height: 0 !important; font-size: 0 !important;
+          }
           .print-summary, .print-summary * { visibility: visible !important; }
           .print-summary { display: block !important; position: fixed !important; top: 0; left: 0; width: 100% !important; background: white !important; z-index: 99999 !important; padding: 0.4in 0.6in !important; font-family: 'Host Grotesk', system-ui, sans-serif !important; color: #0f172a !important; font-size: 11pt !important; }
           .print-header { display: flex !important; justify-content: space-between !important; align-items: center !important; border-bottom: 2px solid #0F172A !important; padding-bottom: 10px !important; margin-bottom: 16px !important; }
