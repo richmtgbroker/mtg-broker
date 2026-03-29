@@ -1277,16 +1277,17 @@ function ProductModal({ product, fieldMeta, lenderLogos, lenderKey, admin, onClo
 
         <div className="overflow-y-auto p-6">
           {sortedGroups.map((group) => (
-            <div key={group.name} className="mb-6 last:mb-0">
-              <h3 className="text-sm font-bold text-text-faint uppercase tracking-wide mb-3">{group.name}</h3>
-              <div className="bg-surface-hover rounded-xl overflow-hidden">
-                {group.fields.map((field, i) => (
-                  <div key={field.key} className={`flex items-start px-4 py-2.5 ${i > 0 ? "border-t border-white" : ""}`}>
-                    <span className="text-xs font-medium text-text-muted w-[180px] shrink-0 pt-0.5">{field.label}</span>
-                    <span className="text-sm text-text flex-1" dangerouslySetInnerHTML={{ __html: formatModalValue(field.value, field.key) }} />
-                  </div>
-                ))}
+            <div key={group.name} style={{ background: "#FFFFFF", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #2563eb55", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px", background: "#2563eb20", borderBottom: "1px solid #2563eb45" }}>
+                <div style={{ width: 3, height: 16, borderRadius: 2, flexShrink: 0, background: "#2563eb" }} />
+                <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.01em", textTransform: "uppercase", color: "#2563eb" }}>{group.name}</span>
               </div>
+              {group.fields.map((field, i) => (
+                <div key={field.key} style={{ display: "flex", alignItems: "flex-start", padding: "10px 16px", borderBottom: i < group.fields.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "#64748B", width: 180, flexShrink: 0, paddingTop: 1 }}>{field.label}</span>
+                  <span className="text-sm text-text flex-1" dangerouslySetInnerHTML={{ __html: formatModalValue(field.value, field.key) }} />
+                </div>
+              ))}
             </div>
           ))}
           {sortedGroups.length === 0 && (
