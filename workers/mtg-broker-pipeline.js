@@ -9,6 +9,7 @@
  *   2. Tighter vertical spacing on nav items (padding 9→6px, gap 2→0px).
  *   3. Added Year Built field to Property tab (new Supabase column: year_built).
  *   4. Added Property Taxes ($/yr) to Property tab, synced with Payment tab prop-taxes.
+ *   5. Added beforeunload warning when closing browser tab with unsaved changes.
  *
  * PREVIOUS: March 25, 2026 - v8.7 — SSN full input, search expansion, escrow fields, closing costs escrow:
  *   1. Full SSN input with XXX-XX-XXXX formatting + masked display (•••-••-XXXX).
@@ -2542,6 +2543,10 @@ function hasUnsavedChanges() {
   });
   return JSON.stringify(data) !== _formSnapshot;
 }
+/* v8.8: Warn user if they try to close/refresh the browser tab with unsaved changes */
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges()) { e.preventDefault(); }
+});
 function closeModal() {
   if (hasUnsavedChanges()) {
     showUnsavedDialog();
