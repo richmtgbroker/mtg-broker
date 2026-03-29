@@ -4,7 +4,13 @@
  * Refinance Quick Calc module, Plan Limits checking, and Usage Tracking
  * 
  * CREATED: February 23, 2026 - v1.0
- * UPDATED: March 25, 2026 - v8.7 — SSN full input, search expansion, escrow fields, closing costs escrow:
+ * UPDATED: March 29, 2026 - v8.8 — Edit Loan sidebar UX + Property tab fields:
+ *   1. Widened left nav sidebar (160→185px) to eliminate horizontal scrollbar.
+ *   2. Tighter vertical spacing on nav items (padding 9→6px, gap 2→0px).
+ *   3. Added Year Built field to Property tab (new Supabase column: year_built).
+ *   4. Added Property Taxes ($/yr) to Property tab, synced with Payment tab prop-taxes.
+ *
+ * PREVIOUS: March 25, 2026 - v8.7 — SSN full input, search expansion, escrow fields, closing costs escrow:
  *   1. Full SSN input with XXX-XX-XXXX formatting + masked display (•••-••-XXXX).
  *      Stores full SSN in Supabase, auto-derives last 4 for backward compat.
  *   2. Pipeline search now includes co-borrower names, property state/zip,
@@ -276,6 +282,7 @@ const FIELD_TO_COLUMN = {
   'Supplemental Insurance': 'supplemental_insurance', 'HOA': 'hoa', 'HOA Dues': 'hoa',
   'Flood Insurance': 'flood_insurance', 'Mortgage Insurance': 'mortgage_insurance',
   'Lender': 'lender', 'Co-Borrower Role': 'co_borrower_role',
+  'Year Built': 'year_built',
   'Property County': 'property_county', 'Channel': 'channel',
   'Comp Type': 'comp_type',
   'Link Application': 'link_application', 'Link Documents': 'link_documents',
@@ -1623,7 +1630,7 @@ async function initPipeline() {
     + '@media(max-width:900px){.inc-iw{width:200px;}.inc-modal{max-width:98vw;}}';
   document.head.appendChild(incomeStyle);
   /* Income section: init handled by buildIncomeSection() from openNewLoanModal / openLoanModal */
-  setupLTVSync(); setupCompensationSync(); setupPICalc(); setupRateFormatting(); setupBorrowerNameBar(); setupPropertyValueSync();
+  setupLTVSync(); setupCompensationSync(); setupPICalc(); setupRateFormatting(); setupBorrowerNameBar(); setupPropertyValueSync(); setupPropertyTaxSync();
 
   /* v7.30: DOM enhancements — rename labels + convert fields */
   /* 1.1: Rename "Report #" label to "Report / File #" */
@@ -1832,6 +1839,14 @@ function setupPropertyValueSync() {
   if (!pvLoan || !pvProp) return;
   pvProp.addEventListener('input', () => { pvLoan.value = pvProp.value; pvLoan.dispatchEvent(new Event('input', {bubbles:true})); });
   pvLoan.addEventListener('input', () => { pvProp.value = pvLoan.value; calcEquityLoan(); });
+}
+/* v8.8: Sync Property Taxes between Property tab and Payment tab */
+function setupPropertyTaxSync() {
+  const taxProp = document.getElementById('prop-page-taxes');
+  const taxPayment = document.getElementById('prop-taxes');
+  if (!taxProp || !taxPayment) return;
+  taxProp.addEventListener('input', () => { taxPayment.value = taxProp.value; taxPayment.dispatchEvent(new Event('input', {bubbles:true})); });
+  taxPayment.addEventListener('input', () => { taxProp.value = taxPayment.value; });
 }
 function setupCompensationSync() {
   const cb = document.getElementById('comp-bps'), ca = document.getElementById('comp-amount-input'), la = document.getElementById('loan-amount');
@@ -2275,6 +2290,8 @@ function openNewLoanModal() {
   /* Reset Property section housing cost fields */
   document.getElementById('prop-hoi').value = '';
   document.getElementById('prop-taxes').value = '';
+  document.getElementById('prop-page-taxes').value = '';
+  document.getElementById('property-year-built').value = '';
   document.getElementById('prop-supp-ins').value = '';
   document.getElementById('prop-flood-ins').value = '';
   document.getElementById('prop-mi').value = '';
@@ -2374,6 +2391,9 @@ async function openLoanModal(id) {
   setVal('property-units', loan['Property Units']);
   document.getElementById('property-value').value = loan['Property Value'] ? loan['Property Value'].toLocaleString() : '';
   document.getElementById('prop-page-value').value = loan['Property Value'] ? loan['Property Value'].toLocaleString() : '';
+  setVal('property-year-built', loan['Year Built']);
+  /* v8.8: Sync Property Taxes to Property tab (annual display) */
+  document.getElementById('prop-page-taxes').value = loan['Property Taxes'] ? (loan['Property Taxes'] * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '';
   document.getElementById('purchase-price').value = loan['Purchase Price'] ? loan['Purchase Price'].toLocaleString() : '';
   setVal('loan-type', loan['Loan Type']); setVal('other-loan-type', loan['Other Loan Type']);
   document.getElementById('loan-amount').value = loan['Loan Amount'] ? loan['Loan Amount'].toLocaleString() : '';
@@ -2642,6 +2662,7 @@ async function saveLoan() {
     'Property Type': document.getElementById('property-type').value,
     'Property Units': document.getElementById('property-units').value ? parseInt(document.getElementById('property-units').value) : null,
     'Property County': document.getElementById('property-county') ? document.getElementById('property-county').value : '',
+    'Year Built': document.getElementById('property-year-built').value ? parseInt(document.getElementById('property-year-built').value) : null,
     'Property Value': parseCurrency(document.getElementById('property-value').value),
     'Purchase Price': parseCurrency(document.getElementById('purchase-price').value),
     'Loan Purpose': document.getElementById('loan-purpose').value,
@@ -9526,25 +9547,25 @@ body {
 }
 /* ---- LEFT NAVIGATION SIDEBAR ----
    v11.5: font bumped 12→14px, icons 12→14px, width 150→160px
-   to match app sidebar link sizing
+   v8.8: width 160→185px to avoid horizontal scrollbar, tighter vertical spacing
    ---- */
 .modal-nav-sidebar {
-  width: 160px;
+  width: 185px;
   flex-shrink: 0;
   background: #FFFFFF;
   border-right: 1px solid #E2E8F0;
   overflow-y: auto;
-  padding: 12px 0;
+  padding: 8px 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0px;
 }
-/* Navigation items — v11.5: 14px text to match sidebar */
+/* Navigation items — v11.5: 14px text to match sidebar, v8.8: tighter padding */
 .mnav-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 16px;
+  padding: 6px 16px;
   font-size: 14px;
   font-weight: 600;
   color: #64748B;
@@ -9918,7 +9939,7 @@ textarea.fc, textarea.form-control { min-height: 70px; resize: vertical; font-fa
 @media (max-width: 1200px) {
   .modal-nav-sidebar { width: 52px; }
   .mnav-item span { display: none; }
-  .mnav-item { padding: 10px 0; justify-content: center; }
+  .mnav-item { padding: 8px 0; justify-content: center; }
   .mnav-item i { font-size: 14px; }
   .modal-calc-panel { width: 160px; }
 }
@@ -11154,6 +11175,10 @@ async function getPipelineTemplateHTML(request) {
               </div>
               <div class="cg">
                 <div class="ff"><label>Property Value ($)</label><input type="text" class="fc currency-input" id="prop-page-value"></div>
+                <div class="ff"><label>Year Built</label><input type="number" class="fc" id="property-year-built" min="1800" max="2099" placeholder="e.g. 1995"></div>
+              </div>
+              <div class="cg">
+                <div class="ff"><label>Property Taxes ($/yr)</label><input type="text" class="fc currency-input" id="prop-page-taxes" data-decimals="2" placeholder="0.00"></div>
               </div>
               <div class="cg">
                 <div class="ff"><button type="button" class="btn btn-secondary" onclick="zillowLookup()" style="display:flex;align-items:center;gap:6px"><i class="fa-solid fa-arrow-up-right-from-square"></i>Zillow Lookup</button></div>
