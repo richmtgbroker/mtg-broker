@@ -4,7 +4,7 @@ import { isNexaUser, checkNexaAccess } from "../../lib/auth";
 
 const LENDERS_API_PRIMARY = "https://mtg-broker-lenders.rich-e00.workers.dev/api/lenders";
 const LENDERS_API_FALLBACK = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
-const CACHE_KEY = "mtg_lenders_v2";
+const CACHE_KEY = "mtg_lenders_v3";
 const CACHE_TTL = 30 * 60 * 1000;
 const FAVORITES_KEY = "mtg_lender_favorites";
 
@@ -17,6 +17,7 @@ export default function LendersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [channelFilter, setChannelFilter] = useState(null);
+  const [showTbdOnly, setShowTbdOnly] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState(() => {
     if (typeof window === "undefined") return [];
@@ -50,7 +51,7 @@ export default function LendersPage() {
       try {
         let lenderList = null;
         try {
-          const res = await fetch(LENDERS_API_PRIMARY);
+          const res = await fetch(LENDERS_API_PRIMARY + "?_v=3");
           if (res.ok) {
             const data = await res.json();
             if (data.success && Array.isArray(data.lenders)) lenderList = data.lenders;
@@ -112,16 +113,18 @@ export default function LendersPage() {
         const channels = getChannels(l);
         if (!channels.includes(channelFilter)) return false;
       }
+      if (showTbdOnly && !l.tbdUnderwriting) return false;
       if (showFavoritesOnly && !favorites.includes(l.name)) return false;
       return true;
     });
-  }, [lenders, searchTerm, channelFilter, showFavoritesOnly, favorites]);
+  }, [lenders, searchTerm, channelFilter, showTbdOnly, showFavoritesOnly, favorites]);
 
-  const isFiltered = searchTerm.length > 0 || channelFilter !== null || showFavoritesOnly;
+  const isFiltered = searchTerm.length > 0 || channelFilter !== null || showTbdOnly || showFavoritesOnly;
 
   function clearFilters() {
     setSearchTerm("");
     setChannelFilter(null);
+    setShowTbdOnly(false);
     setShowFavoritesOnly(false);
     searchRef.current?.focus();
   }
@@ -130,7 +133,7 @@ export default function LendersPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-text mb-6">Lender Directory</h1>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {Array.from({ length: 21 }).map((_, i) => (
             <div key={i} className="aspect-[3/4] rounded-2xl bg-surface-active animate-pulse" />
           ))}
@@ -189,6 +192,22 @@ export default function LendersPage() {
 
         {nexaAuthorized && <div className="w-px h-10 bg-border hidden md:block" />}
 
+        {/* TBD Underwriting Filter */}
+        <button
+          onClick={() => setShowTbdOnly(!showTbdOnly)}
+          title="To Be Determined (TBD) Underwriting"
+          className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-colors ${
+            showTbdOnly
+              ? "bg-orange-600 text-white border-orange-600 shadow-sm"
+              : "bg-white text-text-secondary border-border hover:border-orange-400 hover:text-orange-600"
+          }`}
+        >
+          <span className={`inline-block w-2.5 h-2.5 rounded-sm font-bold text-[9px] leading-[10px] text-center ${showTbdOnly ? "bg-white text-orange-600" : "bg-orange-400 text-white"}`}>T</span>
+          TBD UW
+        </button>
+
+        <div className="w-px h-10 bg-border hidden md:block" />
+
         {/* Favorites Toggle */}
         <button
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
@@ -227,7 +246,7 @@ export default function LendersPage() {
           <button onClick={clearFilters} className="text-sm text-primary-600 font-medium cursor-pointer bg-transparent border-none hover:underline">Clear filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {filtered.map((lender) => (
             <LenderCard
               key={lender.name}
@@ -321,7 +340,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       <div>
         {/* Channel Tags - small rounded pills, distinct from squared action buttons */}
         {channels.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 px-3 pb-2">
+          <div className="flex items-center justify-center gap-1.5 px-2 pb-2">
             {channels.map((ch) => (
               <button
                 key={ch}
@@ -330,7 +349,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
                   e.stopPropagation();
                   onChannelFilter(channelFilter === ch ? null : ch);
                 }}
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer border-none transition-colors ${channelFilter === ch ? (TAG_STYLES[ch]?.active || "bg-gray-600 text-white") : (TAG_STYLES[ch]?.default || "bg-gray-100 text-gray-600")} ${channelFilter !== ch ? "hover:opacity-80" : ""}`}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer border-none transition-colors whitespace-nowrap ${channelFilter === ch ? (TAG_STYLES[ch]?.active || "bg-gray-600 text-white") : (TAG_STYLES[ch]?.default || "bg-gray-100 text-gray-600")} ${channelFilter !== ch ? "hover:opacity-80" : ""}`}
               >
                 {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
               </button>

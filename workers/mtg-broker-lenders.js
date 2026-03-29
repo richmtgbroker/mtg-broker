@@ -292,6 +292,7 @@ async function getLenders(apiKey, request) {
       "NEXA NonDel Lender",
       "NEXA100 Lender (Yes/Blank)",
       "NEXA Only",
+      "TBD Underwriting (Wholesale)",
       "Sync to Webflow"
     ];
     do {
@@ -334,7 +335,8 @@ async function getLenders(apiKey, request) {
           nexaWholesale: isYesOrTrue(f["NEXA Wholesale Lender"]),
           nexaNondel: isYesOrTrue(f["NEXA NonDel Lender"]),
           nexa100: isYesOrTrue(f["NEXA100 Lender (Yes/Blank)"]),
-          nexaOnly: f["NEXA Only"] === true
+          nexaOnly: f["NEXA Only"] === true,
+          tbdUnderwriting: isYesOrTrue(f["TBD Underwriting (Wholesale)"])
         });
       }
       offset = data.offset || null;
