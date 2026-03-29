@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router";
 import { getUserEmail, getUserPlan } from "../../lib/auth";
 
 export function meta() {
@@ -363,6 +364,11 @@ export default function BlendedRateCalculator() {
       {/* SCOPED CSS — matches v1.0 design */}
       <style>{`
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+        .calc-breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; color: #64748B; }
+        .calc-breadcrumb a { color: #2563EB; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .calc-breadcrumb a:hover { color: #1D4ED8; text-decoration: underline; }
+        .calc-breadcrumb .bc-sep { color: #CBD5E1; }
+        .calc-breadcrumb .bc-current { color: #0F172A; font-weight: 600; }
         .calc-container { width: 100%; max-width: 1280px; margin: 0 auto; font-family: 'Host Grotesk', system-ui, -apple-system, sans-serif; color: #0f172a; box-sizing: border-box; }
         .calc-container * { box-sizing: border-box; }
         .calc-header { background: #0F172A; padding: 16px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(15,23,42,0.12); }
@@ -485,12 +491,12 @@ export default function BlendedRateCalculator() {
         @media print {
           body * { visibility: hidden !important; }
           /* Collapse ALL non-print content to zero height so only 1 page prints */
-          body > *, body > * > *, .main-content-section, .main-content-section > *,
-          .calc-container, .calc-container > *:not(.print-summary),
+          .calc-container > *:not(.print-summary),
+          .calc-header, .floating-card, .calc-grid-2, .calc-breadcrumb,
+          .result-card-main,
           nav, footer, header, aside, [class*="sidebar"], [class*="navbar"], [class*="footer"] {
             height: 0 !important; max-height: 0 !important; min-height: 0 !important;
             padding: 0 !important; margin: 0 !important; overflow: hidden !important;
-            border: none !important; line-height: 0 !important; font-size: 0 !important;
           }
           .print-summary, .print-summary * { visibility: visible !important; }
           .print-summary { display: block !important; position: fixed !important; top: 0; left: 0; width: 100% !important; background: white !important; z-index: 99999 !important; padding: 0.4in 0.6in !important; font-family: 'Host Grotesk', system-ui, sans-serif !important; color: #0f172a !important; font-size: 11pt !important; }
@@ -523,6 +529,13 @@ export default function BlendedRateCalculator() {
       `}</style>
 
       <div className="calc-container">
+
+        {/* BREADCRUMB */}
+        <div className="calc-breadcrumb">
+          <Link to="/app/calculators"><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Calculators</Link>
+          <span className="bc-sep">/</span>
+          <span className="bc-current">Blended Rate Calculator</span>
+        </div>
 
         {/* HEADER BAR */}
         <div className="calc-header">
