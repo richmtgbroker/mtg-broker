@@ -5,6 +5,7 @@
  *   POST /api/contact-edit/request  → send magic link email via Resend
  *   POST /api/contact-edit/verify   → check if edit token is valid
  *   POST /api/contact-edit/save     → save self-edits (pending review)
+ *   POST /api/contact-edit/upload   → upload profile pic (multipart/form-data)
  *
  * REQUIRED SECRETS (set in Cloudflare dashboard → Workers → Settings → Variables):
  *   SUPABASE_SERVICE_KEY — Supabase service role key
@@ -287,6 +288,95 @@ async function handleSave(body, env, request) {
 }
 
 
+/**
+ * POST /api/contact-edit/upload
+ * Multipart form data: { token, slug, file }
+ * Uploads profile pic to Supabase Storage, returns public URL.
+ */
+async function handleUpload(request, env) {
+  let formData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return jsonResponse({ error: 'Invalid form data.' }, 400, request);
+  }
+
+  const token = formData.get('token');
+  const slug = formData.get('slug');
+  const file = formData.get('file');
+
+  if (!token || !slug || !file) {
+    return jsonResponse({ error: 'Missing token, slug, or file.' }, 400, request);
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    return jsonResponse({ error: 'Invalid file type. Use JPEG, PNG, WebP, or GIF.' }, 400, request);
+  }
+
+  // Validate file size (5MB max)
+  if (file.size > 5 * 1024 * 1024) {
+    return jsonResponse({ error: 'File too large. Maximum 5MB.' }, 400, request);
+  }
+
+  // Look up contact and verify token
+  const contact = await getContactBySlug(slug, env.SUPABASE_SERVICE_KEY);
+  if (!contact) {
+    return jsonResponse({ error: 'Contact not found.' }, 404, request);
+  }
+
+  if (
+    contact.edit_token !== token ||
+    !contact.edit_token_expires_at ||
+    new Date(contact.edit_token_expires_at) < new Date()
+  ) {
+    return jsonResponse({ error: 'Edit link expired or invalid.' }, 403, request);
+  }
+
+  // Generate a unique filename: slug-timestamp.ext
+  const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+  const filename = `${slug}-${Date.now()}.${ext}`;
+  const storagePath = `headshots/${filename}`;
+
+  // Upload to Supabase Storage
+  const uploadRes = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/contact-headshots/${storagePath}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        'Content-Type': file.type,
+        'x-upsert': 'true',
+      },
+      body: file.stream(),
+    }
+  );
+
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text();
+    console.error('Storage upload failed:', errText);
+    return jsonResponse({ error: 'Failed to upload image.' }, 500, request);
+  }
+
+  // Build public URL
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/contact-headshots/${storagePath}`;
+
+  // Save the new headshot URL to the contact record (as pending change)
+  // Include it in pending_changes so admin can review
+  const existingPending = contact.pending_changes || {};
+  const updatedPending = { ...existingPending, headshot_url: publicUrl };
+
+  await updateContact(contact.id, {
+    pending_changes: updatedPending,
+    pending_review: true,
+    last_self_edit_at: new Date().toISOString(),
+  }, env.SUPABASE_SERVICE_KEY);
+
+  return jsonResponse({ success: true, url: publicUrl }, 200, request);
+}
+
+
 // ============================================================
 // WORKER ENTRY POINT
 // ============================================================
@@ -302,6 +392,13 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // Upload route uses multipart/form-data (not JSON)
+    if (url.pathname.endsWith('/upload')) {
+      return handleUpload(request, env);
+    }
+
+    // All other routes use JSON body
     let body;
     try {
       body = await request.json();

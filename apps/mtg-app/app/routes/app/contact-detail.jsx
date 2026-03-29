@@ -255,6 +255,124 @@ function MagicLinkForm({ contactEmail, contactSlug, showToast }) {
   );
 }
 
+/* ── Photo Upload Component ── */
+function PhotoUpload({ contact, token, showToast }) {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [uploaded, setUploaded] = useState(false);
+
+  async function handleFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate client-side
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      showToast("Please use JPEG, PNG, WebP, or GIF");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Image must be under 5MB");
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreview(ev.target.result);
+    reader.readAsDataURL(file);
+
+    // Upload
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("token", token);
+      formData.append("slug", contact.slug);
+      formData.append("file", file);
+
+      const res = await fetch(`${MAGIC_LINK_API}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUploaded(true);
+        showToast("Photo uploaded — pending review");
+      } else {
+        setPreview(null);
+        showToast(data.error || "Upload failed");
+      }
+    } catch {
+      setPreview(null);
+      showToast("Upload failed — please try again");
+    }
+    setUploading(false);
+  }
+
+  const currentPhoto = preview || contact.headshot_url;
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        Profile Photo
+      </label>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* Current / preview photo */}
+        {currentPhoto ? (
+          <img
+            src={currentPhoto}
+            alt="Profile"
+            style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid #E2E8F0", flexShrink: 0 }}
+          />
+        ) : (
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22, fontWeight: 700, flexShrink: 0 }}>
+            {getInitials(contact.name)}
+          </div>
+        )}
+
+        <div>
+          {uploaded ? (
+            <div style={{ fontSize: 13, color: "#16A34A", fontWeight: 500 }}>
+              <i className="fa-solid fa-check-circle" style={{ marginRight: 4 }} />
+              Photo uploaded — pending review
+            </div>
+          ) : (
+            <>
+              <label
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  background: uploading ? "#F1F5F9" : "#fff",
+                  color: uploading ? "#94A3B8" : "#334155",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: uploading ? "default" : "pointer",
+                }}
+              >
+                <i className={uploading ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-camera"} style={{ fontSize: 13 }} />
+                {uploading ? "Uploading..." : "Upload Photo"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileChange}
+                  disabled={uploading}
+                  style={{ display: "none" }}
+                />
+              </label>
+              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 4 }}>
+                JPEG, PNG, WebP, or GIF • Max 5MB
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Self-Edit Form ── */
 function EditForm({ contact, token, onSaved, showToast }) {
   const [form, setForm] = useState({
@@ -339,6 +457,7 @@ function EditForm({ contact, token, onSaved, showToast }) {
       </div>
 
       <form onSubmit={handleSubmit}>
+        <PhotoUpload contact={contact} token={token} showToast={showToast} />
         <InputField label="Preferred Name" field="preferred_name" placeholder="How you'd like to be called" />
         <InputField label="Job Title" field="job_title" placeholder="e.g. Account Executive" />
         <InputField label="NMLS#" field="nmls" placeholder="e.g. 123456" />
