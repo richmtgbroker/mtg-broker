@@ -38,6 +38,24 @@ function escapeHtml(s) {
   return s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
 }
 
+/** Allows math like 80000/12 or 4500+600 in numeric fields */
+function evaluateExpression(value) {
+  if (!value || typeof value !== "string") return NaN;
+  const cleaned = value.replace(/,/g, "").replace(/\$/g, "").trim();
+  if (!cleaned) return NaN;
+  if (!/^[\d.+\-*/() ]+$/.test(cleaned)) return NaN;
+  try {
+    const result = Function('"use strict"; return (' + cleaned + ")")();
+    if (typeof result === "number" && isFinite(result) && result >= 0) {
+      return Math.round(result * 100) / 100;
+    }
+  } catch {}
+  return NaN;
+}
+
+/** Empty-field yellow highlight class helper */
+const emptyClass = (val) => (!String(val).trim() ? " field-empty" : "");
+
 /* ================================================
    DEFAULT LOAN TEMPLATE
    ================================================ */
@@ -91,14 +109,56 @@ export default function BlendedRateCalculator() {
     updateLoan(idx, "balance", formatNumberString(rawValue));
   }, [updateLoan]);
 
+  /* --- Expression eval on blur for balance fields --- */
+  const handleBalanceBlur = useCallback((idx) => {
+    setLoans((prev) => prev.map((l, i) => {
+      if (i !== idx) return l;
+      const val = l.balance;
+      if (val && /[+\-*/]/.test(val.replace(/,/g, ""))) {
+        const result = evaluateExpression(val);
+        if (!isNaN(result)) return { ...l, balance: formatNumberString(String(result)) };
+      }
+      return { ...l, balance: formatNumberString(val) };
+    }));
+  }, []);
+
   /* --- Rate field: format to 3 decimals on blur --- */
   const handleRateBlur = useCallback((idx) => {
     setLoans((prev) => prev.map((l, i) => {
       if (i !== idx) return l;
-      const val = parseFloat(l.rate);
-      return { ...l, rate: isNaN(val) ? l.rate : val.toFixed(3) };
+      const val = l.rate;
+      if (val && /[+\-*/]/.test(String(val).replace(/,/g, ""))) {
+        const result = evaluateExpression(String(val));
+        if (!isNaN(result)) return { ...l, rate: result.toFixed(3) };
+      }
+      const parsed = parseFloat(val);
+      return { ...l, rate: isNaN(parsed) ? val : parsed.toFixed(3) };
     }));
   }, []);
+
+  /* --- Numeric field: expression eval on blur --- */
+  const handleNumericBlur = useCallback((idx, field) => {
+    setLoans((prev) => prev.map((l, i) => {
+      if (i !== idx) return l;
+      const val = String(l[field]);
+      if (val && /[+\-*/]/.test(val.replace(/,/g, ""))) {
+        const result = evaluateExpression(val);
+        if (!isNaN(result)) return { ...l, [field]: String(Math.round(result)) };
+      }
+      return l;
+    }));
+  }, []);
+
+  /* --- Enter key: evaluate expression and blur --- */
+  const handleFieldKeyDown = useCallback((e, idx, field, type) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (type === "balance") handleBalanceBlur(idx);
+      else if (type === "rate") handleRateBlur(idx);
+      else handleNumericBlur(idx, field);
+      e.target.blur();
+    }
+  }, [handleBalanceBlur, handleRateBlur, handleNumericBlur]);
 
   /* --- Calculations --- */
   const results = useMemo(() => {
@@ -329,6 +389,7 @@ export default function BlendedRateCalculator() {
         .calc-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-family: 'Host Grotesk', system-ui, sans-serif; color: #0f172a; background: #FFFFFF; transition: border-color 0.2s, box-shadow 0.2s; }
         .calc-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .calc-input::placeholder { color: #94A3B8; }
+        .calc-input.field-empty { background-color: #FFFBEB; border-color: #FDE68A; }
         .req { color: #DC2626; }
         .grid-3-compact { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
         .calc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
@@ -544,7 +605,7 @@ export default function BlendedRateCalculator() {
           <div className="grid-3-compact">
             <div className="input-group" style={{ marginBottom: 0 }}>
               <label>Scenario Name <span className="req">*</span></label>
-              <input type="text" className="calc-input" value={scenName} onChange={(e) => setScenName(e.target.value)} placeholder="e.g. Holland 1st + HELOC Blend" />
+              <input type="text" className={`calc-input${emptyClass(scenName)}`} value={scenName} onChange={(e) => setScenName(e.target.value)} placeholder="e.g. Holland 1st + HELOC Blend" />
             </div>
             <div className="input-group" style={{ marginBottom: 0 }}>
               <label>Date</label>
@@ -552,7 +613,7 @@ export default function BlendedRateCalculator() {
             </div>
             <div className="input-group" style={{ marginBottom: 0 }}>
               <label>Borrower Name</label>
-              <input type="text" className="calc-input" value={borName} onChange={(e) => setBorName(e.target.value)} placeholder="e.g. John & Jane Smith" />
+              <input type="text" className={`calc-input${emptyClass(borName)}`} value={borName} onChange={(e) => setBorName(e.target.value)} placeholder="e.g. John & Jane Smith" />
             </div>
           </div>
         </div>
@@ -576,25 +637,25 @@ export default function BlendedRateCalculator() {
                   <div className="loan-row loan-row-top">
                     <div className="input-group">
                       <label>Loan Name</label>
-                      <input type="text" className="calc-input" value={loan.name} onChange={(e) => updateLoan(idx, "name", e.target.value)} placeholder="e.g. 1st Mortgage" />
+                      <input type="text" className={`calc-input${emptyClass(loan.name)}`} value={loan.name} onChange={(e) => updateLoan(idx, "name", e.target.value)} placeholder="e.g. 1st Mortgage" />
                     </div>
                     <div className="input-group">
                       <label>New / Current Balance ($) <i className="fa-solid fa-circle-info" style={{ color: "#94A3B8", cursor: "help" }} title="For existing loans, enter the current remaining principal balance"></i></label>
-                      <input type="text" className="calc-input" value={loan.balance} onChange={(e) => handleBalanceInput(idx, e.target.value)} placeholder="e.g. 350,000" />
+                      <input type="text" className={`calc-input${emptyClass(loan.balance)}`} value={loan.balance} onChange={(e) => handleBalanceInput(idx, e.target.value)} onBlur={() => handleBalanceBlur(idx)} onKeyDown={(e) => handleFieldKeyDown(e, idx, "balance", "balance")} placeholder="e.g. 350,000" />
                     </div>
                   </div>
                   <div className="loan-row loan-row-bottom">
                     <div className="input-group">
                       <label>Interest Rate (%)</label>
-                      <input type="number" className="calc-input" value={loan.rate} onChange={(e) => updateLoan(idx, "rate", e.target.value)} onBlur={() => handleRateBlur(idx)} step="0.125" placeholder="e.g. 6.875" />
+                      <input type="text" className={`calc-input${emptyClass(loan.rate)}`} value={loan.rate} onChange={(e) => updateLoan(idx, "rate", e.target.value)} onBlur={() => handleRateBlur(idx)} onKeyDown={(e) => handleFieldKeyDown(e, idx, "rate", "rate")} step="0.125" placeholder="e.g. 6.875" />
                     </div>
                     <div className="input-group">
                       <label>Original Term (Months)</label>
-                      <input type="number" className="calc-input" value={loan.origTerm} onChange={(e) => updateLoan(idx, "origTerm", e.target.value)} placeholder="e.g. 360" />
+                      <input type="text" className={`calc-input${emptyClass(loan.origTerm)}`} value={loan.origTerm} onChange={(e) => updateLoan(idx, "origTerm", e.target.value)} onBlur={() => handleNumericBlur(idx, "origTerm")} onKeyDown={(e) => handleFieldKeyDown(e, idx, "origTerm", "numeric")} placeholder="e.g. 360" />
                     </div>
                     <div className="input-group">
                       <label>Remaining Term (Months)</label>
-                      <input type="number" className="calc-input" value={loan.remaining} onChange={(e) => updateLoan(idx, "remaining", e.target.value)} placeholder="e.g. 324" />
+                      <input type="text" className={`calc-input${emptyClass(loan.remaining)}`} value={loan.remaining} onChange={(e) => updateLoan(idx, "remaining", e.target.value)} onBlur={() => handleNumericBlur(idx, "remaining")} onKeyDown={(e) => handleFieldKeyDown(e, idx, "remaining", "numeric")} placeholder="e.g. 324" />
                     </div>
                   </div>
                 </div>
