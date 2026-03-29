@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router";
 import { getUserEmail, isAdmin, getAccessToken } from "../../lib/auth";
 
 export function meta() {
@@ -411,8 +412,15 @@ function ContactModal({ contact, onClose, favoriteIds, onToggleFav, showToast })
   );
 }
 
+/* ── Slug generator (matches Airtable formula + sync worker) ── */
+function makeSlug(name) {
+  if (!name) return "";
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 /* ── Main Page ── */
 export default function ContactsPage() {
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -783,7 +791,7 @@ export default function ContactsPage() {
             return (
               <div
                 key={c.id || c.recordId}
-                onClick={() => setSelectedContact(c)}
+                onClick={() => navigate(`/app/contacts/${makeSlug(c.name)}`)}
                 style={{
                   background: "#fff",
                   border: "1px solid #E2E8F0",
