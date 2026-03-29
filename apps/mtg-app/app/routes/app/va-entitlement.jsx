@@ -52,6 +52,27 @@ function escapeHtml(s) {
 }
 
 /* ================================================
+   FUNDING FEE RATE LOGIC
+   ================================================ */
+function getAutoFeeRate(loanPurpose, loanUsage, feeExempt, dpPct) {
+  if (feeExempt === "yes") return 0;
+  switch (loanPurpose) {
+    case "purchase":
+      if (dpPct >= 10) return 1.25;
+      if (dpPct >= 5) return 1.50;
+      return loanUsage === "first" ? 2.15 : 3.30;
+    case "cashout":
+      return loanUsage === "first" ? 2.15 : 3.30;
+    case "irrrl":
+      return 0.50;
+    case "manufactured":
+      return 1.00;
+    default:
+      return 0;
+  }
+}
+
+/* ================================================
    MAIN COMPONENT
    ================================================ */
 export default function VAEntitlementCalculator() {
@@ -87,12 +108,124 @@ export default function VAEntitlementCalculator() {
   const [entitlementUsed, setEntitlementUsed] = useState("0");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [downPayment, setDownPayment] = useState("0");
+  const [downPaymentPct, setDownPaymentPct] = useState("0");
   const [loanUsage, setLoanUsage] = useState("first");
   const [feeExempt, setFeeExempt] = useState("no");
+  const [loanPurpose, setLoanPurpose] = useState("purchase");
+  const [feeRateInput, setFeeRateInput] = useState("");
+  const [feeRateOverride, setFeeRateOverride] = useState(false);
 
   /* --- Collapsible ref state --- */
   const [showFeeRef, setShowFeeRef] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+
+  /* ================================================
+     LINKED DOWN PAYMENT LOGIC
+     ================================================ */
+  // When % changes -> recalculate $ from price
+  const handleDownPctChange = useCallback((val) => {
+    setDownPaymentPct(val);
+    const price = parseRaw(purchasePrice);
+    const pct = parseFloat(val) || 0;
+    if (price > 0) {
+      setDownPayment(formatNumberString(String(Math.round(price * pct / 100))));
+    }
+  }, [purchasePrice]);
+
+  // When $ changes -> recalculate % from price
+  const handleDownAmtChange = useCallback((val) => {
+    // Allow math operators to pass through without formatting
+    if (/[+\-*/]/.test(val.replace(/,/g, ""))) {
+      setDownPayment(val);
+    } else {
+      setDownPayment(formatNumberString(val));
+    }
+    const price = parseRaw(purchasePrice);
+    const amt = parseRaw(val);
+    if (price > 0 && amt >= 0) {
+      setDownPaymentPct(((amt / price) * 100).toFixed(2));
+    }
+  }, [purchasePrice]);
+
+  // Down payment $ blur: evaluate expression, then recalc %
+  const handleDownAmtBlur = useCallback(() => {
+    let val = downPayment;
+    if (val && /[+\-*/]/.test(val.replace(/,/g, ""))) {
+      const result = evaluateExpression(val);
+      if (!isNaN(result)) val = String(result);
+    }
+    const formatted = formatNumberString(val);
+    setDownPayment(formatted);
+    const price = parseRaw(purchasePrice);
+    const amt = parseRaw(val);
+    if (price > 0 && amt >= 0) {
+      setDownPaymentPct(((amt / price) * 100).toFixed(2));
+    }
+  }, [downPayment, purchasePrice]);
+
+  // When price changes -> recalculate $ from existing %
+  const handlePriceChange = useCallback((val) => {
+    if (/[+\-*/]/.test(val.replace(/,/g, ""))) {
+      setPurchasePrice(val);
+    } else {
+      setPurchasePrice(formatNumberString(val));
+    }
+    const price = parseRaw(val);
+    const pct = parseFloat(downPaymentPct) || 0;
+    if (price > 0) {
+      setDownPayment(formatNumberString(String(Math.round(price * pct / 100))));
+    }
+  }, [downPaymentPct]);
+
+  // Price blur: evaluate expression, recalc down $
+  const handlePriceBlur = useCallback(() => {
+    let val = purchasePrice;
+    if (val && /[+\-*/]/.test(val.replace(/,/g, ""))) {
+      const result = evaluateExpression(val);
+      if (!isNaN(result)) val = String(result);
+    }
+    const formatted = formatNumberString(val);
+    setPurchasePrice(formatted);
+    const price = parseRaw(val);
+    const pct = parseFloat(downPaymentPct) || 0;
+    if (price > 0) {
+      setDownPayment(formatNumberString(String(Math.round(price * pct / 100))));
+    }
+  }, [purchasePrice, downPaymentPct]);
+
+  /* ================================================
+     AUTO-UPDATE FUNDING FEE RATE
+     When loan purpose, usage, exempt, or DP% changes,
+     auto-update the fee rate — unless user has overridden.
+     ================================================ */
+  useEffect(() => {
+    if (!feeRateOverride) {
+      const dpPct = parseFloat(downPaymentPct) || 0;
+      const autoRate = getAutoFeeRate(loanPurpose, loanUsage, feeExempt, dpPct);
+      setFeeRateInput(autoRate.toFixed(2));
+    }
+  }, [loanPurpose, loanUsage, feeExempt, downPaymentPct, feeRateOverride]);
+
+  // Reset override flag when loan purpose or usage changes
+  const handleLoanPurposeChange = useCallback((val) => {
+    setLoanPurpose(val);
+    setFeeRateOverride(false);
+  }, []);
+
+  const handleLoanUsageChange = useCallback((val) => {
+    setLoanUsage(val);
+    setFeeRateOverride(false);
+  }, []);
+
+  const handleFeeExemptChange = useCallback((val) => {
+    setFeeExempt(val);
+    setFeeRateOverride(false);
+  }, []);
+
+  const handleFeeRateManualChange = useCallback((val) => {
+    setFeeRateInput(val);
+    setFeeRateOverride(true);
+  }, []);
 
   /* --- Calculations --- */
   const results = useMemo(() => {
@@ -100,6 +233,7 @@ export default function VAEntitlementCalculator() {
     const usedVal = parseRaw(entitlementUsed) || 0;
     const priceVal = parseRaw(purchasePrice) || 0;
     const dpVal = parseRaw(downPayment) || 0;
+    const dpPct = parseFloat(downPaymentPct) || 0;
     const isFull = entitlementType === "full";
     const isExempt = feeExempt === "yes";
 
@@ -128,19 +262,8 @@ export default function VAEntitlementCalculator() {
     /* Base loan */
     const baseLoan = Math.max(0, priceVal - dpVal);
 
-    /* Funding fee rate */
-    let feeRate = 0;
-    if (!isExempt && baseLoan > 0) {
-      const dpPct = priceVal > 0 ? (dpVal / priceVal) * 100 : 0;
-      if (dpPct >= 10) {
-        feeRate = 1.25;
-      } else if (dpPct >= 5) {
-        feeRate = 1.50;
-      } else {
-        feeRate = loanUsage === "first" ? 2.15 : 3.30;
-      }
-    }
-
+    /* Funding fee — use the rate from the input field */
+    const feeRate = isExempt ? 0 : (parseFloat(feeRateInput) || 0);
     const feeAmount = baseLoan * (feeRate / 100);
     const totalLoan = baseLoan + feeAmount;
 
@@ -159,14 +282,15 @@ export default function VAEntitlementCalculator() {
       totalLoan,
       priceVal,
       dpVal,
+      dpPct,
     };
-  }, [entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, loanUsage, feeExempt]);
+  }, [entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, feeExempt, feeRateInput]);
 
   /* --- Collect / populate form data for save/load --- */
   const collectFormData = useCallback(() => ({
     meta: { name: scenName, date: scenDate, borrower: borName },
-    calc: { entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, loanUsage, feeExempt },
-  }), [scenName, scenDate, borName, entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, loanUsage, feeExempt]);
+    calc: { entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride },
+  }), [scenName, scenDate, borName, entitlementType, countyLimit, entitlementUsed, purchasePrice, downPayment, downPaymentPct, loanUsage, feeExempt, loanPurpose, feeRateInput, feeRateOverride]);
 
   const populateForm = useCallback((data) => {
     if (!data) return;
@@ -182,8 +306,12 @@ export default function VAEntitlementCalculator() {
       if (c.entitlementUsed !== undefined) setEntitlementUsed(c.entitlementUsed);
       if (c.purchasePrice !== undefined) setPurchasePrice(c.purchasePrice);
       if (c.downPayment !== undefined) setDownPayment(c.downPayment);
+      if (c.downPaymentPct !== undefined) setDownPaymentPct(c.downPaymentPct);
       if (c.loanUsage) setLoanUsage(c.loanUsage);
       if (c.feeExempt) setFeeExempt(c.feeExempt);
+      if (c.loanPurpose) setLoanPurpose(c.loanPurpose);
+      if (c.feeRateInput !== undefined) setFeeRateInput(c.feeRateInput);
+      if (c.feeRateOverride !== undefined) setFeeRateOverride(c.feeRateOverride);
     }
   }, []);
 
@@ -305,8 +433,10 @@ export default function VAEntitlementCalculator() {
     setScenName(""); setScenDate(new Date().toISOString().split("T")[0]);
     setBorName("");
     setCountyLimit("832,750"); setEntitlementUsed("0");
-    setPurchasePrice(""); setDownPayment("0");
+    setPurchasePrice(""); setDownPayment("0"); setDownPaymentPct("0");
     setLoanUsage("first"); setFeeExempt("no");
+    setLoanPurpose("purchase");
+    setFeeRateInput(""); setFeeRateOverride(false);
     setSaveStatus({ state: "", text: "Ready" });
   }, []);
 
@@ -346,12 +476,21 @@ export default function VAEntitlementCalculator() {
     document.getElementById("vaPrintEntitlement").innerHTML = entRows;
 
     /* Loan Summary table */
-    document.getElementById("vaPrintLoan").innerHTML =
-      `<tr><td>Purchase Price</td><td>${fmt(r.priceVal)}</td></tr>` +
-      `<tr><td>Down Payment</td><td>&minus;${fmt(r.dpVal)}</td></tr>` +
-      `<tr><td>Base Loan Amount</td><td>${fmt(r.baseLoan)}</td></tr>` +
-      `<tr><td>VA Funding Fee (${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</td><td>+${fmt(r.feeAmount)}</td></tr>` +
-      `<tr class="print-total-row"><td>Total Loan Amount</td><td>${fmt(r.totalLoan)}</td></tr>`;
+    const purposeLabels = { purchase: "Purchase / Construction", cashout: "Cash-Out Refinance", irrrl: "IRRRL (Streamline Refi)", manufactured: "Manufactured Home" };
+    let loanRows = `<tr><td>Loan Purpose</td><td>${purposeLabels[loanPurpose] || "Purchase"}</td></tr>`;
+    if (r.priceVal > 0) {
+      loanRows +=
+        `<tr><td>Purchase Price</td><td>${fmt(r.priceVal)}</td></tr>` +
+        `<tr><td>Down Payment (${r.dpPct.toFixed(1)}%)</td><td>&minus;${fmt(r.dpVal)}</td></tr>` +
+        `<tr><td>Base Loan Amount</td><td>${fmt(r.baseLoan)}</td></tr>` +
+        `<tr><td>VA Funding Fee (${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</td><td>+${fmt(r.feeAmount)}</td></tr>` +
+        `<tr class="print-total-row"><td>Total Loan Amount</td><td>${fmt(r.totalLoan)}</td></tr>`;
+    } else {
+      loanRows +=
+        `<tr><td>Funding Fee Rate</td><td>${r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"}</td></tr>` +
+        `<tr><td colspan="2" style="color:#94A3B8;font-style:italic">Enter a purchase price to see loan summary</td></tr>`;
+    }
+    document.getElementById("vaPrintLoan").innerHTML = loanRows;
 
     /* Results bar */
     const entLabel = r.isFull ? "Full Entitlement" : fmt(r.remaining);
@@ -365,7 +504,7 @@ export default function VAEntitlementCalculator() {
     document.getElementById("vaPrintDate").textContent = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
     setTimeout(() => window.print(), 150);
-  }, [scenName, scenDate, borName, results]);
+  }, [scenName, scenDate, borName, results, loanPurpose]);
 
   /* --- Calc-field handler (expression eval on blur OR Enter) --- */
   const handleCalcFieldBlur = useCallback((value, setter) => {
@@ -404,6 +543,9 @@ export default function VAEntitlementCalculator() {
   const dotClass = saveStatus.state ? `save-status-dot ${saveStatus.state}` : "save-status-dot";
 
   const r = results;
+
+  /* --- Loan purpose labels for reference table highlighting --- */
+  const purposeLabels = { purchase: "Purchase / Construction", cashout: "Cash-Out Refinance", irrrl: "IRRRL (Streamline Refi)", manufactured: "Manufactured Home" };
 
   return (
     <>
@@ -445,6 +587,7 @@ export default function VAEntitlementCalculator() {
         .floating-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .card-title { font-size: 14px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #E2E8F0; display: flex; align-items: center; gap: 8px; }
         .card-title i { color: #2563EB; font-size: 14px; }
+        .card-title .addon-badge { font-size: 10px; font-weight: 700; color: #64748B; background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 4px; padding: 2px 6px; text-transform: uppercase; letter-spacing: 0.06em; margin-left: auto; }
         .input-group { margin-bottom: 16px; }
         .input-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
         .calc-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-family: 'Host Grotesk', system-ui, sans-serif; color: #0f172a; background: #FFFFFF; transition: border-color 0.2s, box-shadow 0.2s; }
@@ -455,6 +598,13 @@ export default function VAEntitlementCalculator() {
         .grid-2-compact { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .grid-3-compact { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
         .calc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+        /* Linked input row for DP % / $ */
+        .input-with-suffix { position: relative; display: flex; align-items: center; }
+        .input-with-suffix input { padding-right: 36px; }
+        .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 13px; font-weight: 600; pointer-events: none; }
+        .linked-input-row { display: grid; grid-template-columns: 100px 1fr; gap: 8px; align-items: start; }
+        .linked-input-row .input-with-suffix input { text-align: center; }
 
         /* Entitlement Toggle */
         .entitlement-toggle { display: flex; background: #F1F5F9; border-radius: 10px; padding: 4px; gap: 4px; }
@@ -469,6 +619,8 @@ export default function VAEntitlementCalculator() {
         .info-callout.success i { color: #16A34A; }
         .info-callout.warning { background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; }
         .info-callout.warning i { color: #D97706; }
+        .info-callout.info { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+        .info-callout.info i { color: #2563EB; }
 
         /* Preset Pills */
         .preset-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -491,6 +643,12 @@ export default function VAEntitlementCalculator() {
         /* Computed Display */
         .computed-display { background: #F1F5F9; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; font-size: 15px; font-weight: 600; color: #0F172A; min-height: 42px; display: flex; align-items: center; }
         .computed-display.highlight { background: #EFF6FF; border-color: #93C5FD; color: #1E40AF; }
+
+        /* Fee rate input with auto-calc hint */
+        .fee-rate-wrapper { position: relative; }
+        .fee-rate-hint { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+        .fee-rate-hint .auto-label { color: #2563EB; font-weight: 600; cursor: pointer; }
+        .fee-rate-hint .auto-label:hover { text-decoration: underline; }
 
         /* Dark Results Card */
         .result-card-main { background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%); border-radius: 16px; padding: 32px; box-shadow: 0 8px 32px rgba(15,23,42,0.2); color: white; position: sticky; top: 20px; }
@@ -579,6 +737,7 @@ export default function VAEntitlementCalculator() {
           .save-status { width: 100%; justify-content: center; }
           .floating-card { padding: 16px 14px; }
           .stat-grid { grid-template-columns: 1fr; }
+          .linked-input-row { grid-template-columns: 90px 1fr; }
         }
 
         /* Print styles */
@@ -786,7 +945,7 @@ export default function VAEntitlementCalculator() {
           {/* LEFT COLUMN: All Inputs */}
           <div>
 
-            {/* CARD 2: ENTITLEMENT STATUS */}
+            {/* CARD 2: ENTITLEMENT STATUS — the MAIN feature */}
             <div className="floating-card">
               <h3 className="card-title"><i className="fa-solid fa-flag-usa"></i> Entitlement Status</h3>
 
@@ -885,68 +1044,69 @@ export default function VAEntitlementCalculator() {
               )}
             </div>
 
-            {/* CARD 3: PURCHASE & LOAN DETAILS */}
-            <div className="floating-card">
-              <h3 className="card-title"><i className="fa-solid fa-house-chimney"></i> Purchase &amp; Loan Details</h3>
-              <div className="grid-2-compact">
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label>Target Purchase Price ($) <span className="req">*</span></label>
-                  <input
-                    type="text"
-                    className={`calc-input${emptyClass(purchasePrice)}`}
-                    value={purchasePrice}
-                    onChange={(e) => handleCurrencyChange(e.target.value, setPurchasePrice)}
-                    onBlur={() => handleCalcFieldBlur(purchasePrice, setPurchasePrice)}
-                    onKeyDown={(e) => handleCalcFieldKeyDown(e, purchasePrice, setPurchasePrice)}
-                    placeholder="e.g. 500,000"
-                  />
-                </div>
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label>Down Payment ($)</label>
-                  <input
-                    type="text"
-                    className="calc-input"
-                    value={downPayment}
-                    onChange={(e) => handleCurrencyChange(e.target.value, setDownPayment)}
-                    onBlur={() => handleCalcFieldBlur(downPayment, setDownPayment)}
-                    onKeyDown={(e) => handleCalcFieldKeyDown(e, downPayment, setDownPayment)}
-                    placeholder="e.g. 0"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4: VA FUNDING FEE */}
+            {/* CARD 3: VA FUNDING FEE — moved up, core to VA loans */}
             <div className="floating-card">
               <h3 className="card-title"><i className="fa-solid fa-percent"></i> VA Funding Fee</h3>
+
               <div className="grid-2-compact">
                 <div className="input-group">
+                  <label>Loan Purpose</label>
+                  <select className="calc-input" value={loanPurpose} onChange={(e) => handleLoanPurposeChange(e.target.value)}>
+                    <option value="purchase">Purchase / Construction</option>
+                    <option value="cashout">Cash-Out Refinance</option>
+                    <option value="irrrl">IRRRL (Streamline Refi)</option>
+                    <option value="manufactured">Manufactured Home</option>
+                  </select>
+                </div>
+                <div className="input-group">
                   <label>VA Loan Usage</label>
-                  <select className="calc-input" value={loanUsage} onChange={(e) => setLoanUsage(e.target.value)}>
+                  <select className="calc-input" value={loanUsage} onChange={(e) => handleLoanUsageChange(e.target.value)}>
                     <option value="first">First-Time Use</option>
                     <option value="subsequent">Subsequent Use</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid-2-compact">
                 <div className="input-group">
                   <label>Funding Fee Exempt?</label>
-                  <select className="calc-input" value={feeExempt} onChange={(e) => setFeeExempt(e.target.value)}>
+                  <select className="calc-input" value={feeExempt} onChange={(e) => handleFeeExemptChange(e.target.value)}>
                     <option value="no">No</option>
                     <option value="yes">Yes</option>
                   </select>
                 </div>
-              </div>
-              <div className="grid-2-compact">
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label>Funding Fee Rate</label>
-                  <div className={`computed-display${r.isExempt ? "" : " highlight"}`}>
-                    {r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"}
+                <div className="input-group">
+                  <label>Funding Fee Rate (%)</label>
+                  <div className="fee-rate-wrapper">
+                    <div className="input-with-suffix">
+                      <input
+                        type="text"
+                        className={`calc-input${r.isExempt ? "" : emptyClass(feeRateInput)}`}
+                        value={r.isExempt ? "0.00" : feeRateInput}
+                        onChange={(e) => handleFeeRateManualChange(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }}
+                        placeholder="e.g. 2.15"
+                        disabled={r.isExempt}
+                        style={{ paddingRight: 28 }}
+                      />
+                      <span className="input-suffix">%</span>
+                    </div>
+                    {!r.isExempt && feeRateOverride && (
+                      <div className="fee-rate-hint">
+                        Auto: {getAutoFeeRate(loanPurpose, loanUsage, feeExempt, parseFloat(downPaymentPct) || 0).toFixed(2)}% &mdash; <span className="auto-label" onClick={() => setFeeRateOverride(false)}>Reset to auto</span>
+                      </div>
+                    )}
+                    {r.isExempt && (
+                      <div className="fee-rate-hint">Fee exempt &mdash; rate is 0%</div>
+                    )}
                   </div>
                 </div>
-                <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label>Funding Fee Amount</label>
-                  <div className="computed-display">
-                    {r.isExempt ? "$0" : fmt(r.feeAmount)}
-                  </div>
+              </div>
+
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label>Funding Fee Amount</label>
+                <div className="computed-display">
+                  {r.isExempt ? "$0" : fmt(r.feeAmount)}
                 </div>
               </div>
 
@@ -968,14 +1128,15 @@ export default function VAEntitlementCalculator() {
                       </thead>
                       <tbody>
                         {(() => {
-                          const dpPct = r.priceVal > 0 ? (r.dpVal / r.priceVal) * 100 : 0;
+                          const dpPct = r.dpPct;
+                          const isExempt = r.isExempt;
                           const rows = [
-                            { label: "Purchase < 5% down", first: "2.15%", sub: "3.30%", match: !r.isExempt && dpPct < 5 },
-                            { label: "Purchase 5%+ down", first: "1.50%", sub: "1.50%", match: !r.isExempt && dpPct >= 5 && dpPct < 10 },
-                            { label: "Purchase 10%+ down", first: "1.25%", sub: "1.25%", match: !r.isExempt && dpPct >= 10 },
-                            { label: "Cash-Out Refinance", first: "2.15%", sub: "3.30%", match: false },
-                            { label: "IRRRL (Streamline Refi)", first: "0.50%", sub: "0.50%", match: false },
-                            { label: "Manufactured Home", first: "1.00%", sub: "1.00%", match: false },
+                            { label: "Purchase < 5% down", first: "2.15%", sub: "3.30%", match: !isExempt && loanPurpose === "purchase" && dpPct < 5 },
+                            { label: "Purchase 5%+ down", first: "1.50%", sub: "1.50%", match: !isExempt && loanPurpose === "purchase" && dpPct >= 5 && dpPct < 10 },
+                            { label: "Purchase 10%+ down", first: "1.25%", sub: "1.25%", match: !isExempt && loanPurpose === "purchase" && dpPct >= 10 },
+                            { label: "Cash-Out Refinance", first: "2.15%", sub: "3.30%", match: !isExempt && loanPurpose === "cashout" },
+                            { label: "IRRRL (Streamline Refi)", first: "0.50%", sub: "0.50%", match: !isExempt && loanPurpose === "irrrl" },
+                            { label: "Manufactured Home", first: "1.00%", sub: "1.00%", match: !isExempt && loanPurpose === "manufactured" },
                           ];
                           return rows.map((row, i) => (
                             <tr key={i} className={row.match ? "highlight-row" : ""}>
@@ -999,6 +1160,73 @@ export default function VAEntitlementCalculator() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* CARD 4: PURCHASE SCENARIO — optional add-on */}
+            <div className="floating-card">
+              <h3 className="card-title">
+                <i className="fa-solid fa-house-chimney"></i> Purchase Scenario
+                <span className="addon-badge">Optional</span>
+              </h3>
+
+              <div className="info-callout info" style={{ marginTop: 0, marginBottom: 16 }}>
+                <i className="fa-solid fa-circle-info"></i>
+                <div>Enter a purchase price to see the full loan breakdown with funding fee. Leave blank to just calculate entitlement.</div>
+              </div>
+
+              <div className="input-group">
+                <label>Purchase Price ($)</label>
+                <input
+                  type="text"
+                  className={`calc-input${emptyClass(purchasePrice)}`}
+                  value={purchasePrice}
+                  onChange={(e) => handlePriceChange(e.target.value)}
+                  onBlur={handlePriceBlur}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handlePriceBlur(); e.target.blur(); } }}
+                  placeholder="e.g. 500,000"
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Down Payment</label>
+                <div className="linked-input-row">
+                  <div className="input-with-suffix">
+                    <input
+                      type="text"
+                      className={`calc-input${emptyClass(downPaymentPct)}`}
+                      value={downPaymentPct}
+                      onChange={(e) => handleDownPctChange(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } }}
+                      placeholder="0"
+                      style={{ textAlign: "center", paddingRight: 28 }}
+                    />
+                    <span className="input-suffix">%</span>
+                  </div>
+                  <input
+                    type="text"
+                    className={`calc-input${emptyClass(downPayment)}`}
+                    value={downPayment}
+                    onChange={(e) => handleDownAmtChange(e.target.value)}
+                    onBlur={handleDownAmtBlur}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleDownAmtBlur(); e.target.blur(); } }}
+                    placeholder="e.g. 0"
+                  />
+                </div>
+              </div>
+
+              {/* Computed loan summary (only when purchase price is entered) */}
+              {r.priceVal > 0 && (
+                <div className="grid-2-compact" style={{ marginTop: 4 }}>
+                  <div className="input-group" style={{ marginBottom: 0 }}>
+                    <label>Base Loan Amount</label>
+                    <div className="computed-display">{fmt(r.baseLoan)}</div>
+                  </div>
+                  <div className="input-group" style={{ marginBottom: 0 }}>
+                    <label>Total Loan (w/ Funding Fee)</label>
+                    <div className="computed-display highlight">{fmt(r.totalLoan)}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* CARD 5: HOW VA ENTITLEMENT WORKS */}
@@ -1038,7 +1266,7 @@ export default function VAEntitlementCalculator() {
 
             {/* DARK RESULTS CARD */}
             <div className="result-card-main">
-              {/* Hero value */}
+              {/* Hero value — always show entitlement prominently */}
               <span className="res-label-main">Max $0-Down Purchase Price</span>
               {r.isFull ? (
                 <div className="res-val-main no-limit">No Limit</div>
@@ -1069,14 +1297,14 @@ export default function VAEntitlementCalculator() {
                 <div className="stat-card">
                   <div className="stat-card-label">Funding Fee</div>
                   <div className={`stat-card-value${r.isExempt ? " green" : ""}`}>
-                    {r.isExempt ? "Exempt" : fmt(r.feeAmount)}
+                    {r.isExempt ? "Exempt" : r.priceVal > 0 ? fmt(r.feeAmount) : r.feeRate.toFixed(2) + "%"}
                   </div>
                 </div>
               </div>
 
               <hr className="divider" />
 
-              {/* Entitlement Breakdown */}
+              {/* Entitlement Breakdown — always shown prominently */}
               <div className="breakdown-section">
                 <div className="breakdown-title">Entitlement Breakdown</div>
                 {r.isFull ? (
@@ -1120,7 +1348,7 @@ export default function VAEntitlementCalculator() {
                 )}
               </div>
 
-              {/* Down Payment Alert */}
+              {/* Down Payment Alert — only when purchase price entered */}
               {r.priceVal > 0 && (
                 <>
                   {!r.isFull && r.priceVal > r.maxZeroDown && r.dpVal < r.dpRequired ? (
@@ -1138,32 +1366,35 @@ export default function VAEntitlementCalculator() {
                 </>
               )}
 
-              <hr className="divider" />
-
-              {/* Loan Summary */}
-              <div className="breakdown-section">
-                <div className="breakdown-title">Loan Summary</div>
-                <div className="breakdown-row">
-                  <span>Purchase Price</span>
-                  <span>{fmt(r.priceVal)}</span>
-                </div>
-                <div className="breakdown-row negative">
-                  <span>Down Payment</span>
-                  <span>&minus;{fmt(r.dpVal)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span>Base Loan Amount</span>
-                  <span>{fmt(r.baseLoan)}</span>
-                </div>
-                <div className="breakdown-row">
-                  <span>VA Funding Fee ({r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</span>
-                  <span>+{fmt(r.feeAmount)}</span>
-                </div>
-                <div className="breakdown-row total">
-                  <span>Total Loan Amount</span>
-                  <span>{fmt(r.totalLoan)}</span>
-                </div>
-              </div>
+              {/* Loan Summary — only shown when purchase price is entered */}
+              {r.priceVal > 0 && (
+                <>
+                  <hr className="divider" />
+                  <div className="breakdown-section">
+                    <div className="breakdown-title">Loan Summary</div>
+                    <div className="breakdown-row">
+                      <span>Purchase Price</span>
+                      <span>{fmt(r.priceVal)}</span>
+                    </div>
+                    <div className="breakdown-row negative">
+                      <span>Down Payment ({r.dpPct.toFixed(1)}%)</span>
+                      <span>&minus;{fmt(r.dpVal)}</span>
+                    </div>
+                    <div className="breakdown-row">
+                      <span>Base Loan Amount</span>
+                      <span>{fmt(r.baseLoan)}</span>
+                    </div>
+                    <div className="breakdown-row">
+                      <span>VA Funding Fee ({r.isExempt ? "Exempt" : r.feeRate.toFixed(2) + "%"})</span>
+                      <span>+{fmt(r.feeAmount)}</span>
+                    </div>
+                    <div className="breakdown-row total">
+                      <span>Total Loan Amount</span>
+                      <span>{fmt(r.totalLoan)}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
           </div>
