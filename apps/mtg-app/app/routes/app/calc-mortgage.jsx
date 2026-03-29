@@ -1,689 +1,917 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router";
+import { getUserEmail, getUserPlan } from "../../lib/auth";
 
 export function meta() {
   return [{ title: "Mortgage Calculator — MtgBroker" }];
 }
 
-/* ── Formatting helpers ─────────────────────────────── */
+/* ================================================
+   CONFIGURATION
+   ================================================ */
+const API_BASE = "https://mtg-broker-api.rich-e00.workers.dev";
+const CALC_TYPE = "Mortgage Calculator";
 
-function fmtCurrency(n) {
-  if (n == null || isNaN(n)) return "$0";
-  return "$" + Math.round(n).toLocaleString("en-US");
+/* ================================================
+   FORMATTING HELPERS
+   ================================================ */
+const fmt = (n) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+const fmtDec = (n) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+function parseRaw(val) {
+  if (!val) return 0;
+  return parseFloat(String(val).replace(/,/g, "")) || 0;
 }
 
-function fmtCurrencyDecimal(n) {
-  if (n == null || isNaN(n)) return "$0.00";
-  return "$" + Number(n).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+/** Allows math like 80000/12 or 4500+600 in numeric fields */
+function evaluateExpression(value) {
+  if (!value || typeof value !== "string") return NaN;
+  const cleaned = value.replace(/,/g, "").replace(/\$/g, "").trim();
+  if (!cleaned) return NaN;
+  if (!/^[\d.+\-*/() ]+$/.test(cleaned)) return NaN;
+  try {
+    const result = Function('"use strict"; return (' + cleaned + ")")();
+    if (typeof result === "number" && isFinite(result) && result >= 0) {
+      return Math.round(result * 100) / 100;
+    }
+  } catch {}
+  return NaN;
 }
 
-function fmtPercent(n, decimals = 2) {
-  if (n == null || isNaN(n)) return "0%";
-  return Number(n).toFixed(decimals) + "%";
+/** Format a number string with commas (for currency display in inputs) */
+function formatNumberString(val) {
+  if (!val) return "";
+  const clean = String(val).replace(/[^\d.]/g, "");
+  if (!clean) return "";
+  const parts = clean.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.join(".");
 }
 
-function parseNum(str) {
-  if (!str && str !== 0) return 0;
-  var cleaned = String(str).replace(/[^0-9.\-]/g, "");
-  var val = parseFloat(cleaned);
-  return isNaN(val) ? 0 : val;
+function escapeHtml(s) {
+  return s ? s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;") : "";
 }
 
-/* ── Donut Chart Component ──────────────────────────── */
+/** Empty-field yellow highlight class helper */
+const emptyClass = (val) => (!String(val).trim() ? " field-empty" : "");
 
-function DonutChart({ segments }) {
-  // segments: [{ label, value, color }]
-  var total = segments.reduce(function (s, seg) { return s + seg.value; }, 0);
-  if (total === 0) return null;
-
-  var radius = 70;
-  var strokeWidth = 28;
-  var circumference = 2 * Math.PI * radius;
-  var offset = 0;
-
-  return (
-    <svg viewBox="0 0 200 200" className="w-48 h-48 mx-auto">
-      {segments.map(function (seg, i) {
-        if (seg.value <= 0) return null;
-        var pct = seg.value / total;
-        var dashLen = pct * circumference;
-        var dashOffset = -offset * circumference;
-        offset += pct;
-        return (
-          <circle
-            key={i}
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth={strokeWidth}
-            strokeDasharray={dashLen + " " + (circumference - dashLen)}
-            strokeDashoffset={dashOffset}
-            transform="rotate(-90 100 100)"
-            style={{ transition: "stroke-dasharray 0.3s ease" }}
-          />
-        );
-      })}
-      {/* Center text */}
-      <text x="100" y="94" textAnchor="middle" className="text-sm" fill="#64748b" fontSize="12">
-        Monthly
-      </text>
-      <text x="100" y="114" textAnchor="middle" className="font-bold" fill="#0f172a" fontSize="16">
-        {fmtCurrencyDecimal(total)}
-      </text>
-    </svg>
-  );
-}
-
-/* ── Legend Item ─────────────────────────────────────── */
-
-function LegendItem({ color, label, value, total }) {
-  var pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
-  return (
-    <div className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-      <div className="flex items-center gap-2">
-        <span className="inline-block w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-        <span className="text-sm text-gray-700">{label}</span>
-      </div>
-      <div className="text-right">
-        <span className="text-sm font-semibold text-gray-900">{fmtCurrencyDecimal(value)}</span>
-        <span className="text-xs text-gray-500 ml-1">({pct}%)</span>
-      </div>
-    </div>
-  );
-}
-
-/* ── Input Components ───────────────────────────────── */
-
-function CurrencyInput({ label, value, onChange, id, helpText }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-        <input
-          id={id}
-          type="text"
-          inputMode="decimal"
-          value={value ? Number(value).toLocaleString("en-US") : ""}
-          onChange={function (e) {
-            onChange(parseNum(e.target.value));
-          }}
-          className="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-        />
-      </div>
-      {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
-    </div>
-  );
-}
-
-function PercentInput({ label, value, onChange, id, step, helpText }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <div className="relative">
-        <input
-          id={id}
-          type="number"
-          step={step || "0.01"}
-          value={value}
-          onChange={function (e) { onChange(parseFloat(e.target.value) || 0); }}
-          className="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
-      </div>
-      {helpText && <p className="text-xs text-gray-500 mt-1">{helpText}</p>}
-    </div>
-  );
-}
-
-/* ── Main Component ─────────────────────────────────── */
-
+/* ================================================
+   MAIN COMPONENT
+   ================================================ */
 export default function MortgageCalculator() {
-  // Form state
-  var _homePrice = useState(400000);
-  var homePrice = _homePrice[0];
-  var setHomePrice = _homePrice[1];
+  /* --- Auth --- */
+  const [userEmail, setUserEmail] = useState("");
+  const [userPlanName, setUserPlanName] = useState("LITE");
+  useEffect(() => {
+    setUserEmail(getUserEmail() || "");
+    setUserPlanName(getUserPlan() || "LITE");
+  }, []);
+  const saveLimit = useMemo(() => ({ LITE: 0, PLUS: 10, PRO: Infinity })[userPlanName] || 0, [userPlanName]);
 
-  var _downPaymentDollar = useState(80000);
-  var downPaymentDollar = _downPaymentDollar[0];
-  var setDownPaymentDollar = _downPaymentDollar[1];
+  /* --- Save/load state --- */
+  const [saveStatus, setSaveStatus] = useState({ state: "", text: "Ready" });
+  const [currentScenarioId, setCurrentScenarioId] = useState(null);
+  const [currentSaveCount, setCurrentSaveCount] = useState(0);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [scenarios, setScenarios] = useState([]);
+  const [loadingScenarios, setLoadingScenarios] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameTargetId, setRenameTargetId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
-  var _downPaymentMode = useState("dollar"); // "dollar" or "percent"
-  var downPaymentMode = _downPaymentMode[0];
-  var setDownPaymentMode = _downPaymentMode[1];
+  /* --- Form state: Scenario Details --- */
+  const [scenName, setScenName] = useState("");
+  const [scenDate, setScenDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [borName, setBorName] = useState("");
+  const [propAddress, setPropAddress] = useState("");
 
-  var _downPaymentPercent = useState(20);
-  var downPaymentPercent = _downPaymentPercent[0];
-  var setDownPaymentPercent = _downPaymentPercent[1];
+  /* --- Form state: Loan Information --- */
+  const [loanAmount, setLoanAmount] = useState("350,000");
+  const [intRate, setIntRate] = useState("6.5");
+  const [loanTerm, setLoanTerm] = useState("30");
+  const [annualIns, setAnnualIns] = useState("1,200");
+  const [annualTax, setAnnualTax] = useState("4,500");
+  const [annualSuppIns, setAnnualSuppIns] = useState("0");
+  const [annualHOA, setAnnualHOA] = useState("0");
+  const [pmiRate, setPmiRate] = useState("0.0");
 
-  var _interestRate = useState(6.75);
-  var interestRate = _interestRate[0];
-  var setInterestRate = _interestRate[1];
+  /* ==============================================
+     CALCULATIONS
+     ============================================== */
+  const results = useMemo(() => {
+    const amount = parseRaw(loanAmount);
+    const rate = parseFloat(intRate) || 0;
+    const years = parseInt(loanTerm) || 30;
+    const ins = parseRaw(annualIns);
+    const tax = parseRaw(annualTax);
+    const suppIns = parseRaw(annualSuppIns);
+    const hoa = parseRaw(annualHOA);
+    const pmi = parseFloat(pmiRate) || 0;
 
-  var _loanTerm = useState(30);
-  var loanTerm = _loanTerm[0];
-  var setLoanTerm = _loanTerm[1];
-
-  var _taxMode = useState("rate"); // "rate" or "dollar"
-  var taxMode = _taxMode[0];
-  var setTaxMode = _taxMode[1];
-
-  var _taxRate = useState(1.25);
-  var taxRate = _taxRate[0];
-  var setTaxRate = _taxRate[1];
-
-  var _taxDollar = useState(5000);
-  var taxDollar = _taxDollar[0];
-  var setTaxDollar = _taxDollar[1];
-
-  var _insuranceAnnual = useState(1800);
-  var insuranceAnnual = _insuranceAnnual[0];
-  var setInsuranceAnnual = _insuranceAnnual[1];
-
-  var _hoaMonthly = useState(0);
-  var hoaMonthly = _hoaMonthly[0];
-  var setHoaMonthly = _hoaMonthly[1];
-
-  var _pmiRate = useState(0.5);
-  var pmiRate = _pmiRate[0];
-  var setPmiRate = _pmiRate[1];
-
-  /* ── Derived calculations ─────────────────────────── */
-
-  var calc = useMemo(function () {
-    // Down payment
-    var dp = downPaymentMode === "dollar"
-      ? downPaymentDollar
-      : (homePrice * downPaymentPercent) / 100;
-    var dpPct = homePrice > 0 ? (dp / homePrice) * 100 : 0;
-
-    // Loan amount
-    var loanAmount = Math.max(homePrice - dp, 0);
-
-    // LTV
-    var ltv = homePrice > 0 ? (loanAmount / homePrice) * 100 : 0;
-
-    // Monthly P&I
-    var r = interestRate / 100 / 12;
-    var n = loanTerm * 12;
-    var monthlyPI = 0;
-    if (r > 0 && n > 0 && loanAmount > 0) {
-      monthlyPI = loanAmount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    } else if (n > 0 && loanAmount > 0) {
-      // 0% interest — just divide evenly
-      monthlyPI = loanAmount / n;
+    // P&I calculation
+    let pi = 0;
+    const n = years * 12;
+    if (amount > 0 && rate > 0 && n > 0) {
+      const r = rate / 100 / 12;
+      pi = amount * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    } else if (amount > 0 && rate === 0 && n > 0) {
+      pi = amount / n;
     }
 
-    // Monthly tax
-    var monthlyTax = taxMode === "rate"
-      ? (homePrice * (taxRate / 100)) / 12
-      : taxDollar / 12;
+    const monthlyIns = ins / 12;
+    const monthlyTax = tax / 12;
+    const monthlySuppIns = suppIns / 12;
+    const monthlyHOA = hoa / 12;
+    const monthlyPMI = (amount * pmi / 100) / 12;
 
-    // Monthly insurance (listed BEFORE tax per project rules)
-    var monthlyInsurance = insuranceAnnual / 12;
+    const total = pi + monthlyIns + monthlyTax + monthlySuppIns + monthlyHOA + monthlyPMI;
 
-    // Monthly PMI (only if LTV > 80%)
-    var monthlyPMI = ltv > 80 ? (loanAmount * (pmiRate / 100)) / 12 : 0;
+    return { amount, rate, years, pi, monthlyIns, monthlyTax, monthlySuppIns, monthlyHOA, monthlyPMI, total };
+  }, [loanAmount, intRate, loanTerm, annualIns, annualTax, annualSuppIns, annualHOA, pmiRate]);
 
-    // Total monthly
-    var totalMonthly = monthlyPI + monthlyInsurance + monthlyTax + hoaMonthly + monthlyPMI;
-
-    // Amortization summary
-    var totalPIPayments = monthlyPI * n;
-    var totalInterest = totalPIPayments - loanAmount;
-    var totalCost = totalMonthly * n;
-
-    return {
-      dp: dp,
-      dpPct: dpPct,
-      loanAmount: loanAmount,
-      ltv: ltv,
-      monthlyPI: monthlyPI,
-      monthlyTax: monthlyTax,
-      monthlyInsurance: monthlyInsurance,
-      monthlyPMI: monthlyPMI,
-      hoaMonthly: hoaMonthly,
-      totalMonthly: totalMonthly,
-      totalInterest: totalInterest,
-      totalCost: totalCost,
-      totalPIPayments: totalPIPayments,
-      n: n,
-    };
-  }, [homePrice, downPaymentDollar, downPaymentPercent, downPaymentMode, interestRate, loanTerm, taxMode, taxRate, taxDollar, insuranceAnnual, hoaMonthly, pmiRate]);
-
-  /* ── Chart segments — Insurance before Tax ────────── */
-
-  var chartColors = {
-    pi: "#2563EB",       // blue
-    insurance: "#F59E0B", // amber
-    tax: "#10B981",       // green
-    hoa: "#8B5CF6",       // purple
-    pmi: "#EF4444",       // red
-  };
-
-  var segments = [
-    { label: "Principal & Interest", value: calc.monthlyPI, color: chartColors.pi },
-    { label: "Insurance", value: calc.monthlyInsurance, color: chartColors.insurance },
-    { label: "Property Tax", value: calc.monthlyTax, color: chartColors.tax },
-  ];
-  if (calc.hoaMonthly > 0) {
-    segments.push({ label: "HOA", value: calc.hoaMonthly, color: chartColors.hoa });
-  }
-  if (calc.monthlyPMI > 0) {
-    segments.push({ label: "PMI", value: calc.monthlyPMI, color: chartColors.pmi });
-  }
-
-  /* ── Handlers for down payment toggle ─────────────── */
-
-  function handleDownPaymentDollar(val) {
-    setDownPaymentDollar(val);
-    if (homePrice > 0) {
-      setDownPaymentPercent(Math.round((val / homePrice) * 10000) / 100);
+  /* ==============================================
+     FIELD HANDLERS (expression eval, formatting)
+     ============================================== */
+  // Currency field blur: evaluate expression, then format with commas
+  const handleCurrencyBlur = useCallback((value, setter) => {
+    if (value && /[+\-*/]/.test(value.replace(/,/g, ""))) {
+      const result = evaluateExpression(value);
+      if (!isNaN(result)) { setter(formatNumberString(String(result))); return; }
     }
-  }
+    setter(formatNumberString(value));
+  }, []);
 
-  function handleDownPaymentPercent(val) {
-    setDownPaymentPercent(val);
-    setDownPaymentDollar(Math.round((homePrice * val) / 100));
-  }
-
-  function handleHomePriceChange(val) {
-    setHomePrice(val);
-    // Keep percent stable, recalculate dollar
-    if (downPaymentMode === "percent") {
-      setDownPaymentDollar(Math.round((val * downPaymentPercent) / 100));
+  // Currency input: live comma formatting (skip when math operators present)
+  const handleCurrencyInput = useCallback((val, setter) => {
+    if (/[+\-*/]/.test(val.replace(/,/g, ""))) {
+      setter(val);
     } else {
-      // Keep dollar stable, recalculate percent
-      if (val > 0) {
-        setDownPaymentPercent(Math.round((downPaymentDollar / val) * 10000) / 100);
-      }
+      setter(formatNumberString(val));
     }
-    // Also recalculate tax dollar if in rate mode
-    if (taxMode === "rate") {
-      setTaxDollar(Math.round(val * (taxRate / 100)));
-    }
-  }
+  }, []);
 
-  /* ── Render ───────────────────────────────────────── */
+  // Enter key handler for calc fields
+  const handleCalcFieldKeyDown = useCallback((e, value, setter, type) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (type === "currency") {
+        handleCurrencyBlur(value, setter);
+      } else if (type === "rate") {
+        // evaluate expression for rate fields
+        if (value && /[+\-*/]/.test(String(value).replace(/,/g, ""))) {
+          const result = evaluateExpression(String(value));
+          if (!isNaN(result)) { setter(String(result)); e.target.blur(); return; }
+        }
+        e.target.blur();
+        return;
+      }
+      e.target.blur();
+    }
+  }, [handleCurrencyBlur]);
+
+  /* ==============================================
+     SAVE / LOAD / DELETE / RENAME / CLEAR / PRINT
+     ============================================== */
+  const collectFormData = useCallback(() => ({
+    meta: { name: scenName, date: scenDate, borrower: borName, address: propAddress },
+    calc: { amount: loanAmount, rate: intRate, term: loanTerm, ins: annualIns, tax: annualTax, suppIns: annualSuppIns, hoa: annualHOA, pmi: pmiRate },
+  }), [scenName, scenDate, borName, propAddress, loanAmount, intRate, loanTerm, annualIns, annualTax, annualSuppIns, annualHOA, pmiRate]);
+
+  const populateForm = useCallback((data) => {
+    if (!data) return;
+    if (data.meta) {
+      if (data.meta.name) setScenName(data.meta.name);
+      if (data.meta.date) setScenDate(data.meta.date);
+      if (data.meta.borrower) setBorName(data.meta.borrower);
+      if (data.meta.address) setPropAddress(data.meta.address);
+    }
+    if (data.calc) {
+      const c = data.calc;
+      if (c.amount !== undefined) setLoanAmount(c.amount);
+      if (c.rate !== undefined) setIntRate(c.rate);
+      if (c.term !== undefined) setLoanTerm(c.term);
+      if (c.ins !== undefined) setAnnualIns(c.ins);
+      if (c.tax !== undefined) setAnnualTax(c.tax);
+      if (c.suppIns !== undefined) setAnnualSuppIns(c.suppIns);
+      if (c.hoa !== undefined) setAnnualHOA(c.hoa);
+      if (c.pmi !== undefined) setPmiRate(c.pmi);
+    }
+  }, []);
+
+  /* --- Save --- */
+  const saveScenario = useCallback(async () => {
+    if (!scenName.trim()) { alert("Please enter a Scenario Name."); return; }
+    if (!userEmail) { alert("Please log in to save scenarios."); return; }
+    if (!currentScenarioId && saveLimit !== Infinity && currentSaveCount >= saveLimit) {
+      alert(saveLimit === 0 ? "Saving requires PLUS or PRO plan. Upgrade to start saving!" : `You've reached your save limit (${saveLimit} scenarios). Upgrade to PRO for unlimited saves.`);
+      return;
+    }
+    setSaveStatus({ state: "saving", text: "Saving..." });
+    try {
+      const url = currentScenarioId ? `${API_BASE}/api/calculator-scenarios/${currentScenarioId}` : `${API_BASE}/api/calculator-scenarios`;
+      const method = currentScenarioId ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method, headers: { Authorization: "Bearer " + userEmail, "Content-Type": "application/json" },
+        body: JSON.stringify({ calculatorType: CALC_TYPE, scenarioName: scenName.trim(), scenarioData: collectFormData() }),
+      });
+      const result = await response.json();
+      if (response.ok && result.scenario) {
+        setCurrentScenarioId(result.scenario.id);
+        if (method === "POST") setCurrentSaveCount((c) => c + 1);
+        setSaveStatus({ state: "saved", text: "Saved" });
+      } else { setSaveStatus({ state: "error", text: result.error || "Save failed" }); }
+    } catch { setSaveStatus({ state: "error", text: "Connection error" }); }
+  }, [scenName, userEmail, currentScenarioId, saveLimit, currentSaveCount, collectFormData]);
+
+  /* --- Load modal --- */
+  const openLoadModal = useCallback(async () => {
+    setShowLoadModal(true); setLoadingScenarios(true);
+    if (!userEmail) { setLoadingScenarios(false); return; }
+    try {
+      const response = await fetch(`${API_BASE}/api/calculator-scenarios?type=${encodeURIComponent(CALC_TYPE)}`, { headers: { Authorization: "Bearer " + userEmail } });
+      const data = await response.json();
+      setScenarios(data.scenarios || []); setCurrentSaveCount((data.scenarios || []).length);
+    } catch { setScenarios([]); }
+    setLoadingScenarios(false);
+  }, [userEmail]);
+
+  const loadScenario = useCallback(async (scenarioId) => {
+    setSaveStatus({ state: "loading", text: "Loading..." }); setShowLoadModal(false);
+    try {
+      const response = await fetch(`${API_BASE}/api/calculator-scenarios?type=${encodeURIComponent(CALC_TYPE)}`, { headers: { Authorization: "Bearer " + userEmail } });
+      const data = await response.json();
+      const scenario = (data.scenarios || []).find((s) => s.id === scenarioId);
+      if (scenario && scenario.scenarioData) {
+        setCurrentScenarioId(scenario.id); populateForm(scenario.scenarioData);
+        setSaveStatus({ state: "saved", text: "Loaded: " + scenario.scenarioName });
+      } else { setSaveStatus({ state: "error", text: "Scenario not found" }); }
+    } catch { setSaveStatus({ state: "error", text: "Error loading scenario" }); }
+  }, [userEmail, populateForm]);
+
+  const deleteScenario = useCallback(async (scenarioId, name) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const response = await fetch(`${API_BASE}/api/calculator-scenarios/${scenarioId}`, { method: "DELETE", headers: { Authorization: "Bearer " + userEmail } });
+      if (response.ok) {
+        if (currentScenarioId === scenarioId) { setCurrentScenarioId(null); setSaveStatus({ state: "", text: "Ready" }); }
+        openLoadModal();
+      } else { alert("Delete failed."); }
+    } catch { alert("Delete failed."); }
+  }, [userEmail, currentScenarioId, openLoadModal]);
+
+  const startRename = useCallback((id, name) => { setRenameTargetId(id); setRenameValue(name); setShowRenameModal(true); }, []);
+  const confirmRename = useCallback(async () => {
+    if (!renameValue.trim()) { alert("Please enter a name."); return; }
+    try {
+      const response = await fetch(`${API_BASE}/api/calculator-scenarios/${renameTargetId}`, {
+        method: "PUT", headers: { Authorization: "Bearer " + userEmail, "Content-Type": "application/json" },
+        body: JSON.stringify({ scenarioName: renameValue.trim() }),
+      });
+      if (response.ok) {
+        if (currentScenarioId === renameTargetId) setScenName(renameValue.trim());
+        setShowRenameModal(false); setRenameTargetId(null); openLoadModal();
+      } else { alert("Rename failed."); }
+    } catch { alert("Rename failed."); }
+  }, [renameValue, renameTargetId, userEmail, currentScenarioId, openLoadModal]);
+
+  /* --- Clear --- */
+  const clearForm = useCallback(() => {
+    if (!confirm("Clear all fields and start fresh?")) return;
+    setCurrentScenarioId(null);
+    setScenName(""); setScenDate(new Date().toISOString().split("T")[0]); setBorName("");
+    setPropAddress("");
+    setLoanAmount("350,000"); setIntRate("6.5"); setLoanTerm("30");
+    setAnnualIns("1,200"); setAnnualTax("4,500"); setAnnualSuppIns("0"); setAnnualHOA("0"); setPmiRate("0.0");
+    setSaveStatus({ state: "", text: "Ready" });
+  }, []);
+
+  /* --- Print --- */
+  const printSummary = useCallback(() => {
+    const name = scenName.trim() || "Untitled";
+    const borrower = borName.trim() || "\u2014";
+    const address = propAddress.trim() || "\u2014";
+    let dateDisplay = "\u2014";
+    if (scenDate) { try { dateDisplay = new Date(scenDate + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); } catch {} }
+
+    const r = results;
+
+    document.getElementById("printScenarioInfo").innerHTML =
+      `<div><div class="print-info-label">Scenario</div><div class="print-info-value">${escapeHtml(name)}</div></div>` +
+      `<div><div class="print-info-label">Date</div><div class="print-info-value">${dateDisplay}</div></div>` +
+      `<div><div class="print-info-label">Borrower</div><div class="print-info-value">${escapeHtml(borrower)}</div></div>` +
+      `<div><div class="print-info-label">Property</div><div class="print-info-value">${escapeHtml(address)}</div></div>`;
+
+    // Loan Information table
+    document.getElementById("printLoanTable").innerHTML =
+      `<tr><td>Loan Amount</td><td>${fmt(r.amount)}</td></tr>` +
+      `<tr><td>Interest Rate</td><td>${r.rate}%</td></tr>` +
+      `<tr><td>Loan Term</td><td>${r.years} Years</td></tr>` +
+      `<tr><td>Home Insurance (HOI) / Yr</td><td>${fmt(parseRaw(annualIns))}</td></tr>` +
+      `<tr><td>Property Tax / Yr</td><td>${fmt(parseRaw(annualTax))}</td></tr>` +
+      `<tr><td>Supplemental Ins / Yr</td><td>${fmt(parseRaw(annualSuppIns))}</td></tr>` +
+      `<tr><td>HOA / Yr</td><td>${fmt(parseRaw(annualHOA))}</td></tr>` +
+      `<tr><td>Mortgage Insurance (PMI)</td><td>${parseFloat(pmiRate) || 0}%</td></tr>`;
+
+    // Monthly Breakdown table (Insurance BEFORE Tax)
+    document.getElementById("printBreakdownTable").innerHTML =
+      `<tr><td>Principal &amp; Interest</td><td>${fmtDec(r.pi)}</td></tr>` +
+      `<tr><td>Home Insurance (HOI)</td><td>${fmtDec(r.monthlyIns)}</td></tr>` +
+      `<tr><td>Property Tax</td><td>${fmtDec(r.monthlyTax)}</td></tr>` +
+      `<tr><td>Supplemental Insurance</td><td>${fmtDec(r.monthlySuppIns)}</td></tr>` +
+      `<tr><td>HOA</td><td>${fmtDec(r.monthlyHOA)}</td></tr>` +
+      `<tr><td>Mortgage Insurance (PMI)</td><td>${fmtDec(r.monthlyPMI)}</td></tr>` +
+      `<tr class="print-total-row"><td>Total Monthly Payment</td><td>${fmtDec(r.total)}</td></tr>`;
+
+    document.getElementById("printDate").textContent = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    setTimeout(() => window.print(), 150);
+  }, [scenName, scenDate, borName, propAddress, results, annualIns, annualTax, annualSuppIns, annualHOA, pmiRate]);
+
+  /* --- Zillow lookup --- */
+  const openZillow = useCallback(() => {
+    const addr = propAddress.trim();
+    if (!addr) { alert("Please enter a property address first."); return; }
+    const slug = addr.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9\-]/g, "");
+    window.open(`https://www.zillow.com/homes/${slug}_rb/`, "_blank");
+  }, [propAddress]);
+
+  /* --- Derived --- */
+  const r = results;
+  const dotClass = saveStatus.state ? `save-status-dot ${saveStatus.state}` : "save-status-dot";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50/50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Link to="/app/calculators" className="hover:text-blue-600 transition-colors">
-            Calculators
-          </Link>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-          <span className="text-gray-900 font-medium">Mortgage Calculator</span>
-        </nav>
+    <>
+      {/* ================================================
+          SCOPED CSS
+          ================================================ */}
+      <style>{`
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
 
-        {/* Page Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="4" y="2" width="16" height="20" rx="2" />
-              <line x1="8" y1="6" x2="16" y2="6" />
-              <line x1="16" y1="14" x2="16" y2="18" />
-              <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01" />
-            </svg>
+        /* Breadcrumb */
+        .calc-breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 14px; color: #64748B; }
+        .calc-breadcrumb a { color: #2563EB; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .calc-breadcrumb a:hover { color: #1D4ED8; text-decoration: underline; }
+        .calc-breadcrumb .bc-sep { color: #CBD5E1; }
+        .calc-breadcrumb .bc-current { color: #0F172A; font-weight: 600; }
+
+        /* Container */
+        .calc-container { width: 100%; max-width: 1280px; margin: 0 auto; font-family: system-ui, -apple-system, sans-serif; color: #0f172a; box-sizing: border-box; }
+        .calc-container * { box-sizing: border-box; }
+
+        /* Dark header bar — SHARP bottom corners, connected to card body */
+        .calc-header { background: #0F172A; padding: 16px 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; box-shadow: 0 4px 16px rgba(15,23,42,0.12); }
+        .header-left { flex: 1 1 auto; min-width: 200px; }
+        .calc-title { color: white; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+        .calc-subtitle { color: #94A3B8; margin: 4px 0 0 0; font-size: 13px; font-weight: 400; }
+        .header-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .btn-group { display: flex; gap: 8px; }
+        .action-btn { border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: white; transition: filter 0.2s, transform 0.1s; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-family: system-ui, -apple-system, sans-serif; }
+        .action-btn:hover { filter: brightness(110%); }
+        .action-btn:active { transform: translateY(1px); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; transform: none; }
+        .btn-save { background: #059669; }
+        .btn-load { background: #2563EB; }
+        .btn-print { background: #7C3AED; }
+        .btn-clear { background: #DC2626; }
+
+        /* Save status */
+        .save-status { display: flex; align-items: center; gap: 6px; }
+        .save-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #64748B; flex-shrink: 0; }
+        .save-status-dot.saving { background: #F59E0B; animation: pulse-dot 1s infinite; }
+        .save-status-dot.saved { background: #10B981; }
+        .save-status-dot.error { background: #EF4444; }
+        .save-status-dot.loading { background: #3B82F6; animation: pulse-dot 1s infinite; }
+        .save-status-text { color: #94A3B8; font-size: 12px; font-weight: 500; white-space: nowrap; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Card body — connected to header, SHARP top corners */
+        .app-card-body { background: #FFFFFF; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 12px 12px; padding: 32px; }
+
+        /* Scenario details box */
+        .standard-box { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px; margin-bottom: 28px; }
+        .standard-box .mini-header { font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 16px 0; }
+
+        /* Input group */
+        .input-group { margin-bottom: 16px; }
+        .input-group:last-child { margin-bottom: 0; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        .calc-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-family: system-ui, -apple-system, sans-serif; color: #0f172a; background: #FFFFFF; transition: border-color 0.2s, box-shadow 0.2s; }
+        .calc-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .calc-input::placeholder { color: #94A3B8; }
+        .calc-input.field-empty { background-color: #FFFBEB; border-color: #FDE68A; }
+        .calc-input.readonly { background: #F1F5F9; color: #64748B; cursor: not-allowed; }
+        .req { color: #DC2626; }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-full { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+        /* Address row with Zillow button */
+        .address-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+        .zillow-btn { padding: 10px 16px; border: none; border-radius: 8px; background: #2563EB; color: white; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; transition: background 0.2s; font-family: system-ui, -apple-system, sans-serif; }
+        .zillow-btn:hover { background: #1D4ED8; }
+
+        /* Calc grid — two columns */
+        .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+        .col-inputs { padding-right: 48px; border-right: 1px solid #E2E8F0; }
+        .col-results { padding-left: 48px; }
+        .col-title { font-size: 14px; font-weight: 700; color: #0F172A; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #E2E8F0; display: flex; align-items: center; gap: 8px; }
+        .col-title i { color: #2563EB; font-size: 14px; }
+
+        /* Input helper */
+        .input-helper { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+        .input-with-suffix { position: relative; display: flex; align-items: center; }
+        .input-with-suffix input { padding-right: 36px; }
+        .input-suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 13px; font-weight: 600; pointer-events: none; }
+
+        /* Result box (light blue) */
+        .result-box { background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 24px; }
+        .result-label-sm { font-size: 13px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+        .result-big { font-size: 42px; font-weight: 800; color: #0C4A6E; line-height: 1.1; letter-spacing: -0.02em; }
+
+        /* Breakdown list */
+        .breakdown-list { margin-top: 8px; }
+        .breakdown-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #E2E8F0; }
+        .breakdown-row:last-child { border-bottom: none; }
+        .breakdown-row .bd-label { font-size: 14px; color: #475569; }
+        .breakdown-row .bd-value { font-size: 14px; font-weight: 700; color: #0F172A; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 440px; max-width: 92%; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-height: 80vh; display: flex; flex-direction: column; }
+        .modal-header { background: #0F172A; color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+        .close-modal { cursor: pointer; font-size: 22px; color: #94A3B8; transition: color 0.15s; background: none; border: none; }
+        .close-modal:hover { color: white; }
+        .modal-subheader { padding: 12px 20px; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; font-size: 13px; color: #64748B; }
+        .modal-list { padding: 8px; max-height: 360px; overflow-y: auto; flex: 1; }
+        .modal-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 32px; color: #64748B; font-size: 14px; }
+        .modal-spinner { width: 20px; height: 20px; border: 3px solid #E2E8F0; border-top-color: #2563EB; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .scenario-item { display: flex; align-items: center; padding: 12px; border-radius: 10px; cursor: pointer; transition: background 0.15s; gap: 12px; }
+        .scenario-item:hover { background: #F1F5F9; }
+        .scenario-item-info { flex: 1; min-width: 0; }
+        .scenario-item-name { font-size: 14px; font-weight: 600; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .scenario-item-date { font-size: 12px; color: #94A3B8; margin-top: 2px; }
+        .scenario-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .scenario-action-btn { background: none; border: none; cursor: pointer; padding: 6px 8px; border-radius: 6px; font-size: 13px; color: #64748B; transition: all 0.15s; }
+        .scenario-action-btn:hover { background: #E2E8F0; color: #0F172A; }
+        .scenario-action-btn.delete:hover { background: #FEE2E2; color: #DC2626; }
+        .modal-empty { text-align: center; padding: 32px 20px; }
+        .modal-empty-icon { font-size: 32px; color: #CBD5E1; margin-bottom: 12px; }
+        .modal-empty-title { font-size: 15px; font-weight: 600; color: #475569; margin: 0 0 4px 0; }
+        .modal-empty-text { font-size: 13px; color: #94A3B8; margin: 0; }
+        .modal-upgrade { padding: 16px 20px; background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%); border-top: 1px solid #BFDBFE; text-align: center; }
+        .modal-upgrade-text { font-size: 13px; color: #1E40AF; margin: 0 0 8px 0; }
+        .modal-upgrade-btn { display: inline-block; padding: 8px 20px; background: #2563EB; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .modal-upgrade-btn:hover { background: #1D4ED8; }
+
+        /* Rename modal */
+        .rename-input { width: 100%; padding: 10px 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 14px; margin: 16px 0; font-family: system-ui, -apple-system, sans-serif; }
+        .rename-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .rename-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 0 20px 16px; }
+        .rename-cancel { padding: 8px 16px; border: 1px solid #E2E8F0; border-radius: 6px; background: white; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .rename-cancel:hover { background: #F8FAFC; }
+        .rename-confirm { padding: 8px 16px; border: none; border-radius: 6px; background: #2563EB; color: white; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .rename-confirm:hover { background: #1D4ED8; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .calc-header { flex-direction: column; align-items: flex-start; }
+          .header-left { width: 100%; margin-bottom: 8px; }
+          .header-actions { width: 100%; justify-content: space-between; }
+          .calc-grid { grid-template-columns: 1fr; }
+          .col-inputs { padding-right: 0; border-right: none; border-bottom: 1px solid #E2E8F0; padding-bottom: 28px; margin-bottom: 28px; }
+          .col-results { padding-left: 0; }
+          .grid-2 { grid-template-columns: 1fr; }
+          .address-row { grid-template-columns: 1fr; }
+          .app-card-body { padding: 20px 16px; }
+        }
+        @media (max-width: 480px) {
+          .header-actions { flex-direction: column; gap: 12px; }
+          .btn-group { width: 100%; justify-content: space-between; gap: 6px; }
+          .action-btn { flex: 1; text-align: center; padding: 10px 6px; justify-content: center; font-size: 12px; }
+          .save-status { width: 100%; justify-content: center; }
+          .app-card-body { padding: 16px 14px; }
+        }
+
+        /* Print styles */
+        .print-summary { display: none; }
+        @media print {
+          body * { visibility: hidden !important; }
+          .calc-container > *:not(.print-summary),
+          .calc-header, .app-card-body, .calc-grid, .calc-breadcrumb,
+          nav, footer, header, aside, [class*="sidebar"], [class*="navbar"], [class*="footer"] {
+            height: 0 !important; max-height: 0 !important; min-height: 0 !important;
+            padding: 0 !important; margin: 0 !important; overflow: hidden !important;
+          }
+          .print-summary, .print-summary * { visibility: visible !important; }
+          .print-summary { display: block !important; position: fixed !important; top: 0; left: 0; width: 100% !important; background: white !important; z-index: 99999 !important; padding: 0.4in 0.6in !important; font-family: system-ui, -apple-system, sans-serif !important; color: #0f172a !important; font-size: 11pt !important; }
+          .print-header { display: flex !important; justify-content: space-between !important; align-items: center !important; border-bottom: 2px solid #0F172A !important; padding-bottom: 10px !important; margin-bottom: 16px !important; }
+          .print-logo { height: 32px !important; width: auto !important; }
+          .print-doc-title { font-size: 14pt !important; font-weight: 700 !important; color: #475569 !important; }
+          .print-scenario-info { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 8px 24px !important; background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; border-radius: 8px !important; padding: 12px 16px !important; margin-bottom: 16px !important; }
+          .print-info-label { font-size: 7pt !important; font-weight: 700 !important; color: #64748B !important; text-transform: uppercase !important; }
+          .print-info-value { font-size: 10pt !important; font-weight: 600 !important; color: #0F172A !important; }
+          .print-section-title { font-size: 11pt !important; font-weight: 700 !important; border-bottom: 1px solid #CBD5E1 !important; padding-bottom: 4px !important; margin-bottom: 8px !important; }
+          .print-table { width: 100% !important; border-collapse: collapse !important; font-size: 9pt !important; margin-bottom: 16px !important; }
+          .print-table tr { border-bottom: 1px solid #E2E8F0 !important; }
+          .print-table td, .print-table th { padding: 5px 0 !important; }
+          .print-table th { font-size: 8pt !important; font-weight: 700 !important; color: #64748B !important; text-transform: uppercase !important; text-align: left !important; }
+          .print-table th:last-child, .print-table td:last-child { text-align: right !important; }
+          .print-table td:first-child { color: #475569 !important; }
+          .print-table td:last-child { font-weight: 700 !important; }
+          .print-table tr.print-total-row { border-top: 2px solid #0F172A !important; }
+          .print-table tr.print-total-row td { padding-top: 8px !important; font-size: 12pt !important; font-weight: 800 !important; }
+          .print-two-col { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; margin-bottom: 16px !important; }
+          .print-footer { margin-top: 16px !important; padding-top: 8px !important; border-top: 1px solid #E2E8F0 !important; font-size: 8pt !important; color: #94A3B8 !important; text-align: center !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          @page { size: letter portrait; margin: 0.25in; }
+        }
+      `}</style>
+
+      <div className="calc-container">
+
+        {/* BREADCRUMB */}
+        <div className="calc-breadcrumb">
+          <Link to="/app/calculators"><i className="fa-solid fa-arrow-left" style={{ fontSize: 12 }}></i> Calculators</Link>
+          <span className="bc-sep">/</span>
+          <span className="bc-current">Mortgage Calculator</span>
+        </div>
+
+        {/* DARK HEADER BAR — connected to card body below */}
+        <div className="calc-header">
+          <div className="header-left">
+            <h1 className="calc-title">Mortgage Calculator</h1>
+            <p className="calc-subtitle">Calculate monthly mortgage payments including taxes, insurance, and PMI.</p>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Mortgage Calculator</h1>
-            <p className="text-gray-500 text-sm mt-0.5">Estimate monthly PITI payments for any loan scenario</p>
+          <div className="header-actions">
+            <div className="save-status">
+              <span className={dotClass}></span>
+              <span className="save-status-text">{saveStatus.text}</span>
+            </div>
+            <div className="btn-group">
+              <button onClick={saveScenario} className="action-btn btn-save"><i className="fa-solid fa-cloud-arrow-up"></i> Save</button>
+              <button onClick={openLoadModal} className="action-btn btn-load"><i className="fa-solid fa-folder-open"></i> Load</button>
+              <button onClick={printSummary} className="action-btn btn-print"><i className="fa-solid fa-print"></i> Print</button>
+              <button onClick={clearForm} className="action-btn btn-clear"><i className="fa-solid fa-rotate-left"></i> Clear</button>
+            </div>
           </div>
         </div>
 
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* ── LEFT: Inputs ──────────────────────────── */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Loan Details Card */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Loan Details</h2>
-              <div className="space-y-4">
-                {/* Home Price */}
-                <CurrencyInput
-                  id="homePrice"
-                  label="Home Price"
-                  value={homePrice}
-                  onChange={handleHomePriceChange}
+        {/* CARD BODY — connected to header above */}
+        <div className="app-card-body">
+
+          {/* SCENARIO DETAILS BOX */}
+          <div className="standard-box">
+            <div className="mini-header">Scenario Details</div>
+            <div className="grid-2" style={{ marginBottom: 16 }}>
+              <div className="input-group">
+                <label>Scenario Name <span className="req">*</span></label>
+                <input
+                  type="text"
+                  className={"calc-input" + emptyClass(scenName)}
+                  placeholder="e.g. Smith Purchase"
+                  value={scenName}
+                  onChange={(e) => setScenName(e.target.value)}
                 />
-
-                {/* Down Payment with toggle */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-gray-700">Down Payment</label>
-                    <div className="flex bg-gray-100 rounded-md p-0.5">
-                      <button
-                        type="button"
-                        onClick={function () { setDownPaymentMode("dollar"); }}
-                        className={"px-2.5 py-1 text-xs font-medium rounded transition-colors " +
-                          (downPaymentMode === "dollar"
-                            ? "bg-white text-blue-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700")}
-                      >
-                        $
-                      </button>
-                      <button
-                        type="button"
-                        onClick={function () { setDownPaymentMode("percent"); }}
-                        className={"px-2.5 py-1 text-xs font-medium rounded transition-colors " +
-                          (downPaymentMode === "percent"
-                            ? "bg-white text-blue-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700")}
-                      >
-                        %
-                      </button>
-                    </div>
-                  </div>
-                  {downPaymentMode === "dollar" ? (
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={downPaymentDollar ? Number(downPaymentDollar).toLocaleString("en-US") : ""}
-                        onChange={function (e) { handleDownPaymentDollar(parseNum(e.target.value)); }}
-                        className="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                      />
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={downPaymentPercent}
-                        onChange={function (e) { handleDownPaymentPercent(parseFloat(e.target.value) || 0); }}
-                        className="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    {downPaymentMode === "dollar"
-                      ? fmtPercent(calc.dpPct) + " of home price"
-                      : fmtCurrency(calc.dp) + " down"}
-                  </p>
-                </div>
-
-                {/* Loan Amount (read-only) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount</label>
-                  <div className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-medium">
-                    {fmtCurrency(calc.loanAmount)}
-                  </div>
-                </div>
-
-                {/* Interest Rate */}
-                <PercentInput
-                  id="interestRate"
-                  label="Interest Rate"
-                  value={interestRate}
-                  onChange={setInterestRate}
-                  step="0.125"
+              </div>
+              <div className="input-group">
+                <label>Date</label>
+                <input
+                  type="date"
+                  className="calc-input"
+                  value={scenDate}
+                  onChange={(e) => setScenDate(e.target.value)}
                 />
-
-                {/* Loan Term */}
-                <div>
-                  <label htmlFor="loanTerm" className="block text-sm font-medium text-gray-700 mb-1">Loan Term</label>
-                  <select
-                    id="loanTerm"
-                    value={loanTerm}
-                    onChange={function (e) { setLoanTerm(parseInt(e.target.value)); }}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white"
-                  >
-                    <option value={10}>10 years</option>
-                    <option value={15}>15 years</option>
-                    <option value={20}>20 years</option>
-                    <option value={25}>25 years</option>
-                    <option value={30}>30 years</option>
-                  </select>
-                </div>
               </div>
             </div>
-
-            {/* Taxes, Insurance & Fees Card */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Taxes, Insurance & Fees</h2>
-              <div className="space-y-4">
-                {/* Insurance BEFORE Tax per project rules */}
-                <CurrencyInput
-                  id="insurance"
-                  label="Homeowner's Insurance (Annual)"
-                  value={insuranceAnnual}
-                  onChange={setInsuranceAnnual}
-                  helpText={fmtCurrencyDecimal(insuranceAnnual / 12) + "/mo"}
+            <div className="grid-full" style={{ marginBottom: 16 }}>
+              <div className="input-group">
+                <label>Borrower Name</label>
+                <input
+                  type="text"
+                  className={"calc-input" + emptyClass(borName)}
+                  placeholder="Full name"
+                  value={borName}
+                  onChange={(e) => setBorName(e.target.value)}
                 />
-
-                {/* Property Tax with toggle */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-gray-700">Property Tax</label>
-                    <div className="flex bg-gray-100 rounded-md p-0.5">
-                      <button
-                        type="button"
-                        onClick={function () { setTaxMode("rate"); }}
-                        className={"px-2.5 py-1 text-xs font-medium rounded transition-colors " +
-                          (taxMode === "rate"
-                            ? "bg-white text-blue-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700")}
-                      >
-                        %
-                      </button>
-                      <button
-                        type="button"
-                        onClick={function () { setTaxMode("dollar"); }}
-                        className={"px-2.5 py-1 text-xs font-medium rounded transition-colors " +
-                          (taxMode === "dollar"
-                            ? "bg-white text-blue-600 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700")}
-                      >
-                        $/yr
-                      </button>
-                    </div>
-                  </div>
-                  {taxMode === "rate" ? (
-                    <>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={taxRate}
-                          onChange={function (e) {
-                            var val = parseFloat(e.target.value) || 0;
-                            setTaxRate(val);
-                            setTaxDollar(Math.round(homePrice * (val / 100)));
-                          }}
-                          className="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {fmtCurrency(homePrice * (taxRate / 100))}/yr &middot; {fmtCurrencyDecimal(calc.monthlyTax)}/mo
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={taxDollar ? Number(taxDollar).toLocaleString("en-US") : ""}
-                          onChange={function (e) {
-                            var val = parseNum(e.target.value);
-                            setTaxDollar(val);
-                            if (homePrice > 0) setTaxRate(Math.round((val / homePrice) * 10000) / 100);
-                          }}
-                          className="w-full pl-7 pr-12 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">/yr</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {fmtPercent(homePrice > 0 ? (taxDollar / homePrice) * 100 : 0)} rate &middot; {fmtCurrencyDecimal(taxDollar / 12)}/mo
-                      </p>
-                    </>
-                  )}
-                </div>
-
-                {/* HOA */}
-                <CurrencyInput
-                  id="hoa"
-                  label="HOA (Monthly)"
-                  value={hoaMonthly}
-                  onChange={setHoaMonthly}
+              </div>
+            </div>
+            <div className="address-row">
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label>Property Address</label>
+                <input
+                  type="text"
+                  className={"calc-input" + emptyClass(propAddress)}
+                  placeholder="123 Main St, City, State"
+                  value={propAddress}
+                  onChange={(e) => setPropAddress(e.target.value)}
                 />
+              </div>
+              <button className="zillow-btn" onClick={openZillow}>
+                <i className="fa-solid fa-magnifying-glass"></i> Zillow Lookup
+              </button>
+            </div>
+          </div>
 
-                {/* PMI — only shown when LTV > 80% */}
-                {calc.ltv > 80 && (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <svg className="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                      </svg>
-                      <span className="text-sm font-medium text-amber-800">PMI Required (LTV {fmtPercent(calc.ltv, 1)})</span>
-                    </div>
-                    <PercentInput
-                      id="pmiRate"
-                      label="PMI Rate (Annual)"
-                      value={pmiRate}
-                      onChange={setPmiRate}
-                      helpText={fmtCurrencyDecimal(calc.monthlyPMI) + "/mo"}
+          {/* CALC GRID — two columns */}
+          <div className="calc-grid">
+
+            {/* LEFT COLUMN — Loan Information */}
+            <div className="col-inputs">
+              <div className="col-title"><i className="fa-solid fa-landmark"></i> Loan Information</div>
+
+              {/* Loan Amount */}
+              <div className="input-group">
+                <label>Loan Amount ($)</label>
+                <input
+                  type="text"
+                  className={"calc-input" + emptyClass(loanAmount)}
+                  placeholder="350,000"
+                  value={loanAmount}
+                  onChange={(e) => handleCurrencyInput(e.target.value, setLoanAmount)}
+                  onBlur={() => handleCurrencyBlur(loanAmount, setLoanAmount)}
+                  onKeyDown={(e) => handleCalcFieldKeyDown(e, loanAmount, setLoanAmount, "currency")}
+                />
+              </div>
+
+              {/* Interest Rate + Term */}
+              <div className="grid-2">
+                <div className="input-group">
+                  <label>Interest Rate (%)</label>
+                  <div className="input-with-suffix">
+                    <input
+                      type="text"
+                      className={"calc-input" + emptyClass(intRate)}
+                      placeholder="6.5"
+                      value={intRate}
+                      onChange={(e) => setIntRate(e.target.value)}
+                      onBlur={() => {
+                        if (intRate && /[+\-*/]/.test(intRate.replace(/,/g, ""))) {
+                          const result = evaluateExpression(intRate);
+                          if (!isNaN(result)) { setIntRate(String(result)); return; }
+                        }
+                      }}
+                      onKeyDown={(e) => handleCalcFieldKeyDown(e, intRate, setIntRate, "rate")}
+                      step="0.125"
                     />
+                    <span className="input-suffix">%</span>
                   </div>
+                </div>
+                <div className="input-group">
+                  <label>Term (Years)</label>
+                  <input
+                    type="number"
+                    className="calc-input"
+                    value={loanTerm}
+                    onChange={(e) => setLoanTerm(e.target.value)}
+                    min="1"
+                    max="50"
+                  />
+                </div>
+              </div>
+
+              {/* Home Insurance + Property Tax (Insurance BEFORE Tax!) */}
+              <div className="grid-2">
+                <div className="input-group">
+                  <label>Home Ins (HOI) / Yr ($)</label>
+                  <input
+                    type="text"
+                    className={"calc-input" + emptyClass(annualIns)}
+                    placeholder="1,200"
+                    value={annualIns}
+                    onChange={(e) => handleCurrencyInput(e.target.value, setAnnualIns)}
+                    onBlur={() => handleCurrencyBlur(annualIns, setAnnualIns)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, annualIns, setAnnualIns, "currency")}
+                  />
+                  <div className="input-helper">{fmtDec(parseRaw(annualIns) / 12)}/mo</div>
+                </div>
+                <div className="input-group">
+                  <label>Prop Tax / Yr ($)</label>
+                  <input
+                    type="text"
+                    className={"calc-input" + emptyClass(annualTax)}
+                    placeholder="4,500"
+                    value={annualTax}
+                    onChange={(e) => handleCurrencyInput(e.target.value, setAnnualTax)}
+                    onBlur={() => handleCurrencyBlur(annualTax, setAnnualTax)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, annualTax, setAnnualTax, "currency")}
+                  />
+                  <div className="input-helper">{fmtDec(parseRaw(annualTax) / 12)}/mo</div>
+                </div>
+              </div>
+
+              {/* Supplemental Insurance + HOA */}
+              <div className="grid-2">
+                <div className="input-group">
+                  <label>Supplemental Ins / Yr ($)</label>
+                  <input
+                    type="text"
+                    className={"calc-input" + emptyClass(annualSuppIns)}
+                    placeholder="0"
+                    value={annualSuppIns}
+                    onChange={(e) => handleCurrencyInput(e.target.value, setAnnualSuppIns)}
+                    onBlur={() => handleCurrencyBlur(annualSuppIns, setAnnualSuppIns)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, annualSuppIns, setAnnualSuppIns, "currency")}
+                  />
+                  <div className="input-helper">{fmtDec(parseRaw(annualSuppIns) / 12)}/mo</div>
+                </div>
+                <div className="input-group">
+                  <label>HOA / Yr ($)</label>
+                  <input
+                    type="text"
+                    className={"calc-input" + emptyClass(annualHOA)}
+                    placeholder="0"
+                    value={annualHOA}
+                    onChange={(e) => handleCurrencyInput(e.target.value, setAnnualHOA)}
+                    onBlur={() => handleCurrencyBlur(annualHOA, setAnnualHOA)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, annualHOA, setAnnualHOA, "currency")}
+                  />
+                  <div className="input-helper">{fmtDec(parseRaw(annualHOA) / 12)}/mo</div>
+                </div>
+              </div>
+
+              {/* PMI Rate */}
+              <div className="input-group">
+                <label>Mortgage Insurance (PMI) %</label>
+                <div className="input-with-suffix">
+                  <input
+                    type="text"
+                    className={"calc-input" + emptyClass(pmiRate)}
+                    placeholder="0.0"
+                    value={pmiRate}
+                    onChange={(e) => setPmiRate(e.target.value)}
+                    onBlur={() => {
+                      if (pmiRate && /[+\-*/]/.test(pmiRate.replace(/,/g, ""))) {
+                        const result = evaluateExpression(pmiRate);
+                        if (!isNaN(result)) { setPmiRate(String(result)); return; }
+                      }
+                    }}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, pmiRate, setPmiRate, "rate")}
+                    step="0.01"
+                  />
+                  <span className="input-suffix">%</span>
+                </div>
+                {parseFloat(pmiRate) > 0 && (
+                  <div className="input-helper">{fmtDec(r.monthlyPMI)}/mo</div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* ── RIGHT: Results (sticky) ───────────────── */}
-          <div className="lg:col-span-3">
-            <div className="lg:sticky lg:top-6 space-y-6">
-              {/* Total Monthly Payment */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <div className="text-center mb-6">
-                  <p className="text-sm text-gray-500 mb-1">Estimated Monthly Payment</p>
-                  <p className="text-4xl font-bold text-blue-600 tracking-tight">
-                    {fmtCurrencyDecimal(calc.totalMonthly)}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">{loanTerm}-year fixed at {fmtPercent(interestRate, 3)}</p>
-                </div>
+            {/* RIGHT COLUMN — Monthly Breakdown */}
+            <div className="col-results">
+              <div className="col-title"><i className="fa-solid fa-calculator"></i> Monthly Breakdown</div>
 
-                {/* Donut Chart */}
-                <DonutChart segments={segments} />
-
-                {/* Legend / Breakdown */}
-                <div className="mt-6 px-2">
-                  {segments.map(function (seg, i) {
-                    return (
-                      <LegendItem
-                        key={i}
-                        color={seg.color}
-                        label={seg.label}
-                        value={seg.value}
-                        total={calc.totalMonthly}
-                      />
-                    );
-                  })}
-                </div>
+              {/* Big result box */}
+              <div className="result-box">
+                <div className="result-label-sm">Total Monthly Payment</div>
+                <div className="result-big">{fmtDec(r.total)}</div>
               </div>
 
-              {/* Loan Summary Card */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">Loan Summary</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-0.5">Loan Amount</p>
-                    <p className="text-sm font-semibold text-gray-900">{fmtCurrency(calc.loanAmount)}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-0.5">Down Payment</p>
-                    <p className="text-sm font-semibold text-gray-900">{fmtCurrency(calc.dp)} ({fmtPercent(calc.dpPct, 1)})</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-0.5">Loan-to-Value (LTV)</p>
-                    <p className="text-sm font-semibold text-gray-900">{fmtPercent(calc.ltv, 1)}</p>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-500 mb-0.5">Number of Payments</p>
-                    <p className="text-sm font-semibold text-gray-900">{calc.n}</p>
-                  </div>
+              {/* Breakdown rows — Insurance BEFORE Tax */}
+              <div className="breakdown-list">
+                <div className="breakdown-row">
+                  <span className="bd-label">Principal & Interest</span>
+                  <span className="bd-value">{fmtDec(r.pi)}</span>
                 </div>
-              </div>
-
-              {/* Amortization Summary Card */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-4">Amortization Summary</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Monthly P&I Payment</span>
-                    <span className="text-sm font-semibold text-gray-900">{fmtCurrencyDecimal(calc.monthlyPI)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Total P&I Payments</span>
-                    <span className="text-sm font-semibold text-gray-900">{fmtCurrency(calc.totalPIPayments)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Total Interest Paid</span>
-                    <span className="text-sm font-semibold text-red-600">{fmtCurrency(calc.totalInterest)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-sm text-gray-600">Total Cost (all payments)</span>
-                    <span className="text-sm font-semibold text-gray-900">{fmtCurrency(calc.totalCost)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-sm text-gray-600">Interest-to-Loan Ratio</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {calc.loanAmount > 0 ? fmtPercent((calc.totalInterest / calc.loanAmount) * 100, 1) : "0%"}
-                    </span>
-                  </div>
+                <div className="breakdown-row">
+                  <span className="bd-label">Home Insurance (HOI)</span>
+                  <span className="bd-value">{fmtDec(r.monthlyIns)}</span>
                 </div>
-              </div>
-
-              {/* Principal vs Interest Bar */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-3">Principal vs. Interest</h2>
-                <div className="w-full h-6 bg-gray-100 rounded-full overflow-hidden flex">
-                  {calc.totalPIPayments > 0 && (
-                    <>
-                      <div
-                        className="h-full bg-blue-600 transition-all duration-300"
-                        style={{ width: ((calc.loanAmount / calc.totalPIPayments) * 100) + "%" }}
-                        title={"Principal: " + fmtCurrency(calc.loanAmount)}
-                      />
-                      <div
-                        className="h-full bg-red-400 transition-all duration-300"
-                        style={{ width: ((calc.totalInterest / calc.totalPIPayments) * 100) + "%" }}
-                        title={"Interest: " + fmtCurrency(calc.totalInterest)}
-                      />
-                    </>
-                  )}
+                <div className="breakdown-row">
+                  <span className="bd-label">Property Tax</span>
+                  <span className="bd-value">{fmtDec(r.monthlyTax)}</span>
                 </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
-                    Principal: {fmtCurrency(calc.loanAmount)}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />
-                    Interest: {fmtCurrency(calc.totalInterest)}
-                  </div>
+                <div className="breakdown-row">
+                  <span className="bd-label">Supplemental Insurance</span>
+                  <span className="bd-value">{fmtDec(r.monthlySuppIns)}</span>
+                </div>
+                <div className="breakdown-row">
+                  <span className="bd-label">HOA</span>
+                  <span className="bd-value">{fmtDec(r.monthlyHOA)}</span>
+                </div>
+                <div className="breakdown-row">
+                  <span className="bd-label">Mortgage Insurance (PMI)</span>
+                  <span className="bd-value">{fmtDec(r.monthlyPMI)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* ================================================
+            PRINT SUMMARY (hidden on screen, shown on print)
+            ================================================ */}
+        <div className="print-summary">
+          <div className="print-header">
+            <img src="https://cdn.prod.website-files.com/694e4aaf5f511ad7901b74bc/694e4aaf5f511ad7901b7530_mtg.broker%20logo.svg" alt="mtg.broker" className="print-logo" />
+            <div className="print-doc-title">Mortgage Payment Summary</div>
+          </div>
+          <div className="print-scenario-info" id="printScenarioInfo"></div>
+          <div className="print-two-col">
+            <div>
+              <div className="print-section-title">Loan Information</div>
+              <table className="print-table"><tbody id="printLoanTable"></tbody></table>
+            </div>
+            <div>
+              <div className="print-section-title">Monthly Breakdown</div>
+              <table className="print-table"><tbody id="printBreakdownTable"></tbody></table>
+            </div>
+          </div>
+          <div className="print-footer">Generated from mtg.broker &middot; <span id="printDate"></span></div>
+        </div>
+
+        {/* ================================================
+            LOAD MODAL
+            ================================================ */}
+        {showLoadModal && (
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowLoadModal(false); }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>Saved Scenarios</h3>
+                <button onClick={() => setShowLoadModal(false)} className="close-modal">&times;</button>
+              </div>
+              <div className="modal-subheader">
+                {!userEmail ? "" :
+                  saveLimit === 0 ? <><i className="fa-solid fa-lock" style={{ marginRight: 4 }}></i> Saving is available on PLUS and PRO plans</> :
+                  saveLimit === Infinity ? <><i className="fa-solid fa-infinity" style={{ marginRight: 4 }}></i> {scenarios.length} saved (unlimited)</> :
+                  <><i className="fa-solid fa-cloud" style={{ marginRight: 4 }}></i> {scenarios.length} of {saveLimit} saves used</>}
+              </div>
+              <div className="modal-list">
+                {loadingScenarios ? (
+                  <div className="modal-loading"><div className="modal-spinner"></div> Loading scenarios...</div>
+                ) : !userEmail ? (
+                  <div className="modal-empty">
+                    <div className="modal-empty-icon"><i className="fa-solid fa-user-lock"></i></div>
+                    <p className="modal-empty-title">Please log in</p>
+                    <p className="modal-empty-text">Log in to access your saved scenarios.</p>
+                  </div>
+                ) : scenarios.length === 0 ? (
+                  <div className="modal-empty">
+                    <div className="modal-empty-icon"><i className="fa-solid fa-folder-open"></i></div>
+                    <p className="modal-empty-title">No saved scenarios</p>
+                    <p className="modal-empty-text">Save your first scenario using the Save button.</p>
+                  </div>
+                ) : (
+                  scenarios.map((s) => (
+                    <div key={s.id} className="scenario-item" onClick={() => loadScenario(s.id)}>
+                      <div className="scenario-item-info">
+                        <div className="scenario-item-name">{s.scenarioName}</div>
+                        <div className="scenario-item-date">{new Date(s.updatedAt || s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>
+                      </div>
+                      <div className="scenario-item-actions">
+                        <button className="scenario-action-btn" onClick={(e) => { e.stopPropagation(); startRename(s.id, s.scenarioName); }} title="Rename">
+                          <i className="fa-solid fa-pen"></i>
+                        </button>
+                        <button className="scenario-action-btn delete" onClick={(e) => { e.stopPropagation(); deleteScenario(s.id, s.scenarioName); }} title="Delete">
+                          <i className="fa-solid fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              {userEmail && saveLimit === 0 && (
+                <div className="modal-upgrade">
+                  <p className="modal-upgrade-text">Upgrade to PLUS or PRO to save scenarios</p>
+                  <a href="https://mtg.broker/pricing" target="_blank" rel="noopener noreferrer" className="modal-upgrade-btn">View Plans</a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================================================
+            RENAME MODAL
+            ================================================ */}
+        {showRenameModal && (
+          <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowRenameModal(false); }}>
+            <div className="modal-content" style={{ width: 380 }}>
+              <div className="modal-header">
+                <h3>Rename Scenario</h3>
+                <button onClick={() => setShowRenameModal(false)} className="close-modal">&times;</button>
+              </div>
+              <div style={{ padding: "0 20px" }}>
+                <input
+                  type="text"
+                  className="rename-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") confirmRename(); }}
+                  autoFocus
+                />
+              </div>
+              <div className="rename-actions">
+                <button className="rename-cancel" onClick={() => setShowRenameModal(false)}>Cancel</button>
+                <button className="rename-confirm" onClick={confirmRename}>Rename</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
-    </div>
+    </>
   );
 }
