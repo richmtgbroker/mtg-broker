@@ -556,6 +556,7 @@ export default function ContactDetailPage() {
   const [copyMsg, setCopyMsg] = useState("");
   const [tokenValid, setTokenValid] = useState(false);
   const [tokenChecked, setTokenChecked] = useState(!editToken);
+  const [imgError, setImgError] = useState(false);
 
   const adminUser = checkIsAdmin();
 
@@ -725,19 +726,12 @@ export default function ContactDetailPage() {
 
       {/* ── Header (matches lender/vendor detail pattern) ── */}
       <div style={{ background: "#1E3A5F", padding: "18px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", borderRadius: 12, marginBottom: 20 }}>
-        {/* Avatar — with onError fallback for broken images */}
-        {c.headshot_url ? (
+        {/* Avatar — React state fallback for broken/expired Airtable URLs */}
+        {c.headshot_url && !imgError ? (
           <img
             src={c.headshot_url}
             alt={c.name}
-            onError={(e) => {
-              // Replace broken image with initials div
-              const parent = e.target.parentNode;
-              const fallback = document.createElement("div");
-              Object.assign(fallback.style, { width: "80px", height: "80px", borderRadius: "12px", border: "2px solid rgba(255,255,255,0.22)", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: "0", fontSize: "28px", fontWeight: "700", color: "#fff" });
-              fallback.textContent = getInitials(c.name);
-              parent.replaceChild(fallback, e.target);
-            }}
+            onError={() => setImgError(true)}
             style={{ width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "2px solid rgba(255,255,255,0.22)", flexShrink: 0 }}
           />
         ) : (
@@ -757,11 +751,11 @@ export default function ContactDetailPage() {
               {c.lender_or_vendor ? (
                 <Link
                   to={`/app/${c.lender_or_vendor === "Lender" ? "lenders" : "vendors"}/${c.company_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`}
-                  style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none", borderBottom: "1px solid rgba(255,255,255,0.3)" }}
-                  onMouseEnter={(e) => { e.target.style.color = "#fff"; e.target.style.borderBottomColor = "rgba(255,255,255,0.6)"; }}
-                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; e.target.style.borderBottomColor = "rgba(255,255,255,0.3)"; }}
+                  style={{ color: "rgba(255,255,255,0.7)", textDecoration: "none", transition: "color 0.15s" }}
+                  onMouseEnter={(e) => { e.target.style.color = "#fff"; }}
+                  onMouseLeave={(e) => { e.target.style.color = "rgba(255,255,255,0.7)"; }}
                 >
-                  {c.company_name}
+                  {c.company_name} <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 9, marginLeft: 3, opacity: 0.6 }} />
                 </Link>
               ) : (
                 <span style={{ color: "rgba(255,255,255,0.6)" }}>{c.company_name}</span>
@@ -787,16 +781,13 @@ export default function ContactDetailPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons (no copy — moved to Contact Info card) */}
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
           <button onClick={copyLink} title="Copy Link" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
             <i className="fa-solid fa-link" />
           </button>
           <button onClick={shareLink} title="Share" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
             <i className="fa-solid fa-share-nodes" />
-          </button>
-          <button onClick={() => copyToClipboard(buildAllContactText(c), showToast)} title="Copy All Info" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
-            <i className="fa-regular fa-copy" />
           </button>
           {adminUser && (
             <a
@@ -837,6 +828,31 @@ export default function ContactDetailPage() {
             {c.zoom_room && (
               <ActionRow icon="fa-solid fa-video" iconBg="#DC2626" label="Zoom Room" href={c.zoom_room} displayText="Join Meeting" copyText={c.zoom_room} showToast={showToast} />
             )}
+            {/* Copy All — inside the contact info card */}
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
+              <button
+                onClick={() => copyToClipboard(buildAllContactText(c), showToast)}
+                style={{
+                  width: "100%",
+                  padding: "9px 0",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  background: "#F8FAFC",
+                  color: "#334155",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  fontFamily: "inherit",
+                }}
+              >
+                <i className="fa-regular fa-copy" style={{ fontSize: 11 }} />
+                Copy All Contact Info
+              </button>
+            </div>
           </div>
         </div>
 
