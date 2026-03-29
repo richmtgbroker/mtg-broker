@@ -17,6 +17,7 @@ export default function LendersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [channelFilter, setChannelFilter] = useState(null);
+  const [showTbdOnly, setShowTbdOnly] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState(() => {
     if (typeof window === "undefined") return [];
@@ -112,16 +113,18 @@ export default function LendersPage() {
         const channels = getChannels(l);
         if (!channels.includes(channelFilter)) return false;
       }
+      if (showTbdOnly && !l.tbdUnderwriting) return false;
       if (showFavoritesOnly && !favorites.includes(l.name)) return false;
       return true;
     });
-  }, [lenders, searchTerm, channelFilter, showFavoritesOnly, favorites]);
+  }, [lenders, searchTerm, channelFilter, showTbdOnly, showFavoritesOnly, favorites]);
 
-  const isFiltered = searchTerm.length > 0 || channelFilter !== null || showFavoritesOnly;
+  const isFiltered = searchTerm.length > 0 || channelFilter !== null || showTbdOnly || showFavoritesOnly;
 
   function clearFilters() {
     setSearchTerm("");
     setChannelFilter(null);
+    setShowTbdOnly(false);
     setShowFavoritesOnly(false);
     searchRef.current?.focus();
   }
@@ -188,6 +191,21 @@ export default function LendersPage() {
         ))}
 
         {nexaAuthorized && <div className="w-px h-10 bg-border hidden md:block" />}
+
+        {/* TBD Underwriting Filter */}
+        <button
+          onClick={() => setShowTbdOnly(!showTbdOnly)}
+          className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border cursor-pointer transition-colors ${
+            showTbdOnly
+              ? "bg-orange-50 text-orange-700 border-orange-300"
+              : "bg-white text-text-secondary border-border hover:border-text-muted"
+          }`}
+        >
+          <span className={`inline-block w-2.5 h-2.5 rounded-sm font-bold text-[9px] leading-[10px] text-center text-white ${showTbdOnly ? "bg-orange-500" : "bg-orange-400"}`}>T</span>
+          TBD UW
+        </button>
+
+        <div className="w-px h-10 bg-border hidden md:block" />
 
         {/* Favorites Toggle */}
         <button
