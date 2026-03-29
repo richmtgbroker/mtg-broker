@@ -61,7 +61,7 @@ export default function Root() {
         />
         <script async src="https://r.wdfl.co/rw.js" data-rewardful="a3ca66"></script>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Outlet />
         <ScrollRestoration />
         <Scripts />
