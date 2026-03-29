@@ -1214,15 +1214,38 @@ function ProductModal({ product, fieldMeta, lenderLogos, lenderKey, admin, onClo
       }));
   }, [product, fieldMeta]);
 
-  const lenderName = product[lenderKey] || product.Lender || product.lender || "";
-  const resolvedLender = Array.isArray(lenderName) ? lenderName[0] : lenderName;
-  const logoUrl = lenderLogos[resolvedLender];
+  const rawLender = product[lenderKey] || product.Lender || product.lender || "";
+  const resolvedLender = Array.isArray(rawLender) ? rawLender[0] : rawLender;
+  // If lender value is an Airtable record ID, look up the display name from lenderLogos keys
+  const lenderDisplay = (() => {
+    if (resolvedLender && !resolvedLender.startsWith("rec")) return resolvedLender;
+    // Try to find the lender name from fieldMeta-labeled fields
+    for (const k of Object.keys(fieldMeta)) {
+      const label = (fieldMeta[k]?.label || "").toLowerCase();
+      if (label === "lender" && product[k] && !String(product[k]).startsWith("rec")) {
+        return Array.isArray(product[k]) ? product[k][0] : product[k];
+      }
+    }
+    return resolvedLender;
+  })();
+  const logoUrl = lenderLogos[resolvedLender] || lenderLogos[lenderDisplay];
 
   const productName = (() => {
+    // Try "Product Name" field first
+    if (product["Product Name"]) return product["Product Name"];
+    if (product["product_name"]) return product["product_name"];
+    // Try "Lender Product Name | Version (Final)" for more specific name
+    if (product["Lender Product Name | Version (Final)"]) return product["Lender Product Name | Version (Final)"];
+    if (product["Lender Product Name | Version"]) return product["Lender Product Name | Version"];
+    // Try any field with "loanproduct" in its name
     for (const k of Object.keys(product)) {
       if (k.toLowerCase().replace(/[^a-z0-9]/g, "").includes("loanproduct")) return product[k];
     }
-    return resolvedLender;
+    // Try any field with "productname" in its name
+    for (const k of Object.keys(product)) {
+      if (k.toLowerCase().replace(/[^a-z0-9]/g, "").includes("productname")) return product[k];
+    }
+    return "Product Details";
   })();
 
   const airtableUrl = product["Link to this Airtable LOAN (Formula)"] || "";
@@ -1243,7 +1266,7 @@ function ProductModal({ product, fieldMeta, lenderLogos, lenderKey, admin, onClo
             )}
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-text truncate">{productName}</h2>
-              <p className="text-xs text-text-muted">{resolvedLender}</p>
+              <p className="text-xs text-text-muted">{lenderDisplay}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
