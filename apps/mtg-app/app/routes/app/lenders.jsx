@@ -340,7 +340,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
       <div>
         {/* Channel Tags - small rounded pills, distinct from squared action buttons */}
         {channels.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 px-3 pb-2">
+          <div className="flex items-center justify-center flex-wrap gap-1 px-2 pb-2">
             {channels.map((ch) => (
               <button
                 key={ch}
@@ -349,7 +349,7 @@ function LenderCard({ lender, channels, isFavorite, onToggleFavorite, searchTerm
                   e.stopPropagation();
                   onChannelFilter(channelFilter === ch ? null : ch);
                 }}
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer border-none transition-colors ${channelFilter === ch ? (TAG_STYLES[ch]?.active || "bg-gray-600 text-white") : (TAG_STYLES[ch]?.default || "bg-gray-100 text-gray-600")} ${channelFilter !== ch ? "hover:opacity-80" : ""}`}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer border-none transition-colors whitespace-nowrap ${channelFilter === ch ? (TAG_STYLES[ch]?.active || "bg-gray-600 text-white") : (TAG_STYLES[ch]?.default || "bg-gray-100 text-gray-600")} ${channelFilter !== ch ? "hover:opacity-80" : ""}`}
               >
                 {ch === "NEXA" ? "NEXA\u{1F4AF}" : ch}
               </button>
