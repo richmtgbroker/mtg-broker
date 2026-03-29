@@ -157,8 +157,9 @@ function ActionRow({ icon, iconBg, label, href, displayText, copyText, showToast
   );
 }
 
-/* ── Magic Link Request Form ── */
+/* ── Magic Link Request Form (collapsed by default, subtle) ── */
 function MagicLinkForm({ contactEmail, contactSlug, showToast }) {
+  const [expanded, setExpanded] = useState(false);
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -191,25 +192,43 @@ function MagicLinkForm({ contactEmail, contactSlug, showToast }) {
 
   if (sent) {
     return (
-      <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "20px 24px", textAlign: "center" }}>
-        <i className="fa-solid fa-envelope-circle-check" style={{ fontSize: 32, color: "#16A34A", marginBottom: 8, display: "block" }} />
-        <div style={{ fontSize: 15, fontWeight: 600, color: "#166534", marginBottom: 4 }}>Check your email!</div>
-        <div style={{ fontSize: 13, color: "#15803D" }}>
-          We sent an edit link to <strong>{email}</strong>. It expires in 48 hours.
+      <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "14px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>
+          <i className="fa-solid fa-check" style={{ marginRight: 6, color: "#16A34A" }} />
+          Edit link sent to <strong>{email}</strong>
         </div>
       </div>
     );
   }
 
+  // Collapsed state — just a subtle text link
+  if (!expanded) {
+    return (
+      <div style={{ textAlign: "center", padding: "8px 0" }}>
+        <button
+          onClick={() => setExpanded(true)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#94A3B8",
+            fontSize: 12,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            padding: "4px 8px",
+          }}
+        >
+          <i className="fa-solid fa-pen-to-square" style={{ marginRight: 5 }} />
+          Is this your profile? Request edit access
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "20px 24px" }}>
-      <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: "0 0 8px 0" }}>
-        <i className="fa-solid fa-pen-to-square" style={{ marginRight: 8, color: "#2563EB" }} />
-        Update Your Information
-      </h3>
-      <p style={{ fontSize: 13, color: "#64748B", margin: "0 0 14px 0", lineHeight: 1.5 }}>
-        Enter the email address associated with this contact to receive an edit link.
-      </p>
+    <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: "14px 20px" }}>
+      <div style={{ fontSize: 12, color: "#64748B", marginBottom: 8 }}>
+        Enter your email to receive an edit link.
+      </div>
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
           type="email"
@@ -218,35 +237,36 @@ function MagicLinkForm({ contactEmail, contactSlug, showToast }) {
           onChange={(e) => setEmail(e.target.value)}
           required
           style={{
-            flex: "1 1 200px",
-            padding: "9px 14px",
+            flex: "1 1 180px",
+            padding: "7px 12px",
             border: "1px solid #E2E8F0",
-            borderRadius: 8,
-            fontSize: 14,
+            borderRadius: 6,
+            fontSize: 13,
             outline: "none",
             fontFamily: "inherit",
+            background: "#fff",
           }}
         />
         <button
           type="submit"
           disabled={sending}
           style={{
-            padding: "9px 20px",
-            borderRadius: 8,
+            padding: "7px 14px",
+            borderRadius: 6,
             border: "none",
-            background: sending ? "#94A3B8" : "#2563EB",
+            background: sending ? "#94A3B8" : "#64748B",
             color: "#fff",
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 600,
             cursor: sending ? "default" : "pointer",
             fontFamily: "inherit",
           }}
         >
-          {sending ? "Sending..." : "Send Edit Link"}
+          {sending ? "Sending..." : "Send Link"}
         </button>
       </form>
       {error && (
-        <div style={{ fontSize: 13, color: "#DC2626", marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: "#DC2626", marginTop: 6 }}>
           <i className="fa-solid fa-circle-exclamation" style={{ marginRight: 4 }} />
           {error}
         </div>
@@ -703,138 +723,108 @@ export default function ContactDetailPage() {
         </div>
       )}
 
-      {/* ── Header ── */}
-      <div style={{ background: "linear-gradient(135deg, #0C4A6E, #1D4ED8)", borderRadius: 12, padding: "28px 24px", marginBottom: 20, textAlign: "center", position: "relative" }}>
-        {/* Action buttons - top right */}
-        <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
-          <button onClick={copyLink} style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-            <i className="fa-solid fa-link" style={{ marginRight: 4 }} />Copy Link
+      {/* ── Header (matches lender/vendor detail pattern) ── */}
+      <div style={{ background: "#1E3A5F", padding: "18px 24px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", borderRadius: 12, marginBottom: 20 }}>
+        {/* Avatar */}
+        {c.headshot_url ? (
+          <img
+            src={c.headshot_url}
+            alt={c.name}
+            style={{ width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "2px solid rgba(255,255,255,0.22)", flexShrink: 0 }}
+          />
+        ) : (
+          <div style={{ width: 80, height: 80, borderRadius: 12, border: "2px solid rgba(255,255,255,0.22)", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 28, fontWeight: 700, color: "#fff" }}>
+            {getInitials(c.name)}
+          </div>
+        )}
+
+        {/* Name + badges */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF", lineHeight: 1.2, margin: "0 0 4px 0" }}>
+            {displayName}
+          </h1>
+          {c.job_title && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 2 }}>{c.job_title}</div>}
+          {c.company_name && <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>{c.company_name}</div>}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {c.nmls && (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,0.15)", color: "#CBD5E1" }}>
+                NMLS# {c.nmls}
+              </span>
+            )}
+            {c.lender_or_vendor && (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,0.15)", color: "#CBD5E1" }}>
+                {c.lender_or_vendor}
+              </span>
+            )}
+            {c.nationwide_territory && (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(16,185,129,0.2)", color: "#6EE7B7" }}>
+                <i className="fa-solid fa-globe" style={{ marginRight: 4 }} />Nationwide
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+          <button onClick={copyLink} title="Copy Link" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+            <i className="fa-solid fa-link" />
           </button>
-          <button onClick={shareLink} style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-            <i className="fa-solid fa-share-nodes" style={{ marginRight: 4 }} />Share
+          <button onClick={shareLink} title="Share" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+            <i className="fa-solid fa-share-nodes" />
+          </button>
+          <button onClick={() => copyToClipboard(buildAllContactText(c), showToast)} title="Copy All Info" style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#CBD5E1", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>
+            <i className="fa-regular fa-copy" />
           </button>
           {adminUser && (
             <a
               href={`https://airtable.com/appuJgI9X93OLaf0u/tblEEDPa1vXeR6cnT/viwXP46Ml5H2RHml3/${c.airtable_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ padding: "6px 12px", borderRadius: 7, border: "1px solid rgba(245,158,11,0.5)", background: "rgba(245,158,11,0.15)", color: "#FBBF24", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              title="View in Airtable"
+              style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid rgba(245,158,11,0.5)", background: "rgba(245,158,11,0.15)", color: "#FBBF24", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, textDecoration: "none" }}
             >
-              <i className="fa-solid fa-table" style={{ marginRight: 4 }} />Airtable
+              <i className="fa-solid fa-table" />
             </a>
-          )}
-        </div>
-
-        {/* Avatar */}
-        {c.headshot_url ? (
-          <img
-            src={c.headshot_url}
-            alt={c.name}
-            style={{ width: 88, height: 88, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,.3)", margin: "0 auto 14px", display: "block" }}
-          />
-        ) : (
-          <div style={{ width: 88, height: 88, borderRadius: "50%", background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 30, fontWeight: 700, color: "#fff" }}>
-            {getInitials(c.name)}
-          </div>
-        )}
-
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{displayName}</div>
-        {c.job_title && <div style={{ fontSize: 14, color: "rgba(255,255,255,.8)" }}>{c.job_title}</div>}
-        {c.company_name && <div style={{ fontSize: 14, color: "rgba(255,255,255,.6)", marginTop: 2 }}>{c.company_name}</div>}
-
-        {/* Badges */}
-        <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 12 }}>
-          {c.nmls && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,0.15)", color: "#CBD5E1" }}>
-              NMLS# {c.nmls}
-            </span>
-          )}
-          {c.lender_or_vendor && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(255,255,255,0.15)", color: "#CBD5E1" }}>
-              {c.lender_or_vendor}
-            </span>
-          )}
-          {c.nationwide_territory && (
-            <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 100, background: "rgba(16,185,129,0.2)", color: "#6EE7B7" }}>
-              <i className="fa-solid fa-globe" style={{ marginRight: 4 }} />Nationwide
-            </span>
           )}
         </div>
       </div>
 
-      {/* Two-column layout on desktop */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
-        {/* ── Contact Info ── */}
-        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "20px 24px" }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: "0 0 12px 0" }}>
-            <i className="fa-solid fa-address-card" style={{ marginRight: 8, color: "#2563EB" }} />
-            Contact Information
-          </h2>
+      {/* ── Two-column content grid ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
 
-          {c.email && (
-            <ActionRow icon="fa-solid fa-envelope" iconBg="#2563EB" label="Email" href={`mailto:${c.email}`} displayText={c.email} copyText={c.email} showToast={showToast} />
-          )}
-          {c.mobile && (
-            <ActionRow icon="fa-solid fa-mobile-screen" iconBg="#16A34A" label="Mobile" href={`tel:${rawDigits(c.mobile)}`} displayText={formatPhone(c.mobile)} copyText={formatPhone(c.mobile)} showToast={showToast} />
-          )}
-          {c.office && (
-            <ActionRow icon="fa-solid fa-phone" iconBg="#7C3AED" label="Office" href={`tel:${rawDigits(c.office)}`} displayText={formatPhone(c.office) + (c.extension ? ` x${c.extension}` : "")} copyText={formatPhone(c.office) + (c.extension ? ` x${c.extension}` : "")} showToast={showToast} />
-          )}
-          {c.linkedin && (
-            <ActionRow icon="fa-brands fa-linkedin-in" iconBg="#0A66C2" label="LinkedIn" href={c.linkedin} displayText="View Profile" copyText={c.linkedin} showToast={showToast} />
-          )}
-          {c.zoom_room && (
-            <ActionRow icon="fa-solid fa-video" iconBg="#DC2626" label="Zoom Room" href={c.zoom_room} displayText="Join Meeting" copyText={c.zoom_room} showToast={showToast} />
-          )}
-
-          {/* Copy All */}
-          <div style={{ marginTop: 16 }}>
-            <button
-              onClick={() => copyToClipboard(buildAllContactText(c), showToast)}
-              style={{
-                width: "100%",
-                padding: "10px 0",
-                borderRadius: 8,
-                border: "1px solid #E2E8F0",
-                background: "#F8FAFC",
-                color: "#334155",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                fontFamily: "inherit",
-              }}
-            >
-              <i className="fa-regular fa-copy" />
-              Copy All Contact Info
-            </button>
+        {/* ── Contact Info card ── */}
+        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0" }}>
+          <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+            <i className="fa-solid fa-address-card" style={{ color: "#fff", fontSize: 13 }} />
+            <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>Contact Information</span>
+          </div>
+          <div style={{ padding: "4px 16px 12px" }}>
+            {c.email && (
+              <ActionRow icon="fa-solid fa-envelope" iconBg="#2563EB" label="Email" href={`mailto:${c.email}`} displayText={c.email} copyText={c.email} showToast={showToast} />
+            )}
+            {c.mobile && (
+              <ActionRow icon="fa-solid fa-mobile-screen" iconBg="#16A34A" label="Mobile" href={`tel:${rawDigits(c.mobile)}`} displayText={formatPhone(c.mobile)} copyText={formatPhone(c.mobile)} showToast={showToast} />
+            )}
+            {c.office && (
+              <ActionRow icon="fa-solid fa-phone" iconBg="#7C3AED" label="Office" href={`tel:${rawDigits(c.office)}`} displayText={formatPhone(c.office) + (c.extension ? ` x${c.extension}` : "")} copyText={formatPhone(c.office) + (c.extension ? ` x${c.extension}` : "")} showToast={showToast} />
+            )}
+            {c.linkedin && (
+              <ActionRow icon="fa-brands fa-linkedin-in" iconBg="#0A66C2" label="LinkedIn" href={c.linkedin} displayText="View Profile" copyText={c.linkedin} showToast={showToast} />
+            )}
+            {c.zoom_room && (
+              <ActionRow icon="fa-solid fa-video" iconBg="#DC2626" label="Zoom Room" href={c.zoom_room} displayText="Join Meeting" copyText={c.zoom_room} showToast={showToast} />
+            )}
           </div>
         </div>
 
-        {/* ── Bio ── */}
-        {c.bio && (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "20px 24px" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: "0 0 10px 0" }}>
-              <i className="fa-solid fa-user" style={{ marginRight: 8, color: "#2563EB" }} />
-              About
-            </h2>
-            <p style={{ fontSize: 14, lineHeight: 1.7, color: "#334155", margin: 0, whiteSpace: "pre-wrap" }}>
-              {c.bio}
-            </p>
-          </div>
-        )}
-
-        {/* ── Licensed States ── */}
+        {/* ── Licensed States card ── */}
         {c.territory_states && (
-          <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: "20px 24px" }}>
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: "0 0 10px 0" }}>
-              <i className="fa-solid fa-map" style={{ marginRight: 8, color: "#2563EB" }} />
-              Licensed States
-            </h2>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0" }}>
+            <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="fa-solid fa-map" style={{ color: "#fff", fontSize: 13 }} />
+              <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>Licensed States</span>
+            </div>
+            <div style={{ padding: "16px", display: "flex", gap: 6, flexWrap: "wrap" }}>
               {c.territory_states.split(",").map((state) => state.trim()).filter(Boolean).map((state) => (
                 <span
                   key={state}
@@ -854,31 +844,47 @@ export default function ContactDetailPage() {
           </div>
         )}
 
-        {/* ── Self-Edit Section ── */}
-        {editToken && tokenChecked && tokenValid && (
-          <EditForm
-            contact={c}
-            token={editToken}
-            onSaved={handleSaved}
-            showToast={showToast}
-          />
-        )}
-
-        {editToken && tokenChecked && !tokenValid && (
-          <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "20px 24px", textAlign: "center" }}>
-            <i className="fa-solid fa-link-slash" style={{ fontSize: 32, color: "#DC2626", marginBottom: 8, display: "block" }} />
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#991B1B", marginBottom: 4 }}>Edit link expired or invalid</div>
-            <div style={{ fontSize: 13, color: "#B91C1C" }}>
-              Please request a new edit link below.
+        {/* ── Bio card (full width) ── */}
+        {c.bio && (
+          <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #E2E8F0", gridColumn: "1 / -1" }}>
+            <div style={{ background: "#2563EB", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="fa-solid fa-user" style={{ color: "#fff", fontSize: 13 }} />
+              <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.03em" }}>About</span>
+            </div>
+            <div style={{ padding: "16px" }}>
+              <p style={{ fontSize: 13, lineHeight: 1.7, color: "#334155", margin: 0, whiteSpace: "pre-wrap" }}>
+                {c.bio}
+              </p>
             </div>
           </div>
         )}
 
-        {/* Magic link request form — show if no active edit token */}
-        {(!editToken || (tokenChecked && !tokenValid)) && c.email && (
-          <MagicLinkForm contactEmail={c.email} contactSlug={slug} showToast={showToast} />
+        {/* ── Self-Edit Section (full width) ── */}
+        {editToken && tokenChecked && tokenValid && (
+          <div style={{ gridColumn: "1 / -1" }}>
+            <EditForm
+              contact={c}
+              token={editToken}
+              onSaved={handleSaved}
+              showToast={showToast}
+            />
+          </div>
+        )}
+
+        {editToken && tokenChecked && !tokenValid && (
+          <div style={{ gridColumn: "1 / -1", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "14px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#991B1B" }}>
+              <i className="fa-solid fa-link-slash" style={{ marginRight: 6 }} />
+              Edit link expired or invalid — request a new one below.
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Magic link request — subtle, below the grid */}
+      {(!editToken || (tokenChecked && !tokenValid)) && c.email && (
+        <MagicLinkForm contactEmail={c.email} contactSlug={slug} showToast={showToast} />
+      )}
 
       {/* Bottom spacing */}
       <div style={{ height: 40 }} />
