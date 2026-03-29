@@ -1,0 +1,20 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    /* Default: dark icon for light browser tabs */
+    .favicon-shape { fill: #1E2548; }
+
+    /* Auto-switch: white icon for dark browser tabs */
+    @media (prefers-color-scheme: dark) {
+      .favicon-shape { fill: white; }
+    }
+  </style>
+  <g clip-path="url(#clip0_favicon)">
+    <path class="favicon-shape" d="M-5.33334 1.06667L16 18.1333L37.3333 1.06667V12.8L16 29.8667L-5.33334 12.8V1.06667Z"/>
+    <path class="favicon-shape" d="M-5.33334 17.0667L16 34.1333L37.3333 17.0667V28.8L16 45.8667L-5.33334 28.8V17.0667Z"/>
+  </g>
+  <defs>
+    <clipPath id="clip0_favicon">
+      <rect width="32" height="32"/>
+    </clipPath>
+  </defs>
+</svg>
