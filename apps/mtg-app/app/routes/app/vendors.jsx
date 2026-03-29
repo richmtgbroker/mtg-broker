@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router";
 import { getUserEmail } from "../../lib/auth";
 
 export function meta() {
@@ -466,154 +467,65 @@ export default function VendorsPage() {
 
       {/* Card Grid */}
       {!loading && filtered.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: 16,
-          }}
-        >
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3">
           {filtered.map((v) => {
             const isFav = favoriteIds.has(v.id);
+            const slug = v.slug || v.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
             return (
               <div
                 key={v.id}
-                style={{
-                  background: "#fff",
-                  border: "1px solid #E2E8F0",
-                  borderRadius: 10,
-                  padding: 20,
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  transition: "box-shadow .15s, transform .15s",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,.08)";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.transform = "none";
-                }}
-                onClick={() => {
-                  if (v.slug) window.location.href = `/app/vendors/${v.slug}`;
-                }}
+                className="relative bg-white border border-[#cbd5e1] rounded-2xl overflow-hidden shadow-[0_3px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.15)] hover:border-[#93c5fd] transition-all hover:-translate-y-0.5 flex flex-col"
               >
-                {/* Heart */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavorite(v);
-                  }}
-                  style={{
-                    position: "absolute",
-                    top: 12,
-                    right: 12,
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 4,
-                    fontSize: 16,
-                    color: isFav ? "#EF4444" : "#CBD5E1",
-                    lineHeight: 1,
-                  }}
-                  title={isFav ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <i className={isFav ? "fa-solid fa-heart" : "fa-regular fa-heart"} />
-                </button>
-
-                {/* Logo / Letter */}
-                <div
-                  style={{
-                    width: "100%",
-                    maxWidth: 220,
-                    height: 140,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 12,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                  }}
+                {/* Logo Area */}
+                <Link
+                  to={`/app/vendors/${slug}`}
+                  className="relative bg-[#f8fafc] flex items-center justify-center p-5 no-underline border-b border-[#cbd5e1]"
+                  style={{ minHeight: "140px" }}
                 >
                   {v.logo ? (
                     <img
                       src={v.logo}
                       alt={v.name}
-                      style={{
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        objectFit: "contain",
-                      }}
+                      className="max-w-[90%] max-h-[105px] object-contain"
                     />
                   ) : (
-                    <div
-                      style={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: 12,
-                        background: "#2563EB",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontWeight: 700,
-                        fontSize: 28,
-                      }}
-                    >
+                    <div className="text-3xl font-bold text-[#94a3b8]">
                       {getInitial(v.name)}
                     </div>
                   )}
-                </div>
+
+                  {/* Favorite heart */}
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(v); }}
+                    className="absolute top-2 right-2 bg-transparent border-none cursor-pointer p-0 transition-colors"
+                    aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <svg viewBox="0 0 24 24" fill={isFav ? "#ef4444" : "none"} stroke={isFav ? "#ef4444" : "#cbd5e1"} strokeWidth="2" className="w-4 h-4">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </button>
+                </Link>
 
                 {/* Vendor Name */}
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#0F172A",
-                    textAlign: "center",
-                    marginBottom: 8,
-                    lineHeight: 1.3,
-                  }}
+                <Link
+                  to={`/app/vendors/${slug}`}
+                  className="flex-1 flex items-center justify-center text-center px-3 pt-3 pb-1.5 no-underline"
                 >
-                  {v.name}
-                </div>
+                  <h3 className="text-[13px] font-bold text-[#0f172a] leading-snug m-0">
+                    {v.name}
+                  </h3>
+                </Link>
 
                 {/* Action Buttons */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    marginTop: "auto",
-                    width: "100%",
-                    justifyContent: "center",
-                  }}
-                >
+                <div className="flex items-center justify-center gap-2 px-3 py-2.5">
                   {v.website && (
                     <a
                       href={v.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{
-                        padding: "7px 14px",
-                        borderRadius: 6,
-                        border: "1px solid #E2E8F0",
-                        background: "#F8FAFC",
-                        color: "#2563EB",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
+                      className="flex-1 text-center py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
                     >
-                      <i className="fa-solid fa-globe" />
                       Website
                     </a>
                   )}
@@ -623,21 +535,8 @@ export default function VendorsPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      style={{
-                        padding: "7px 14px",
-                        borderRadius: 6,
-                        border: "1px solid #E2E8F0",
-                        background: "#F8FAFC",
-                        color: "#2563EB",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
+                      className="flex-1 text-center py-1.5 rounded-lg border border-[#93c5fd] bg-[#f0f7ff] text-[#1a56db] text-[11px] font-semibold no-underline hover:bg-[#dbeafe] transition-colors"
                     >
-                      <i className="fa-solid fa-arrow-right-to-bracket" />
                       Login Portal
                     </a>
                   )}

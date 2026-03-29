@@ -348,11 +348,11 @@ export default function LenderDetailPage() {
   const loanProducts = lender.loanProducts || [];
   const loanTypes = lender.loanTypes || [];
 
-  /* Channel badges — NEXA tags only visible to NEXA-authorized users.
-     Styles match the lender directory card tags. */
+  /* Channel badges — all channel tags are NEXA-gated since they refer to
+     NEXA wholesale channels and must not be shown to non-NEXA users. */
   const badges = [];
-  if (lender.nexaWholesale) badges.push({ label: "Broker", style: { background: "#FEF3C7", color: "#92400E" } });
-  if (lender.nexaNondel) badges.push({ label: "NonDel", style: { background: "#DCFCE7", color: "#15803D" } });
+  if (nexaAuthorized && lender.nexaWholesale) badges.push({ label: "Broker", style: { background: "#FEF3C7", color: "#92400E" } });
+  if (nexaAuthorized && lender.nexaNondel) badges.push({ label: "NonDel", style: { background: "#DCFCE7", color: "#15803D" } });
   if (nexaAuthorized && lender.nexa100) badges.push({ label: "NEXA\u{1F4AF}", style: { background: "#1a1a1a", color: "#FFFFFF" } });
   if (nexaAuthorized && lender.nexaOnly) badges.push({ label: "NEXA Only", style: { background: "#EDE9FE", color: "#6D28D9" } });
 
