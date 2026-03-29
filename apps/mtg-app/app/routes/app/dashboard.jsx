@@ -4,8 +4,8 @@ import { getAccessToken, getUserEmail } from "../../lib/auth";
 import NavIcon from "../../components/NavIcon";
 
 const API_BASE = "https://mtg-broker-api.rich-e00.workers.dev";
-const PIPELINE_API = "https://mtg-broker-pipeline.rich-e00.workers.dev";
-const LENDERS_API = "https://mtg-broker-pipeline.rich-e00.workers.dev/api/lenders";
+const PIPELINE_API = "";
+const LENDERS_API = "/api/lenders";
 
 const CACHE_TTL = {
   rates: 30 * 60 * 1000,
