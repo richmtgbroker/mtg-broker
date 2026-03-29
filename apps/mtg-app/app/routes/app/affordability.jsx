@@ -374,7 +374,7 @@ export default function AffordabilityCalculator() {
     setTimeout(() => window.print(), 150);
   }, [scenName, scenDate, borName, fico, income, debts, loanRate, qualRate, term, miRate, ins, tax, suppIns, hoa, results]);
 
-  /* --- Calc-field handler (expression eval on blur) --- */
+  /* --- Calc-field handler (expression eval on blur OR Enter) --- */
   const handleCalcFieldBlur = useCallback((value, setter) => {
     if (value && /[+\-*/]/.test(value.replace(/,/g, ""))) {
       const result = evaluateExpression(value);
@@ -385,6 +385,15 @@ export default function AffordabilityCalculator() {
     }
     setter(formatNumberString(value));
   }, []);
+
+  /** Press Enter in a calc-field → evaluate expression + blur the input */
+  const handleCalcFieldKeyDown = useCallback((e, value, setter) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCalcFieldBlur(value, setter);
+      e.target.blur();
+    }
+  }, [handleCalcFieldBlur]);
 
   /* --- Empty-field class helper --- */
   const emptyClass = (val) => (!String(val).trim() ? " field-empty" : "");
@@ -711,6 +720,7 @@ export default function AffordabilityCalculator() {
                   value={income}
                   onChange={(e) => setIncome(e.target.value)}
                   onBlur={() => handleCalcFieldBlur(income, setIncome)}
+                  onKeyDown={(e) => handleCalcFieldKeyDown(e, income, setIncome)}
                   placeholder="e.g. 8,500 or 102000/12"
                 />
               </div>
@@ -722,6 +732,7 @@ export default function AffordabilityCalculator() {
                   value={debts}
                   onChange={(e) => setDebts(e.target.value)}
                   onBlur={() => handleCalcFieldBlur(debts, setDebts)}
+                  onKeyDown={(e) => handleCalcFieldKeyDown(e, debts, setDebts)}
                   placeholder="e.g. 1,200"
                 />
               </div>
@@ -774,6 +785,7 @@ export default function AffordabilityCalculator() {
                     value={ins}
                     onChange={(e) => setIns(e.target.value)}
                     onBlur={() => handleCalcFieldBlur(ins, setIns)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, ins, setIns)}
                     placeholder="e.g. 1,800"
                   />
                 </div>
@@ -785,6 +797,7 @@ export default function AffordabilityCalculator() {
                     value={tax}
                     onChange={(e) => setTax(e.target.value)}
                     onBlur={() => handleCalcFieldBlur(tax, setTax)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, tax, setTax)}
                     placeholder="e.g. 3,000"
                   />
                 </div>
@@ -798,6 +811,7 @@ export default function AffordabilityCalculator() {
                     value={suppIns}
                     onChange={(e) => setSuppIns(e.target.value)}
                     onBlur={() => handleCalcFieldBlur(suppIns, setSuppIns)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, suppIns, setSuppIns)}
                     placeholder="e.g. 600"
                   />
                 </div>
@@ -809,6 +823,7 @@ export default function AffordabilityCalculator() {
                     value={hoa}
                     onChange={(e) => setHoa(e.target.value)}
                     onBlur={() => handleCalcFieldBlur(hoa, setHoa)}
+                    onKeyDown={(e) => handleCalcFieldKeyDown(e, hoa, setHoa)}
                     placeholder="e.g. 0"
                   />
                 </div>
