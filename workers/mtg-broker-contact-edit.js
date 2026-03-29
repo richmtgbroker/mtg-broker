@@ -20,7 +20,7 @@
 const SUPABASE_URL = 'https://tcmahfwhdknxhhdvqpum.supabase.co';
 const APP_URL = 'https://mtg.broker';
 const TOKEN_EXPIRY_HOURS = 48;
-const FROM_EMAIL = 'noreply@mtg.broker';
+const FROM_EMAIL = 'noreply@updates.mtg.broker';
 const ADMIN_EMAIL = 'rich@prestonlending.com';
 
 // CORS headers
