@@ -52,7 +52,7 @@ function buildAllContactText(c) {
   }
   if (c.nmls) lines.push(`NMLS# ${c.nmls}`);
   if (c.linkedin) lines.push(`LinkedIn: ${c.linkedin}`);
-  if (c.zoom_room) lines.push(`Zoom: ${c.zoom_room}`);
+  if (c.territory_states) lines.push(`Territory: ${c.territory_states}`);
   return lines.join("\n");
 }
 
@@ -393,8 +393,39 @@ function PhotoUpload({ contact, token, showToast }) {
   );
 }
 
+/* ── Input field — defined OUTSIDE EditForm so React doesn't remount on every keystroke ── */
+function InputField({ label, value, onChange, type = "text", placeholder = "", span2 = false }) {
+  return (
+    <div style={{ marginBottom: 14, gridColumn: span2 ? "1 / -1" : undefined }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{
+          width: "100%",
+          padding: "9px 14px",
+          border: "1px solid #E2E8F0",
+          borderRadius: 8,
+          fontSize: 14,
+          outline: "none",
+          fontFamily: "inherit",
+          boxSizing: "border-box",
+        }}
+      />
+    </div>
+  );
+}
+
 /* ── Self-Edit Form ── */
 function EditForm({ contact, token, onSaved, showToast }) {
+  // territory_states may be an array from Supabase — convert to comma string for editing
+  const statesRaw = contact.territory_states;
+  const statesStr = Array.isArray(statesRaw) ? statesRaw.join(", ") : (statesRaw || "");
+
   const [form, setForm] = useState({
     preferred_name: contact.preferred_name || "",
     job_title: contact.job_title || "",
@@ -402,16 +433,15 @@ function EditForm({ contact, token, onSaved, showToast }) {
     office: contact.office || "",
     extension: contact.extension || "",
     linkedin: contact.linkedin || "",
-    zoom_room: contact.zoom_room || "",
     bio: contact.bio || "",
     nmls: contact.nmls || "",
-    territory_states: contact.territory_states || "",
+    territory_states: statesStr,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  function handleChange(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  function handleChange(field) {
+    return (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
   }
 
   async function handleSubmit(e) {
@@ -438,32 +468,6 @@ function EditForm({ contact, token, onSaved, showToast }) {
     setSaving(false);
   }
 
-  function InputField({ label, field, type = "text", placeholder = "" }) {
-    return (
-      <div style={{ marginBottom: 14 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {label}
-        </label>
-        <input
-          type={type}
-          value={form[field]}
-          onChange={(e) => handleChange(field, e.target.value)}
-          placeholder={placeholder}
-          style={{
-            width: "100%",
-            padding: "9px 14px",
-            border: "1px solid #E2E8F0",
-            borderRadius: 8,
-            fontSize: 14,
-            outline: "none",
-            fontFamily: "inherit",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div style={{ background: "#fff", border: "2px solid #2563EB", borderRadius: 10, padding: "20px 24px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
@@ -478,38 +482,41 @@ function EditForm({ contact, token, onSaved, showToast }) {
 
       <form onSubmit={handleSubmit}>
         <PhotoUpload contact={contact} token={token} showToast={showToast} />
-        <InputField label="Preferred Name" field="preferred_name" placeholder="How you'd like to be called" />
-        <InputField label="Job Title" field="job_title" placeholder="e.g. Account Executive" />
-        <InputField label="NMLS#" field="nmls" placeholder="e.g. 123456" />
-        <InputField label="Mobile Phone" field="mobile" placeholder="(555) 123-4567" type="tel" />
-        <InputField label="Office Phone" field="office" placeholder="(555) 123-4567" type="tel" />
-        <InputField label="Extension" field="extension" placeholder="e.g. 123" />
-        <InputField label="LinkedIn URL" field="linkedin" placeholder="https://linkedin.com/in/..." type="url" />
-        <InputField label="Zoom Room" field="zoom_room" placeholder="https://zoom.us/j/..." type="url" />
-        <InputField label="Licensed States" field="territory_states" placeholder="e.g. CA, TX, FL" />
 
-        {/* Bio — textarea */}
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Bio
-          </label>
-          <textarea
-            value={form.bio}
-            onChange={(e) => handleChange("bio", e.target.value)}
-            placeholder="Tell us about yourself..."
-            rows={4}
-            style={{
-              width: "100%",
-              padding: "9px 14px",
-              border: "1px solid #E2E8F0",
-              borderRadius: 8,
-              fontSize: 14,
-              outline: "none",
-              fontFamily: "inherit",
-              boxSizing: "border-box",
-              resize: "vertical",
-            }}
-          />
+        {/* Two-column grid for fields */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
+          <InputField label="Preferred Name" value={form.preferred_name} onChange={handleChange("preferred_name")} placeholder="How you'd like to be called" />
+          <InputField label="Job Title" value={form.job_title} onChange={handleChange("job_title")} placeholder="e.g. Account Executive" />
+          <InputField label="NMLS#" value={form.nmls} onChange={handleChange("nmls")} placeholder="e.g. 123456" />
+          <InputField label="Mobile Phone" value={form.mobile} onChange={handleChange("mobile")} placeholder="(555) 123-4567" type="tel" />
+          <InputField label="Office Phone" value={form.office} onChange={handleChange("office")} placeholder="(555) 123-4567" type="tel" />
+          <InputField label="Extension" value={form.extension} onChange={handleChange("extension")} placeholder="e.g. 123" />
+          <InputField label="LinkedIn URL" value={form.linkedin} onChange={handleChange("linkedin")} placeholder="https://linkedin.com/in/..." type="url" span2 />
+          <InputField label="Territory" value={form.territory_states} onChange={handleChange("territory_states")} placeholder="e.g. CA, TX, FL" span2 />
+
+          {/* Bio — textarea, full width */}
+          <div style={{ marginBottom: 14, gridColumn: "1 / -1" }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748B", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              Bio
+            </label>
+            <textarea
+              value={form.bio}
+              onChange={handleChange("bio")}
+              placeholder="Tell us about yourself..."
+              rows={4}
+              style={{
+                width: "100%",
+                padding: "9px 14px",
+                border: "1px solid #E2E8F0",
+                borderRadius: 8,
+                fontSize: 14,
+                outline: "none",
+                fontFamily: "inherit",
+                boxSizing: "border-box",
+                resize: "vertical",
+              }}
+            />
+          </div>
         </div>
 
         {error && (
@@ -824,9 +831,6 @@ export default function ContactDetailPage() {
             )}
             {c.linkedin && (
               <ActionRow icon="fa-brands fa-linkedin-in" iconBg="#0A66C2" label="LinkedIn" href={c.linkedin} displayText="View Profile" copyText={c.linkedin} showToast={showToast} />
-            )}
-            {c.zoom_room && (
-              <ActionRow icon="fa-solid fa-video" iconBg="#DC2626" label="Zoom Room" href={c.zoom_room} displayText="Join Meeting" copyText={c.zoom_room} showToast={showToast} />
             )}
             {/* Copy All — inside the contact info card */}
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
