@@ -1971,14 +1971,7 @@ const LOAN_SEARCH_JS = String.raw`
       rangeFiltersByGroup[gName].push({ rangeKey, cfg, resolved });
     });
 
-    // v7.4.1: Default only "Loan Info" expanded (first group, or explicit match)
-    if (_activePillGroups.size === 0 && sortedGroupNames.length > 0) {
-      const loanInfoGroup = sortedGroupNames.find(gName => {
-        const lower = gName.toLowerCase();
-        return lower.includes('loan info') || lower.includes('loan details');
-      });
-      _activePillGroups.add(loanInfoGroup || sortedGroupNames[0]);
-    }
+    // All filter groups start collapsed — user clicks to expand
 
     // v7.4.1: Build each group as a collapsible accordion section (no pills)
     sortedGroupNames.forEach(groupName => {
