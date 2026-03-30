@@ -1005,6 +1005,7 @@ export default function AdminHub() {
                     { href: "https://mtgbroker.outseta.com/#/app/dashboard", title: "Outseta", desc: "Users, billing, auth" },
                     { href: "https://supabase.com/dashboard/project/tcmahfwhdknxhhdvqpum", title: "Supabase", desc: "Database, tables, queries" },
                     { href: "https://airtable.com/appuJgI9X93OLaf0u", title: "Airtable", desc: "Loan products, lenders" },
+                    { href: "https://airtable.com/appuJgI9X93OLaf0u/pagcqJ1jc0L8k5brK?gvMKC%3Aview=plafmxXOpT62A9AJ0&gvMKC%3Asort=eyJwZWw0dEp0MTNpdjhsM2o1TiI6eyJjb2x1bW5JZCI6ImZsZGJETXJOcWRJaURUZU5VIiwiYXNjZW5kaW5nIjp0cnVlfX0", title: "Bug Tracker", desc: "YBug reports & dev tasks" },
                   ].map((link) => (
                     <a
                       key={link.title}
