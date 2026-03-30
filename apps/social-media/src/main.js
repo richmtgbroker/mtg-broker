@@ -255,37 +255,9 @@ var PAGE_HTML = [
   '          </div>',
   '          <div class="field-hint" style="text-align:center; margin-top:8px; font-size:11px; color:#9CA3AF;">Auto-loaded from Settings if available</div>',
   '',
-  '          <div class="sm-home-upload-area" id="homePhotoSection">',
-  '            <div class="sm-home-upload-preview" id="homePhotoPreview" onclick="document.getElementById(\'homePhotoInput\').click()">',
-  '              <div class="home-upload-placeholder" id="homePhotoPlaceholder">',
-  '                <i class="fas fa-camera"></i><span>Upload Home Photo (optional)</span>',
-  '              </div>',
-  '              <img id="homePhotoImg" src="" alt="Home photo" style="display:none; width:100%; height:100%; object-fit:cover;" />',
-  '            </div>',
-  '            <div class="sm-upload-actions">',
-  '              <button class="sm-upload-btn" onclick="document.getElementById(\'homePhotoInput\').click()"><i class="fas fa-upload"></i> Upload Photo</button>',
-  '              <button class="sm-upload-btn remove" id="homePhotoRemoveBtn" onclick="SMG.removeImage(\'homePhoto\')" style="display:none;"><i class="fas fa-times"></i></button>',
-  '            </div>',
-  '            <input type="file" id="homePhotoInput" accept="image/*" onchange="SMG.handleUpload(event, \'homePhoto\')" style="display:none;" />',
-  '          </div>',
+  '          <!-- Home Photo and Realtor Photo are now in the dynamic fields area, not here -->',
   '',
-  '          <!-- Realtor Profile Photo (New Listing only) -->',
-  '          <div class="sm-realtor-upload-area" id="realtorPhotoSection" style="display:none;">',
-  '            <div class="sm-realtor-upload-row">',
-  '              <div class="sm-realtor-upload-preview" id="realtorPhotoPreview" onclick="document.getElementById(\'realtorPhotoInput\').click()">',
-  '                <i class="fas fa-user-tie" id="realtorPhotoIcon"></i>',
-  '                <img id="realtorPhotoImg" src="" alt="Realtor photo" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;" />',
-  '              </div>',
-  '              <div class="sm-realtor-upload-info">',
-  '                <span class="sm-realtor-upload-label">Realtor Photo <small>(optional)</small></span>',
-  '                <div class="sm-upload-actions">',
-  '                  <button class="sm-upload-btn sm-btn-sm" onclick="document.getElementById(\'realtorPhotoInput\').click()"><i class="fas fa-upload"></i> Upload</button>',
-  '                  <button class="sm-upload-btn remove sm-btn-sm" id="realtorPhotoRemoveBtn" onclick="SMG.removeImage(\'realtorPhoto\')" style="display:none;"><i class="fas fa-times"></i></button>',
-  '                </div>',
-  '              </div>',
-  '            </div>',
-  '            <input type="file" id="realtorPhotoInput" accept="image/*" onchange="SMG.handleUpload(event, \'realtorPhoto\')" style="display:none;" />',
-  '          </div>',
+  '',
   '        </div>',
   '',
   '      </div>',
@@ -421,7 +393,14 @@ function mount() {
 function loadEngine() {
   var s = document.createElement('script');
   s.src = ENGINE_URL;
-  s.defer = true;
+  s.onload = function() {
+    // In SPA navigation (React Router), DOMContentLoaded already fired before
+    // the engine loaded, so the engine's DOMContentLoaded listener won't fire.
+    // We call init() directly to ensure fields are built and data is restored.
+    if (document.readyState !== 'loading' && typeof SMG !== 'undefined' && SMG.init) {
+      SMG.init();
+    }
+  };
   document.head.appendChild(s);
 }
 
