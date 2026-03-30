@@ -1032,6 +1032,7 @@ export default function AdminHub() {
                 <div className="flex flex-wrap gap-3">
                   <SyncButton label="Sync Lenders" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/lenders" />
                   <SyncButton label="Sync Products" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/products" />
+                  <SyncButton label="Sync Contacts" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/contacts" />
                   <SyncButton label="Sync All" url="https://mtg-broker-airtable-sync.rich-e00.workers.dev/" />
                 </div>
               </div>
