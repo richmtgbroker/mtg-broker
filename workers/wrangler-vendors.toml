@@ -1,0 +1,12 @@
+name = "mtg-broker-vendors"
+main = "mtg-broker-vendors.js"
+compatibility_date = "2026-03-10"
+account_id = "e00ea2fe32b9a5cee69e55cbcf2da9ea"
+
+# ============================================================
+# Environment Variables (secrets)
+# These are NOT stored here — they live in the Cloudflare dashboard.
+# Set them at: Workers & Pages → mtg-broker-vendors → Settings → Variables
+#
+#   AIRTABLE_API_KEY    — Airtable personal access token
+# ============================================================
