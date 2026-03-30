@@ -71,29 +71,29 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <div className="flex-1 overflow-y-auto py-4 px-3">
+      <div className="flex-1 overflow-y-auto py-3 px-3">
         {/* Main nav */}
-        <div className="mb-6">
+        <div className="mb-1.5">
           {mainNavItems.map((item) => (
             <SidebarLink key={item.href} item={item} currentPath={currentPath} collapsed={collapsed} />
           ))}
         </div>
 
         {/* Divider */}
-        <hr className={`border-none border-t border-border ${collapsed ? "my-1.5" : "my-3"}`} />
+        <hr className={`border-0 h-px bg-border/50 mx-2 ${collapsed ? "my-1" : "my-2"}`} />
 
         {/* Secondary */}
-        <div className="mb-6">
+        <div className="mb-1.5">
           {secondaryNavItems.map((item) => (
             <SidebarLink key={item.href} item={item} currentPath={currentPath} collapsed={collapsed} />
           ))}
         </div>
 
         {/* Divider */}
-        <hr className={`border-none border-t border-border ${collapsed ? "my-1.5" : "my-3"}`} />
+        <hr className={`border-0 h-px bg-border/50 mx-2 ${collapsed ? "my-1" : "my-2"}`} />
 
         {/* Tools */}
-        <div className="mb-6">
+        <div className="mb-1.5">
           {toolsNavItems.map((item) => (
             <SidebarLink key={item.href} item={item} currentPath={currentPath} collapsed={collapsed} />
           ))}
@@ -101,8 +101,8 @@ export default function Sidebar() {
 
         {/* NEXA Exclusive */}
         {nexa && (
-          <div className="mb-6">
-            <div className={`text-[11px] font-bold text-text-faint uppercase tracking-wide px-3 pb-2 whitespace-nowrap transition-all duration-200 ${collapsed ? "opacity-0 h-0 p-0 overflow-hidden" : ""}`}>
+          <div className="mb-1.5">
+            <div className={`text-[11px] font-bold text-text-faint uppercase tracking-wide px-3 pb-1 whitespace-nowrap transition-all duration-200 ${collapsed ? "opacity-0 h-0 p-0 overflow-hidden" : ""}`}>
               NEXA Exclusive
             </div>
             <SidebarLink item={nexaNavItem} currentPath={currentPath} collapsed={collapsed} isNexa />
@@ -110,8 +110,8 @@ export default function Sidebar() {
         )}
 
         {/* My Workspace */}
-        <div className="mb-6">
-          <div className={`text-[11px] font-bold text-text-faint uppercase tracking-wide px-3 pb-2 whitespace-nowrap transition-all duration-200 ${collapsed ? "opacity-0 h-0 p-0 overflow-hidden" : ""}`}>
+        <div className="mb-1.5">
+          <div className={`text-[11px] font-bold text-text-faint uppercase tracking-wide px-3 pb-1 whitespace-nowrap transition-all duration-200 ${collapsed ? "opacity-0 h-0 p-0 overflow-hidden" : ""}`}>
             My Workspace
           </div>
           {workspaceNavItems
@@ -139,8 +139,8 @@ function SidebarLink({ item, currentPath, collapsed, isNexa = false, isPro = fal
   return (
     <Link
       to={item.href}
-      className={`flex items-center gap-3 rounded-[10px] no-underline text-[17px] font-medium whitespace-nowrap overflow-hidden transition-all duration-150 ${
-        collapsed ? "p-2.5 justify-center" : "px-3 py-2.5"
+      className={`flex items-center gap-3 rounded-lg no-underline text-[15px] font-medium whitespace-nowrap overflow-hidden transition-all duration-150 ${
+        collapsed ? "p-2 justify-center" : "px-3 py-[7px]"
       } ${isActive ? activeClasses : hoverClasses}`}
       style={isActive ? undefined : { color: "#64748b" }}
       title={collapsed ? item.label : undefined}
