@@ -16,12 +16,14 @@ import { isLoggedIn } from "../lib/auth";
  * trigger the auth widget on the current page.
  */
 const SIDEBAR_KEY = "sidebar-collapsed";
+const MOBILE_BREAKPOINT = 991;
 
 export default function AppLayout() {
   const [authChecked, setAuthChecked] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -29,6 +31,15 @@ export default function AppLayout() {
     setAuthChecked(true);
     setSidebarCollapsed(localStorage.getItem(SIDEBAR_KEY) === "true");
   }, [location.pathname]);
+
+  // Track mobile breakpoint so we can zero-out sidebar margin on small screens
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+    setIsMobile(mq.matches);
+    function onChange(e) { setIsMobile(e.matches); }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Listen for sidebar collapse changes via localStorage
   useEffect(() => {
@@ -74,7 +85,7 @@ export default function AppLayout() {
     };
   }, []);
 
-  const sidebarWidth = sidebarHidden ? "0px" : sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
+  const sidebarWidth = isMobile || sidebarHidden ? "0px" : sidebarCollapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
