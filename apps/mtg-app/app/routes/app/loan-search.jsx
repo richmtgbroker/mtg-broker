@@ -915,12 +915,7 @@ function FilterPanel({ open, onClose, allFields, fieldMeta, products, panelFilte
       }));
   }, [allFields, fieldMeta]);
 
-  // Auto-expand first group on mount
-  useEffect(() => {
-    if (expandedGroups.size === 0 && groupedFields.length > 0) {
-      setExpandedGroups(new Set([groupedFields[0].name]));
-    }
-  }, [groupedFields]);
+  // All filter groups start collapsed — user clicks to expand
 
   function toggleGroup(name) {
     setExpandedGroups((prev) => {
