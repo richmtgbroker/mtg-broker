@@ -1197,13 +1197,7 @@ export function initLoanSearch() {
       rangeFiltersByGroup[gName].push({ rangeKey, cfg, resolved });
     });
 
-    if (_activePillGroups.size === 0 && sortedGroupNames.length > 0) {
-      const loanInfoGroup = sortedGroupNames.find(gName => {
-        const lower = gName.toLowerCase();
-        return lower.includes('loan info') || lower.includes('loan details');
-      });
-      _activePillGroups.add(loanInfoGroup || sortedGroupNames[0]);
-    }
+    // All filter groups start collapsed — user clicks to expand
 
     sortedGroupNames.forEach(groupName => {
       const isActive = _activePillGroups.has(groupName);
