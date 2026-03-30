@@ -7,18 +7,9 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Try serving static assets first via Cloudflare Pages asset binding.
-    // This handles /assets/*.js, /assets/*.css, /favicon.ico, etc.
-    try {
-      const assetResponse = await env.ASSETS.fetch(request);
-      if (assetResponse.status !== 404) {
-        return assetResponse;
-      }
-    } catch (e) {
-      // ASSETS binding not available or failed — fall through to SSR
-    }
-
-    // API proxy routes — forward to external Workers to avoid CORS issues.
+    // API proxy routes FIRST — check before static assets so POST requests
+    // to /api/* don't get blocked by the ASSETS binding returning 405.
+    // (ASSETS.fetch returns 405 for POST requests instead of 404.)
     // These Workers don't have proper CORS for *.pages.dev origins,
     // so we proxy through the same-origin _worker.js instead.
     if (url.pathname.startsWith("/api/contact-edit")) {
@@ -98,6 +89,16 @@ export default {
       }
       const res = await fetch(target, init);
       return new Response(await res.text(), { status: res.status, headers: { "Content-Type": "application/json" } });
+    }
+
+    // Try serving static assets (after API routes, so POST /api/* doesn't get 405'd)
+    try {
+      const assetResponse = await env.ASSETS.fetch(request);
+      if (assetResponse.status !== 404) {
+        return assetResponse;
+      }
+    } catch (e) {
+      // ASSETS binding not available or failed — fall through to SSR
     }
 
     // Not a static asset or API proxy — handle via React Router SSR
