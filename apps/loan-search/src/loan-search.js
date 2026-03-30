@@ -1780,18 +1780,12 @@ export function initLoanSearch() {
         clearAllBtn.addEventListener('click', (e) => {
           e.preventDefault();
           clearFiltersOnly();
+          // Collapse all accordion sections on clear
           _activePillGroups.clear();
           const grid = $('.filters-grid');
           if (grid) {
             $$('.filter-group-section', grid).forEach(section => {
-              const gName = section.getAttribute('data-group') || '';
-              const isLoanInfo = gName.toLowerCase().includes('loan info') || gName.toLowerCase().includes('loan details');
-              if (isLoanInfo) {
-                _activePillGroups.add(gName);
-                section.classList.add('active');
-              } else {
-                section.classList.remove('active');
-              }
+              section.classList.remove('active');
             });
           }
         });
