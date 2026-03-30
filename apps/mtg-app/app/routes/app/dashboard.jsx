@@ -51,7 +51,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-[32px] font-extrabold tracking-[-0.5px] text-text">
+          <h1 className="text-2xl sm:text-[32px] font-extrabold tracking-[-0.5px] text-text">
             {userName ? `Welcome back, ${userName}!` : "Welcome back!"}
           </h1>
           <p className="text-text-muted text-base mt-1">Your mortgage toolkit at a glance</p>
@@ -90,12 +90,12 @@ function QuickActions({ lenderCount }) {
 
   return (
     <DashSection title="Quick Actions" fillHeight>
-      <div className="grid grid-cols-3 gap-2.5 h-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 h-full">
         {actions.map((a) => (
           <Link
             key={a.href}
             to={a.href}
-            className={`group flex flex-col items-center justify-center text-center px-3 py-4 rounded-xl border no-underline transition-all hover:-translate-y-1 ${
+            className={`group flex flex-col items-center justify-center text-center px-2 sm:px-3 py-3 sm:py-4 rounded-xl border no-underline transition-all hover:-translate-y-1 ${
               a.highlight
                 ? "bg-gradient-to-b from-[#EFF6FF] to-[#DBEAFE] border-2 border-[#2563EB] shadow-[0_4px_16px_rgba(37,99,235,0.2)] hover:shadow-[0_8px_24px_rgba(37,99,235,0.3)]"
                 : "bg-gradient-to-b from-white to-[#F1F5F9] border-[#E2E8F0] shadow-[0_2px_6px_rgba(0,0,0,0.08)] hover:border-[#94A3B8] hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)]"
@@ -130,7 +130,7 @@ function RatesSection({ rates }) {
 
   return (
     <DashSection title="Today's Avg Rates" icon={`<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline>`}>
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         {rateKeys.map(({ key, label }) => {
           const data = rates?.[key];
           const change = data ? parseFloat(data.change) : 0;
@@ -155,7 +155,7 @@ function RatesSection({ rates }) {
       {/* Pricing Engines */}
       <div className="mt-4">
         <div className="text-[11px] font-bold text-text-faint uppercase tracking-wide mb-2">Pricing Engines</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
             { name: "LenderPrice", url: "https://marketplace.digitallending.com/#/login", domain: "lenderprice.com" },
             { name: "LoanNEX", url: "https://web.loannex.com/", domain: "loannex.com" },
@@ -448,7 +448,7 @@ function CalendarChip({ dateStr, closings }) {
 // ============================================================
 function DashSection({ title, icon, linkHref, linkText, fillHeight, children }) {
   return (
-    <div className={`bg-white rounded-[20px] border border-border p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] ${fillHeight ? "flex flex-col" : ""}`}>
+    <div className={`bg-white rounded-[20px] border border-border p-4 sm:p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)] ${fillHeight ? "flex flex-col" : ""}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-text flex items-center gap-2 uppercase tracking-wide">
           {icon && <NavIcon paths={icon} size={16} className="text-text-muted" />}

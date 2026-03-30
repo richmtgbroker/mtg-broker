@@ -83,12 +83,10 @@ export default function AppLayout() {
 
       {/* Main content area — offset by sidebar width */}
       <main
-        className="flex-1 transition-[margin] duration-300 ease-in-out max-[991px]:ml-0 pb-20 max-[991px]:pb-24"
+        className="flex-1 transition-[margin] duration-300 ease-in-out max-[991px]:ml-0 pb-20 max-[991px]:pb-24 px-4 sm:px-6 lg:px-8"
         style={{
           marginLeft: sidebarWidth,
           paddingTop: "24px",
-          paddingLeft: "32px",
-          paddingRight: "32px",
         }}
       >
         <div className="w-full">
