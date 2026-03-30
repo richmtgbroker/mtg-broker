@@ -427,11 +427,20 @@ async function syncTable(tableConfig, apiKey, serviceKey, logLine) {
   await deleteAllSupabaseRecords(supabase_table, delete_filter, serviceKey);
   logLine(`  ✓ Table cleared`);
 
-  // If we have preserved data, create a wrapper mapper that merges it back
+  // If we have preserved fields, create a wrapper mapper that:
+  // 1. Always includes ALL preserved field keys (with null defaults) so every
+  //    record in a batch has consistent keys (Supabase bulk insert requires this)
+  // 2. Merges back any saved values for records that had them
   let finalMapper = mapper;
-  if (preserveFields && preserveFields.length > 0 && Object.keys(preservedData).length > 0) {
+  if (preserveFields && preserveFields.length > 0) {
+    const nullDefaults = {};
+    for (const f of preserveFields) nullDefaults[f] = null;
+
     finalMapper = (record) => {
       const mapped = mapper(record);
+      // Add all preserved fields with null defaults first
+      Object.assign(mapped, nullDefaults);
+      // Then overlay any saved values for this specific record
       const saved = preservedData[record.id];
       if (saved) {
         Object.assign(mapped, saved);
